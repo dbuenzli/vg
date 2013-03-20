@@ -1,0 +1,56 @@
+OASISFormat: 0.3
+Name: vg
+Version: 0.0.1
+Synopsis: Declarative 2D vector graphics
+Authors: Daniel Bünzli <daniel.buenzli at erratique.ch>
+Copyrights: (c) 2013 Daniel C. Bünzli
+License: BSD3
+Homepage: http://erratique.ch/software/vg
+Description:
+ Vg is an OCaml module for declarative 2D vector graphics. It has a precise
+ denotational semantics and an open backend. Built-in support for PDF, SVG 
+ and HTML5 2D canvas output is provided.
+ .
+ Vg is made of a single module, depends on [Gg][1] and is distributed under 
+ the BSD3 license.
+ .
+ [1]: http://erratique.ch/software/gg
+
+OCamlVersion: >= 3.12.0
+Plugins: META (0.3)
+BuildTools:ocamlbuild
+
+Library vg
+ Path: src
+ Modules: Vg
+ BuildDepends: gg
+
+Executable vgtest
+ Path: vgtest
+ MainIs: vgtest.ml
+ CompiledObject: Best
+ BuildDepends: vg
+ Install: false
+
+Test vgtest
+ Command: $test
+
+Document api
+ Title: Vg's documentation and API reference
+ Type: ocamlbuild (0.3)
+ BuildTools+: ocamldoc
+ XOCamlbuildLibraries: vg
+ XOCamlbuildPath: doc
+
+Document distribution
+ Title: "Vg's README and CHANGES files"
+ DataFiles: README CHANGES
+
+Document samples
+ Title: "Vg's sample code"
+ DataFiles: test/*.ml
+
+SourceRepository head
+ Type: git
+ Location: git://erratique.ch/repos/vg.git
+ Browser: http://erratique.ch/repos/vg

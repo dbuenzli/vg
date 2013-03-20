@@ -1,0 +1,169 @@
+* Next steps
+** Change coordinate system to top-left is (0., 0.) or not ? look at gg.
+   This seems a bad idea because of top < bottom. 
+** Finish tutorial.
+** Finish semantics of I module.
+** Review Path module.
+** Test use thunk instead of lazy avoids ugly begin end
+** Non-blocking IO. 
+
+* Documentation
+** "f a b" is style. 
+** What's the most common area rule ? Use that in the tutorial. NZ I think.
+
+* Api
+** Make everything t.r.
+
+* Image
+** ? Is I.blend order the right thing to do, YES but review semant. order
+   of c [] c' 
+** also review other orders so that >> can be used ?
+** ? Image.mono -> Image.const
+** ? gradient add spread mode, or not.
+** TODO semantics of radial is wrong. 
+** TODO semantics of rimage. Provide rendering intent attribute or part of 
+   rimage.
+** let miter_angle_to_miter_limit a = 1. /. (sin (0.5 *. a))
+** stops, regarding constraints on s_i look what it gives when we write the 
+   backend. It may be better to declare it as a private type, check the
+   constraint so that backends are guaranteed to get clean data.
+   stops replace that by tone curve ? 
+** Image.raster. Accept any raster value, backend does its
+   best, but it also accepts a 
+   raster:Gg.raster -> [`Await | `Ok of Gg.raster ] function that the
+   backend user can plug to use "external" tools to improve normalisation.
+
+* Path
+** TODO rethink the api, which representation. path-subpath-segment
+   path-subpath-points with interpolation scheme. contours ? 
+   have a look at what contour mean in tt. Have a look at CL-vectors.
+** Do we really want ellipses ? YES and circles, however maybe we don't
+   want them *internally*. We could just have cubic bezier and 
+   linear segments internally. 
+** Subdivision http://www.antigrain.com/research/adaptive_bezier/index.html
+** Boolean operations, minkowski, not for the release. 
+** Introduce type Path.rev_t ?
+   val rev t -> rev_t
+   val rev_append : ?tr:M3 -> rev_t -> t -> t
+   better write a t.r. append.
+** P.rect P.ellipse add an angle ? 
+** last_pt should raise Invalid_arg.
+** Check P. for tail recursion and numerical stability.
+** P.cubify 
+** P.to_string ? really ?
+** Path continuations ?
+** ? expose cubic ellipse and ellipse parametrization. 
+** Review bounds of ellipse
+** Sort out the tolerance stuff. 
+** Elliptical arc,  angle optional ?
+** Close as a segment is a litte bit nonsense prefer the following type for
+   subpath : Gg2.pt * segment list * bool. Or NOT.
+** Smoke's representation may be interesting (avoids the moveto): 
+   type tag = Open of v2 (* start point *) 
+   | Closed (* start point is end point of the last segment) 
+   type contour = tag * segment list
+   type Line of v2 | Bezier of v2 * v2 * v2
+** P.map_pts : (p2 -> p2) -> path -> path 
+** P.tr : M3.t -> path -> path
+** P.start / P.end instead of P.last_pt ?
+** P.length : path -> float (arc length)
+** P.split : path -> float -> path * path 
+** contour ? 
+** use real lists for segments spec ? 
+** use real list for path spec  subpath are abstract, functions like 
+   length are defined on those ? 
+
+* Samples
+** Dash offset is for start of each subpath, negative dashoffsets. 
+** Primitives, special cases axial with p = p', radial with c = c'. 
+** join + cap styles add white spots.
+** base.ml only base images (the renderer needs to crop). 
+** Cantor draw the unit line.
+** Test geometric primitives, quadric and ellipse for pdf backend.
+** fill rules.
+** gradient stops as premultiplied color value cannot blend red to blue
+   while alpha 1.0 to alpha 0.0.
+** The IEEE 754 double floating point line vs the real line.
+** The IEEE 754 double floating point grid vs the real plane
+** How many doubles between 10 and 11, 100 and 101, 1000 and 1001, etc.
+   or 2 ** n and 2 ** n+1.
+** slogans.
+** Pies, better to eat them than use them.
+   http://en.wikipedia.org/wiki/File:Piecharts.svg 
+** Rectangle, area cut of w = 0 or s = 0 is nothing but outline cut
+   is segment. 
+** Scatter plot.
+
+* Glyph api,
+** Glyph. 
+   Maybe an approach similar to raster. Define a type that allows for
+   quite different font specification and provide a normalizer in the
+   backends for resolution.
+** OTFm
+** Cairo, pdf & fonts
+   http://lists.cairographics.org/archives/cairo/2007-February/009452.html
+   http://lists.cairographics.org/archives/cairo/2007-September/011427.html
+** output, font resolver ? to accomodate different backends ? 
+** OpenVG, 
+  VGFont, just maps indices to glyphs, applications are responsible for 
+          creating the map. No metric or layout info in the font. 
+	  Applications responsible for text layout operations.
+          Mapping defined by the app, e.g.
+	  - unicode character code (for subsets) -> glyph 
+	    no need for additional table.
+          - native font glyph indices (as found in TT or OpenType font)
+	  - other.
+  A glyph is either a VGPath (vector outline) or a VGimage (raster image)
+
+** SVG 1.2 tiny, text element can specify a line of text
+       the text layout is performed by the standard.
+  SVG 1.1, more control. E.g. tspan allows x, y offset as in VG api.
+  +rotate. Also possible to layout text along a path. 
+
+** Test miànjï 面积 (area, surface area), vector.
+** Test font http://www.twardoch.com/fonts/ Nadeyezhda 
+
+* Backend
+** What about NaNs ? 
+** Primitive images careful when a transform immediatly follows add it
+   e.g. to the gradient transform. Test.
+** introduce a type for meta-data.
+** allow to choose rendering intent.
+** Use mm as units so that they can be represented precisely. 
+** Generate PDF/A
+** Prop or Dict or Meta 
+
+* Misc pointers
+** http://www.fontconfig.org/fontconfig-user.html
+** http://processingjs.nihongoresources.com/bezierinfo/
+** http://www.codeproject.com/Articles/226569/Drawing-polylines-by-tessellation
+** http://portal.acm.org/citation.cfm?id=129906 
+** http://books.google.com/books?q=vatti+clipping+agoston
+
+* PDF backend old notes
+** Rewrite to use Form XObjects. 
+** Rewrite to use Gs dictionaries.
+** Ellipse output. [done ?]
+** Be more clever in state changes and stack push/pop. I guess
+   this means maintaining the state in the renderer.
+** Alpha handling.
+** Pretty print dictionnary output.
+** Blue color seems strange. I'm doing the right thing ?
+** escape string metadata in o_pdf_str.
+** ~date not very friendly and D: prefix.
+** /Producer OCaml Vg module %%VERSION%%
+** Page 65 of the PDF spec shows how, with an indirect object, we can 
+   write a stream without knowing its length in advance. Instead
+   of buffering the stream in memory we could do that. However
+   deflate callback integration becomes tricky (remove deflates and
+   use simple compression).
+
+   The user should write the compressed stream using
+   the first function, we will call the second one to output the stream.
+    
+   (string -> int) -> (string -> int -> unit) -> unit
+   
+   The compress function should reapeatedly call the first one
+   to get data and call the first one to output. Hard to integrate
+   I think (input).
+** %F or %f ?

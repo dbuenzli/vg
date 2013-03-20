@@ -1,0 +1,7 @@
+<**/*.ml> : annot
+<gg> : include
+<src> : include
+<test> : include
+<test/tests> : include
+<test/*> : debug
+<test/vgtest.{byte,native}> : use_str
