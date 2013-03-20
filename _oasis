@@ -1,7 +1,7 @@
 OASISFormat: 0.3
 Name: vg
 Version: 0.0.1
-Synopsis: Declarative 2D vector graphics
+Synopsis: Declarative 2D vector graphics for OCaml
 Authors: Daniel Bünzli <daniel.buenzli at erratique.ch>
 Copyrights: (c) 2013 Daniel C. Bünzli
 License: BSD3
