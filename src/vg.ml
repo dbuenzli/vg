@@ -9,6 +9,8 @@ open Gg;;
 let ( >> ) v f = f v
 let ( & ) f v = f v 
 
+let eps = 1e-9
+
 module P = struct
   let err_close = "Close can only appear at the end of a subpath"
   let err_empty = "empty path"
@@ -96,9 +98,9 @@ module P = struct
     let rx = V2.x r in let ry = V2.y r in
     let x0 = V2.x p0 in let y0 = V2.y p0 in
     let x1 = V2.x p1 in let y1 = V2.y p1 in
-    if V1.is_zero rx || V1.is_zero ry then None else
-    let sina = V1.round_zero (sin a) in
-    let cosa = V1.round_zero (cos a) in
+    if Float.is_zero ~eps rx || Float.is_zero ~eps ry then None else
+    let sina = Float.round_zero ~eps (sin a) in
+    let cosa = Float.round_zero ~eps (cos a) in
     let x0' = (cosa *. x0 +. sina *. y0) /. rx in (* transform to unit circle *)
     let y0' = (-. sina *. x0 +. cosa *. y0) /. ry in
     let x1' = (cosa *. x1 +. sina *. y1) /. rx in
@@ -108,8 +110,8 @@ module P = struct
     let nx = vy in                                        (* normal to p0'p1' *)
     let ny = -. vx in 
     let nn = (nx *. nx) +. (ny *. ny) in
-    if V1.is_zero nn then None (* points coincide *) else 
-    let d2 = V1.round_zero (1. /. nn -. 0.25) in
+    if Float.is_zero ~eps nn then None (* points coincide *) else 
+    let d2 = Float.round_zero ~eps (1. /. nn -. 0.25) in
     if d2 < 0. then None (* points are too far apart *) else
     let d = sqrt d2 in
     let d = if (large && cw) || (not large && not cw) then -. d else d in
@@ -119,8 +121,8 @@ module P = struct
     let t1 = atan2 (y1' -. cy') (x1' -. cx') in
     let dt = (t1 -. t0) in
     let adjust = 
-      if dt > 0. && cw then -. V1._2pi else
-      if dt < 0. && not cw then V1._2pi else
+      if dt > 0. && cw then -. 2. *. Float.pi else
+      if dt < 0. && not cw then 2. *. Float.pi else
       0.
     in
     let t1 = t0 +. (dt +. adjust) in                          (* angle of p1' *)
@@ -146,38 +148,34 @@ module P = struct
       | Close -> close p
     in
     let add_tr m p = function
-      | Start pt -> start (M3.tr2 m pt) p
-      | Line pt -> line (M3.tr2 m pt) p
-      | Qcurve (c, pt) -> qcurve (M3.tr2 m c) (M3.tr2 m pt) p
-      | Ccurve (c, c', pt) -> 
-	  ccurve (M3.tr2 m c) (M3.tr2 m c') (M3.tr2 m pt) p
+      | Start pt -> start (P2.tr m pt) p
+      | Line pt -> line (P2.tr m pt) p
+      | Qcurve (c, pt) -> qcurve (P2.tr m c) (P2.tr m pt) p
+      | Ccurve (c, c', pt) -> ccurve (P2.tr m c) (P2.tr m c') (P2.tr m pt) p
       | Earc (large, cw, r, a, pt) -> 
-	    (* TODO something about these v3, review Gg,
-	       Something faster ??? Try to factorize. *)
 	  let sina = sin a in
 	  let cosa = cos a in
 	  let rx = V2.x r in
 	  let ry = V2.y r in
 	  let ax = V2.v (cosa *. rx) (sina *. rx) in 
 	  let ay = V2.v (-. sina *. ry) (cosa *. ry) in 
-	  let ax' = (V2.of_v3 (M3.tr m (V3.of_v2 ax ~z:0.))) in
-	  let ay' = (V2.of_v3 (M3.tr m (V3.of_v2 ay ~z:0.)) )in
+	  let ax' = V2.tr m ax in
+	  let ay' = V2.tr m ay in
 	  let a' = atan2 (V2.y ax') (V2.x ax') in 
 	  let rx' = V2.norm ax' in
 	  let ry' = V2.norm ay' in
-	  earc ~large ~cw (V2.v rx' ry') a' (M3.tr2 m pt) p
+	  earc ~large ~cw (V2.v rx' ry') a' (P2.tr m pt) p
       | Close -> close p
     in
     if tr == M3.id then fold add p' p else fold (add_tr tr) p' p
 
   let casteljau pt c c' pt' t =
-    let b00 = V2.lerp pt c t in
-    let b01 = V2.lerp c c' t in
-    let b02 = V2.lerp c' pt' t in
-    let b10 = V2.lerp b00 b01 t in
-    let b11 = V2.lerp b01 b02 t in
-    let b = V2.lerp b10 b11 t in
-    Format.printf "t:%F %a%!\n" t V2.print b;
+    let b00 = V2.mix pt c t in
+    let b01 = V2.mix c c' t in
+    let b02 = V2.mix c' pt' t in
+    let b10 = V2.mix b00 b01 t in
+    let b11 = V2.mix b01 b02 t in
+    let b = V2.mix b10 b11 t in
     b
     		       
   let bounds ?(control = false) p = match p with
@@ -207,7 +205,7 @@ module P = struct
 	    | Some (c, m, a1, a2) ->
 		(* TODO wrong in general. *)
 		let t = (a1 +. a2) /. 2. in
-		let b = V2.add c (M2.tr m (V2.v (cos t) (sin t))) in
+		let b = V2.add c (V2.ltr m (V2.v (cos t) (sin t))) in
 		update b;  update pt'; csub l
 	    end
 	| Close :: l -> csub l
@@ -264,7 +262,7 @@ module P = struct
 	    | Some (c, m, a1, a2) ->
 		(* TODO wrong in general. *)
 		let t = (a1 +. a2) /. 2. in
-		let b = V2.add c (M2.tr m (V2.v (cos t) (sin t))) in
+		let b = V2.add c (V2.ltr m (V2.v (cos t) (sin t))) in
 		update b;  update pt'; csub l
 	    end
 	| Close :: l -> csub l
@@ -338,9 +336,9 @@ module P = struct
 	ux +. uy <= tol
       in
       if is_flat then line p2 acc else
-      let p01 = V2.mid p0 p1 in
-      let p12 = V2.mid p1 p2 in
-      let p012 = V2.mid p01 p12 in
+      let p01 = P2.mid p0 p1 in
+      let p12 = P2.mid p1 p2 in
+      let p012 = P2.mid p01 p12 in
       aux tol line (aux tol line acc p0 p01 p012) p012 p12 p2
     in
     aux tol line acc p0 p1 p2
@@ -362,12 +360,12 @@ module P = struct
 	mx +. my <= tol
       in
       if is_flat then line p3 acc else    
-      let p01 = V2.mid p0 p1 in 
-      let p12 = V2.mid p1 p2 in 
-      let p23 = V2.mid p2 p3 in
-      let p012 = V2.mid p01 p12 in
-      let p123 = V2.mid p12 p23 in
-      let p0123 = V2.mid p012 p123 in    
+      let p01 = P2.mid p0 p1 in 
+      let p12 = P2.mid p1 p2 in 
+      let p23 = P2.mid p2 p3 in
+      let p012 = P2.mid p01 p12 in
+      let p123 = P2.mid p12 p23 in
+      let p0123 = P2.mid p012 p123 in    
       aux tol line (aux tol line acc p0 p01 p012 p0123) p0123 p123 p23 p3
     in
     aux tol line acc p0 p1 p2 p3
@@ -380,7 +378,7 @@ module P = struct
 	let tol2 = tol *. tol in
 	let rec aux tol line acc p0 t0 p1 t1 = 
 	  let t = (t0 +. t1) /. 2. in
-	  let b = V2.add c (M2.tr m (V2.v (cos t) (sin t))) in
+	  let b = V2.add c (V2.ltr m (V2.v (cos t) (sin t))) in
 	  let is_flat =                (* cf. Drawing elliptic... L. Maisonbe *)
 	    let x0 = V2.x p0 in 
 	    let y0 = V2.y p0 in 
@@ -422,7 +420,7 @@ module P = struct
       let accr = ref acc in
       for i = 0 to pt_count do 
 	let t = (first_pt +. (foi i) *. period) /. seg_len in
-	accr := sample (V2.lerp last pt t) !accr 
+	accr := sample (V2.mix last pt t) !accr 
       done;
       (pt, residual', !accr)
     in
@@ -436,12 +434,12 @@ module P = struct
     match ellipse_param p0 large cw r a p1 with
     | None -> (* line with a cubic *)
 	let c = V2.add (V2.smul two_div_3 p0) (V2.smul one_div_3 p1) in
-	let c' = V2.add (V2.smul one_div_3 p0) (V2.smul two_div_3 p1) in
-	cubic c c' p1 acc
+        let c' = V2.add (V2.smul one_div_3 p0) (V2.smul two_div_3 p1) in
+        cubic c c' p1 acc
     | Some (c, m, t0, t1) -> 
 	let mt = (* TODO something better *)
-	  M2.v (-. (M2.el m 0 0)) (M2.el m 1 0)(* gives the tngt to a point *)
-	       (-. (M2.el m 0 1)) (M2.el m 1 1)
+	  M2.v (-. (M2.e00 m)) (M2.e10 m) (* gives the tngt to a point *)
+	       (-. (M2.e01 m)) (M2.e11 m)
 	in
 	let tol = tol /. max (V2.x r) (V2.y r) in
 	let rec aux tol cubic acc p0 t0 p1 t1 = 
@@ -450,13 +448,14 @@ module P = struct
 	  let is_flat = (2.*. (sin a) ** 6.) /. (27.*. (cos a) ** 2.) <= tol in
 	  if is_flat then 
 	    let l = (4. *. tan a) /. 3. in
-	    let c = V2.add p0 (V2.smul l (M2.tr mt (V2.v (sin t0) (cos t0)))) in
-	    let c' = V2.sub p1 (V2.smul l (M2.tr mt (V2.v (sin t1) (cos t1)))) 
-	    in
+	    let c = V2.add p0 (V2.smul l (V2.ltr mt (V2.v (sin t0) (cos t0)))) 
+            in
+	    let c' = V2.sub p1 (V2.smul l (V2.ltr mt (V2.v (sin t1) (cos t1))))
+            in
 	    cubic c c' p1 acc
 	  else
 	    let t = (t0 +. t1) /. 2. in
-	    let b = V2.add c (M2.tr m (V2.v (cos t) (sin t))) in
+	    let b = V2.(c + ltr m (V2.v (cos t) (sin t))) in
 	    aux tol cubic (aux tol cubic acc p0 t0 b t) b t p1 t1
       in
       aux tol cubic acc p0 t0 p1 t1
@@ -465,16 +464,16 @@ module P = struct
     let pr = Format.fprintf in
     let pr_seg fmt = function
       | Start pt -> 
-	  pr fmt "@ @[<1>S@ %a@]" V2.print pt
+	  pr fmt "@ @[<1>S@ %a@]" V2.pp pt
       | Line pt -> 
-	  pr fmt "@ @[<1>L@ %a@]" V2.print pt
+	  pr fmt "@ @[<1>L@ %a@]" V2.pp pt
       | Qcurve (c, pt) ->
-	  pr fmt "@ @[<1>Qc@ %a@ %a@]" V2.print c V2.print pt
+	  pr fmt "@ @[<1>Qc@ %a@ %a@]" V2.pp c V2.pp pt
       | Ccurve (c, c', pt) -> 
-	  pr fmt "@ @[<1>Cc@ %a@ %a@ %a@]" V2.print c V2.print c' V2.print pt
+	  pr fmt "@ @[<1>Cc@ %a@ %a@ %a@]" V2.pp c V2.pp c' V2.pp pt
       | Earc (large, cw, radii, angle, pt) ->
-	  pr fmt "@ @[<1>Ea@ %B@ %B@ %a@ %F %a@]" large cw V2.print radii angle
-	    V2.print pt
+	  pr fmt "@ @[<1>Ea@ %B@ %B@ %a@ %F %a@]" large cw V2.pp radii angle
+	    V2.pp pt
       | Close -> pr fmt "@ Close"
     in
     let pr_segs fmt segs = List.iter (pr_seg fmt) (List.rev segs) in
@@ -502,7 +501,7 @@ module I = struct
 	dashes : dashes option }
 
   type area_rule = [ `Aeo | `Anz | `Ol of outline ]
-  type blender = Over 
+  type blender = [ `Atop | `In | `Out | `Over | `Plus | `Copy | `Xor ]
 
   type prim = 
     | Mono of color
@@ -530,7 +529,7 @@ module I = struct
   type text = string * (int * int) list * bool (* reverse *)
   let cut_glyphs ?text ar gl i = failwith "unimplemented"
 
-  let blend ?a i i' = Blend (Over, a, i, i')
+  let blend ?a ?(blender = `Over) i i' = Blend (blender, a, i, i')
 
   let push_tr tr = function (* collects sucessive transforms in a single Tr. *)
     | Tr (tl, i) -> Tr (tr :: tl, i)
@@ -545,13 +544,14 @@ module I = struct
   let compare i i' = Pervasives.compare i i' 
   let equal i i' = i = i' 
   let print fmt i = failwith "unimplemented"
+  let print_f fmt i = failwith "unimplemented"
   let to_string i = failwith "unimplemented"
 end
 
 type image = I.t
 
 
-module Vgo = struct
+module Vgr = struct
   type surface = size2 * box2  * image
   type meta_data
   type dest = [ 

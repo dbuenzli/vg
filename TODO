@@ -1,9 +1,6 @@
 * Next steps
-** Change coordinate system to top-left is (0., 0.) or not ? look at gg.
-   This seems a bad idea because of top < bottom. 
 ** Finish tutorial.
 ** Finish semantics of I module.
-** Review Path module.
 ** Test use thunk instead of lazy avoids ugly begin end
 ** Non-blocking IO. 
 
@@ -34,6 +31,7 @@
    backend user can plug to use "external" tools to improve normalisation.
 
 * Path
+** Maybe, Boolean operations, minkowski. 
 ** TODO rethink the api, which representation. path-subpath-segment
    path-subpath-points with interpolation scheme. contours ? 
    have a look at what contour mean in tt. Have a look at CL-vectors.
@@ -41,37 +39,24 @@
    want them *internally*. We could just have cubic bezier and 
    linear segments internally. 
 ** Subdivision http://www.antigrain.com/research/adaptive_bezier/index.html
-** Boolean operations, minkowski, not for the release. 
 ** Introduce type Path.rev_t ?
    val rev t -> rev_t
    val rev_append : ?tr:M3 -> rev_t -> t -> t
    better write a t.r. append.
-** P.rect P.ellipse add an angle ? 
-** last_pt should raise Invalid_arg.
 ** Check P. for tail recursion and numerical stability.
-** P.cubify 
 ** P.to_string ? really ?
 ** Path continuations ?
 ** ? expose cubic ellipse and ellipse parametrization. 
 ** Review bounds of ellipse
 ** Sort out the tolerance stuff. 
 ** Elliptical arc,  angle optional ?
-** Close as a segment is a litte bit nonsense prefer the following type for
-   subpath : Gg2.pt * segment list * bool. Or NOT.
-** Smoke's representation may be interesting (avoids the moveto): 
-   type tag = Open of v2 (* start point *) 
-   | Closed (* start point is end point of the last segment) 
-   type contour = tag * segment list
-   type Line of v2 | Bezier of v2 * v2 * v2
-** P.map_pts : (p2 -> p2) -> path -> path 
+** ? P.map_pts : (p2 -> p2) -> path -> path 
 ** P.tr : M3.t -> path -> path
-** P.start / P.end instead of P.last_pt ?
+** P.mem : path -> p2 -> bool
 ** P.length : path -> float (arc length)
 ** P.split : path -> float -> path * path 
-** contour ? 
-** use real lists for segments spec ? 
-** use real list for path spec  subpath are abstract, functions like 
-   length are defined on those ? 
+** P.cubic_fold
+
 
 * Samples
 ** Dash offset is for start of each subpath, negative dashoffsets. 
@@ -93,6 +78,7 @@
 ** Rectangle, area cut of w = 0 or s = 0 is nothing but outline cut
    is segment. 
 ** Scatter plot.
+** Redo all the image references in the docs with Vg.
 
 * Glyph api,
 ** Glyph. 

@@ -272,7 +272,7 @@ module I : sig
   
   type blender = [ `Atop | `In | `Out | `Over | `Plus | `Copy | `Xor ]
 
-  val blend : ?a:float -> ?b:blender -> image -> image -> image 
+  val blend : ?a:float -> ?blender:blender -> image -> image -> image 
   (** [blend i i'] blends the colors of [i] over those of [i']. If [a] is 
       specified this value is used as the alpha value for each color of the 
       resulting image.
@@ -282,6 +282,7 @@ module I : sig
       {- \[[blend i i']\]{_[p]} [= (c]{_r}[,c]{_g}[,c]{_b}[,a)] 
          for any [p] with
          c = \[[i]\]{_[p]} \[\] \[[i']\]{_[p]} otherwise.}} 
+      (* TODO ?blender docs *)
    *)
 
 
@@ -307,11 +308,11 @@ module I : sig
       to print floating point values. *)
 end
 
-(** Image output. 
+(** Image rendering. 
 
-    This module defines functions to output images to PDF, SVG and 
+    This module defines functions to render images to PDF, SVG and 
     the HTML5 canvas. *)
-module Vgo : sig
+module Vgr : sig
 
 
   (** {1:page Pages} 
@@ -549,8 +550,7 @@ module Vgo : sig
 end
 
 val ( >> ) : 'a -> ('a -> 'b) -> 'b
-(** Sequencing operator. Left associative. *)
-
+(** [x >> f] is [f x], associates to the left. *)
 
 (** {1:basics Basics} 
 
@@ -564,31 +564,28 @@ open Vg;;]}
     ({!Gg.color}). Later you may want to read {!Gg}'s documentation
     basics but for now it is sufficient to know that each of these
     types has a constructor [v] in a module named after the
-    capitalized type name (e.g.  {!P2.v}, {!V2.v}, etc.).
-
-
-    For the toplevel it may be useful to install [Gg]'s printer,
-    consult [Gg]'s documentation.
+    capitalized type name ({!P2.v}, {!V2.v}, etc.).
 
     {2 Infinite images}
 
     In [Vg], images are {e conceptually} infinite. They are seen as
     functions mapping points of the plane to colors.  Images are
-    (immutable) values of type {!image}.
+    immutable values of type {!image}.
 
     The simplest image is a monochrome image: an image that associates
-    the same color to every point in the plane.  The following code
-    defines an infinite red image :
+    the same color to every point in the plane.  This expression
+    defines an infinite red image:
 {[let red = I.mono Color.red]}
     The module {!I} contains all the combinators to define and compose
     infinite images, we'll explore some of them later.
 
     {2 Rendering}
 
-    Manipulating infinite images with combinators is blissful but at
-    some point you want to see the result.  The functions in {!Vgo}
-    render a {e finite}, rectangular, part of an image on a
-    surface. The rendered area is called the {e view rectangle}.
+    Manipulating infinite images with combinators is blissful but
+    seeing them is more interesting. Images defined with [Vg] can be
+    rendered to multiple backends. The module {!Vgr} defines a few
+    functions common to certain backends and allows to specify image
+    metadata for non-interactive backends.
 
     The following code outputs the unit square of [red] on a
     4x4 centimeters PDF surface in the file [/tmp/vg-tutorial.pdf]: 
@@ -597,8 +594,8 @@ open Vg;;]}
   let view = Box2.v P2.o (Size2.v 1. 1.) in
   try
     let oc = open_out "/tmp/vg-tutorial.pdf" in
-    let o = Vgo.create_output (`Channel oc) in
-    Vgo.output_pdf o Vgo.Meta.empty [(size, view, i)];
+    let r = Vgr.create (`Channel oc) in
+    Vgr_pdf.render r Vgr.Meta.empty [(size, view, i)];
     close_out oc
   with Sys_error e -> prerr_endline e
 
@@ -611,13 +608,12 @@ let () = usquare_to_pdf red]}
     [Vg]'s cartesian coordinate space has the y-axis pointing up and
     x-axis right. It has no units, you define what they mean to you.
 
-    In {!Vgo} the map between the coordinate space of an image and a
-    surface is defined by the view rectangle: its corners are mapped
-    one to one to the surface's corners.  This is done regardless of
-    the (backend dependent) surface coordinate's system, appropriate
-    transforms are applied so that the bottom-left corner of the view
-    rectangle maps to the bottom-left corner of the surface and so
-    forth for each corner.
+    On rendering the corners of the specified view rectangle are
+    mapped one to one to the surface's corners. This is done
+    regardless of the (backend dependent) surface coordinate's system,
+    appropriate transforms are applied so that the bottom-left corner
+    of the view rectangle maps to the bottom-left corner of the
+    surface and so forth for each corner.
 
     If a surface has a physical size, the view rectangle implicitely
     defines a physical unit for [Vg]'s coordinate space when the image
@@ -763,7 +759,7 @@ let red_circle = I.cut `Aeo red circle]}
 
     Antony Courtney. {e Haven : Functional Vector Graphics}, chapter 6
     in
-    {{:http://www.apocalypse.org/~antony/work/pubs/ac-thesis.pdf}Modeling
+    {{:http://yufind.library.yale.edu/yufind/Record/9844025/Description}Modeling
     User Interfaces in a Functional Language}, Ph.D. Thesis, Yale
     University, 2004. *)
 
@@ -772,20 +768,9 @@ let red_circle = I.cut `Aeo red circle]}
     The following notations and definitions are used to give precise 
     meaning to the combinators. 
 
-    {2:semcolor Color and color stops}
+    {2:semcolor Color}
 
-    A value [Color.v r g b a] of type {!Gg.color} represents an
-    [(r,g,b,a)] point in an RGBA color space defined as follows.
-
-    The first three components [r], [g] and [b] are the magnitude from
-    [0] to [1] along red, green and blue dimensions of a {e linear}
-    RGB color space defined by a D65 white point and the ITU-R BT.709
-    primary chromaticities (this corresponds to a {e linearized} sRGB
-    space).
-
-    The fourth component [a] is the color's {e alpha} component. It
-    ranges from [0] to [1] and represents the color's opacity.  [0]
-    denotes a fully transparent color and [1] a completly opaque one.
+    The semantics of colors is the one ascribed to {{!Gg.Color.t}[Gg.color]}. 
 
     The (semantic) blending function \[\][ : color -> color -> color]
     mixes two colors [c = (r,g,b,a)] and [c' = (r',g',b',a')] into a
@@ -810,7 +795,7 @@ let red_circle = I.cut `Aeo red circle]}
 
       A value of type {!Gg.Color.stops} specifies a color at each point of the
       1D {e unit} space. It is defined by a list of pairs
-      [(t]{_i}[,c]{_i}[)] where [t]{_i} is a value from [0] to [1] and
+      [(t]{_i}[, c]{_i}[)] where [t]{_i} is a value from [0] to [1] and
       [c]{_i} the corresponding color at that value. Colors at points
       between [t]{_i} and [t]{_i+1} are linearly interpolated between
       [c]{_i} and [c]{_i+1}. Pairs whose [t]{_i} lies outside [0] to
@@ -838,43 +823,38 @@ let red_circle = I.cut `Aeo red circle]}
     \[\][: image -> p2 -> color] maps them to a color value written
     \[i\]{_[p]} representing the image's color at this point.
 
-    {2:sempaths Paths}
+    {2:sempaths Paths and areas}
     
-    A value of type {!path} is a set of subpaths. A subpath is a list
-    of {e directed} and connected curved segments. Subpaths can be
+    A value of type {!path} is a list of subpaths. A subpath is a list
+    of {e directed} and connected curved {e segments}. Subpaths can be
     disconnected from each other and may (self-)intersect.
 
-    {2:semareas Areas}
-
-    A path and a value of type {!I.area_rule} defines a finite area of
+    A path and a value of type {!P.area} defines a finite area of
     the 2D euclidian space. Given a rule [a], a path [pa] and a point
-    [p], the semantic function \[\]: [I.area_rule -> path -> p2 ->
-    bool] maps them to a boolean value written \[[a], [pa]\]{_[p]}
+    [p], the semantic function \[\]: [P.area -> path -> p2 ->
+    bool] maps them to a boolean value written \[[a], [p]\]{_[pt]}
     that indicates whether [p] belongs to the area or not. The
     semantics of area rules is as follows :
     {ul
-    {- \[[`Aeo], [pa]\]{_[p]} is determined by the even-odd rule :
-
-       Cast a ray from [p] to infinity in any direction (just make 
-       sure it doesn't intersect [pa] tangently or at a singularity).
-       Count the number of [pa]'s segments the ray crosses. [p] belongs to
+    {- \[[`Aeo], [p]\]{_[pt]} is determined by the even-odd rule.
+       Cast a ray from [pt] to infinity in any direction (just make 
+       sure it doesn't intersect [p] tangently or at a singularity).
+       Count the number of [p]'s segments the ray crosses. [pt] belongs to
        the area iff this number is odd.
        {{:http://www.w3.org/TR/SVG/images/painting/fillrule-evenodd.png}
        Illustration}.}
-    {- \[[`Anz], [pa]\]{_[p]} is determined by the non-zero winding number 
-       rule :
-       
-       Cast a ray from [p] to infinity in any direction (just make 
+    {- \[[`Anz], [p]\]{_[pt]} is determined by the non-zero winding number 
+       rule. Cast a ray from [pt] to infinity in any direction (just make 
        sure it doesn't intersect [pa] tangently or at a singularity). 
        Starting with a count of zero examine each intersection of the 
-       ray with [pa]'s segments. If the segment crosses the ray from left to
+       ray with [p]'s segments. If the segment crosses the ray from left to
        right add one to the count, otherwise, from right to left, subtract
-       one. [p] belongs to the area iff the final count is not zero.
+       one. [pt] belongs to the area iff the final count is not zero.
        {{:http://www.w3.org/TR/SVG/images/painting/fillrule-nonzero.png}
        Illustration}.}
-    {- \[[`O o], [pa]\]{_[p]} is determined by the outline
-        area of [pa] as defined by the value [o] of type 
-        {!type:I.outline}. See below.}}
+    {- \[[`O o], [p]\]{_[pt]} is determined by the outline
+        area of [p] as defined by the value [o] of type 
+        {!type:P.outline}. See below.}}
 
     {3:semoutlines Outlines}
 

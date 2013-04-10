@@ -1,4 +1,5 @@
-<**/*.ml> : annot
+<**/*.{ml,mli}> : annot, package(gg)
+<dist> : not_hygienic
 <gg> : include
 <src> : include
 <test> : include
