@@ -6,18 +6,17 @@
 
 (** Declarative 2D vector graphics.
 
-    [Vg] is a module for applicative 2D vector graphics. The module
-    {{:Vg.Vgo.html}outputs} images to PDF, SVG and the HTML5 canvas.  
-    New output backends can be defined and distributed
-    separately, follow
-    {{:http://erratique.ch/software/vg}this link} for a list.
+    [Vg] is a module for declarative 2D vector graphics. The render
+    backend is open and built-in support for rendering to PDF, SVG and
+    the HTML5 canvas element is provided.
 
-    Consult the {{:#basics}basics} and the
-    {{:#semantics}semantics}. Open the module to use it.
+    Consult the {{!basics}basics} and the {{!semantics}semantics}. 
+    Open the module to use it, this defines only modules and types in 
+    your scope and a single {{!(>>)}sequencing operator}.
 
-    {e Version %%VERSION%% - %%EMAIL%% } *)
+    {e Release %%VERSION%% - %%AUTHORS%% } *)
 
-(** {1:top  Interface} *)
+(** {1 Interface} *)
 
 open Gg;;
 
@@ -25,143 +24,230 @@ type path
 (** The type for paths. *)
 
 type image 
-(** The type for vector images. *)
+(** The type for images. *)
 
 (** Paths. 
     
-    Consult their {{:Vg.html#sempaths}semantics} and how
-    they define finite 2D {{:Vg.html#semareas}areas}. 
+    Consult their {{!sempaths}semantics}. 
 
-    Path contructors always take the path as the last argument, it allows
-    to use the operator {!Vg.(>>)} to build paths from the empty path.
+    Path combinators always take the path to act upon as the last
+    argument. Use {!Vg.(>>)} to build paths from the empty path.  *)
+    module P : sig
 
-    In the functions below, if the optional argument [rel] is [true]
-    point coordinates given to the function are expressed relative to
-    the {{:#VALlast_pt}last point} of the path or [(0,0)] if there is no
-    such point. If a segment is added on an empty path without
-    a previous {!start}, an implicit start of [(0,0)] is issued. *) 
-module P : sig
+  (** {1 Path areas} *)
 
-  (** {1 Paths} *)
+  type cap = [ `Butt | `Round | `Square ]
+  (** The type for path caps. {{!semcaps}Semantics}.*)
+
+  type join = [ `Bevel | `Miter | `Round ]
+  (** The type for segment jointures. {{!semjoins}Semantics}.*)
+
+  type dashes = float * float list
+  (** The type for dashes. {{!semdashes}Semantics}. *)
+
+  type outline = 
+      { width : float;          (** Outline width. *)
+	cap : cap;              (** Shape at the end points of open subpaths
+				    and dashes. *)
+	join : join;            (** Shape at segment jointures. *)
+	miter_angle : float;    (** Limit {e angle} for miter joins.*)
+	dashes : dashes option; (** Outline dashes. *) }
+  (** The type for path outline area specifications. 
+      {{!semoutlines}Semantics}.*)
+
+  val o : outline 
+  (** [o] holds a default set of values. [width] is [1.],
+      [cap] is [`Butt], [join] is [`Miter], [miter_angle] is 
+      [0.] and [dashes] is [None]. *)
+      
+  type area = [ `Aeo | `Anz | `O of outline ]
+  (** The type for path area specifications. 
+      {{!sempaths}Semantics}.*)
+
+  (** {1 Path} *)
 
   type t = path
   (** The type for paths. *)
 
   val empty : path
-  (** The empty path. *)
+  (** [empty] is the empty path. *)
 
-  val is_empty : path -> bool
-  (** [true] if the path is empty. *)
 
-  val last_pt : path -> p2
-  (** The last point. Raises [Not_found]
-      on empty paths. *)
+  (** {1 Subpaths and segments} 
 
-  val append : ?tr:m3 -> path -> path -> path
-    (** [append ~tr pa pa'] appends [pa] transformed by [tr] to
-        [pa']. [tr] defaults to the identity.*)
+      If a path segment is directly added to a path [p] which is
+      {{!empty}[empty]} or whose last subpath is {{!close}closed}, a
+      new subpath is {e automatically} started with {!sub}[ P2.o p].
 
-  val start : ?rel:bool -> p2 -> path -> path
-  (** [start p pa], starts a new subpath at [p]. *)
+      In the functions below the default value of the optional
+      argument [rel] is [false]. If [true], the points given to the
+      function are expressed {e relative} to the {{!last_pt}last
+      point} of the path or {!Gg.P2.o} if the path is empty. *)
+
+  val sub : ?rel:bool -> p2 -> path -> path
+  (** [sub pt p] is [p] with a new subpath starting at [pt]. *)
  
   val line : ?rel:bool -> p2 -> path -> path
-  (** [line p pa], straight line from the last point to [p]. *)
+  (** [line pt p] is [p] with a straight line from [p]'s last point to [pt]. *)
 
   val qcurve : ?rel:bool -> p2 -> p2 -> path -> path
-  (** [qcurve c p pa], quadratic bézier curve from the last point
-      to [p] with control point [c]. *)
+  (** [qcurve c pt p] is [p] with a quadratic bézier curve from 
+      [p]'s last point to [pt] with control point [c]. *)
 
   val ccurve : ?rel:bool -> p2 -> p2 -> p2 -> path -> path
-  (** [ccurve c c' p pa], quadratic bézier curve from the last point
-      to [p] with control points [c] and [c']. *)
+  (** [ccurve c c' pt p] is [p] with a cubic bézier curve from [p]'s 
+      last point to [pt] with control points [c] and [c']. *)
 
   val earc : ?rel:bool -> ?large:bool -> ?cw:bool -> size2 -> float -> p2 -> 
     path -> path
-  (** [earc radii angle p pa], elliptical arc from the last point to
-      [p].  The ellipse is defined by the given horizontal and
-      vertical [radii] which are rotated by the given [angle] with
-      respect to the current coordinate system. In the general case
-      this defines four possible arcs, thus [large] indicates if more
-      than pi radians of the arc is to be traversed and [cw] if the
-      arc is to be traversed in the clockwise direction (both default
-      to [false]). See
+  (** [earc r angle pt p] is [p] with an elliptical arc from [p]'s
+      last point to [pt].  The ellipse is defined by the horizontal
+      and vertical radii [r] which are rotated by [angle] with respect
+      to the current coordinate system. In the general case this
+      defines four possible arcs, thus [large] indicates if more than
+      pi radians of the arc is to be traversed and [cw] if the arc is
+      to be traversed in the clockwise direction (both default to
+      [false]). See
       {{:http://www.w3.org/TR/2000/CR-SVG-20001102/images/paths/arcs02.png}this
-      figure}. If parameters do not define a valid ellipse (coincident or 
-      too far apart points, zero radius) the arc collapses to a line. *)
+      figure}. If parameters do not define a valid ellipse (coincident
+      or too far apart points, zero radius) the arc collapses to a
+      line. *)
 
   val close : path -> path
-  (** Straight line from the last point to the subpath's starting
-      point and ends the subpath.  *)
+  (** [close p] is [p] with a straight line from [p]'s last point to
+      [p]'s current subpath starting point, this ends the subpath. A
+      new segment addition on the result will start a new subpath. *)
 
-  val bounds : ?control:bool -> path -> box2
-  (** Axis-aligned rectangle containing the path. If [control]
-      is true control points are also included in the rectangle.
-      Beware
-      that the outline of a path, depending on its 
-      {{:Vg.I.html#TYPEoutline}width} 
-      may exceed these bounds. Raises [Invalid_arg] on empty paths.  *)
- 
-  val print : Format.formatter -> path -> unit
-      (** Prints the path. *)
+  (** {2 Derived subpaths} 
 
-  (** {1 Subpaths} 
-
-      The following convenience functions add and close a new subpath
+      The following convenience functions start and close a new subpath
       to the given path. *)
 
   val circle : ?rel:bool -> p2 -> float -> path -> path
-  (** [circle c r pa], circle with center [c] and radius [r]. *)
+  (** [circle c r p] is [p] with a circle subpath of center [c] 
+      and radius [r]. *)
 
   val ellipse : ?rel:bool -> p2 -> size2 -> path -> path
-  (** [ellipse c radii pa], axis-aligned ellipse with center [c] and
-      given [radii].*)
+  (** [ellipse c r p] is [p] with an axis-aligned ellipse subpath of
+      center [c] and radii [r].*)
 
   val rect : ?rel:bool -> box2 -> path -> path
-  (** [rect r pa], axis-aligned rectangle. *)
+  (** [rect r p] is [p] with an axis-aligned rectangle subpath 
+      [r]. *)
 
   val rrect :?rel:bool -> box2 -> size2 -> path -> path
-  (** [rrect r radii pa], axis-aligned rectangle 
-      [r] with round corner of given [radii]. *)
+  (** [rrect r cr p] is [p] with an axis-aligned rectangle subpath
+      [r] with round corners of radii [cr]. *)
 
-  (** {1 Accessing path data} *)
+  (** {1 Functions} *)
 
-  type segment = 
-    | Start of p2
-    (** Starting point of a subpath (empty segment). *)
-    | Line of p2               
-    (** Line to point. *)
-    | Qcurve of p2 * p2  
+  val last_pt : path -> p2
+  (** [last_pt p] is the last point of [p]'s last subpath.
+      @raise Invalid_argument if [p] is [empty]. *)
+
+  val append : ?tr:m3 -> path -> path -> path
+  (** [append tr p p'] appends [p] transformed by [tr] to [p']. [tr]
+      defaults to {!M3.id}.  
+
+      {b Warning.} To accomodate {!(>>)} the argument order is the opposite of
+      {!List.append}. *)
+
+  val bounds : ?ctrl:bool -> path -> box2
+  (** [bounds ctrl p] is an axis-aligned rectangle containing [p]. If
+      [ctrl] is [true] (defaults to [false]) control points are also
+      included in the rectangle. Returns {!Box2.empty} if the path 
+      is [empty].
+
+      {b Warning.} This function computes the bounds of the ideal
+      path (without width). Path {!outline}s areas will exceed these 
+      bounds. *)
+
+  val tr : Gg.m3 -> path -> path 
+  (** [tr m p] is the affine transform in homogenous 2D space of the path
+      [p] by [m]. *)
+
+  (** {1 Traversal} *)
+
+  type fold = 
+    [ `Sub of p2
+    (** New subpath starting at point, the point *)
+    | `Line of p2               
+    (** Line to point, the point *)
+    | `Qcurve of p2 * p2  
     (** Quadratic curve to point, a control point and the point *)
-    | Ccurve of p2 * p2 * p2   
+    | `Ccurve of p2 * p2 * p2   
     (** Cubic curve to point, two control points and the point *)
-    | Earc of bool * bool * size2 * float * p2
-    (** Elliptic arc to point, large, cw, raddii, angle and the point *)
-    | Close
-    (** Line to [Start] and ends the subpath. *)
+    | `Earc of bool * bool * size2 * float * p2
+    (** Elliptic arc to point, [large], [cw], [raddii], [angle] and the point *)
+    | `Close 
+    (** Line to point of the last [`Sub], ends the subpath. *)
+    ]
+  (** The type for path folds. *)
 
-  val fold : ('a -> segment -> 'a) -> 'a -> path -> 'a
-  (** [fold seg pa v]. Applies [seg] to each path segment. 
-      Each [Start] denotes the beginning of a new subpath. Note that
-      subpaths are not necessarily [Close]d. *)
 
-  val iter : (segment -> unit) -> path -> unit
-  (** [iter seg pa]. Applies [seg] to each segment.
-      Each [Start] denotes the beginning of a new subpath. Note that
-      subpaths are not necessarily [Close]d. *)
+  val fold : ('a -> fold -> 'a) -> 'a -> path -> 'a
+  (** [fold f acc p], applies [f] to each subpath and subpath segments
+      with an accumulator. Subpaths are traversed in the order they
+      were specified, always start with a [`Sub], but may not be
+      [`Close]d. *)
 
-  val linearize : ?tol:float -> start:(p2 -> 'a -> 'a) -> 
-    line:(p2 -> 'a -> 'a) -> 'a -> path -> 'a
-  (** Accesses path data as a sequence of line segments. [start] is
-      called at each new subpath and [line] denotes a line segment
-      from the last point to the given point.  The maximal distance
-      between the original path and the approximation does not exceed
-      [tol] (defaults to [1e-3]). *) 
+  val iter : (fold -> unit) -> path -> unit
+  (** [iter f p] is the imperative incarnation of {!fold}. *)
 
-  val sample : ?tol:float -> start:(p2 -> 'a -> 'a) -> 
-    sample:(p2 -> 'a -> 'a) -> float -> 'a -> path -> 'a
-  (** [sample start sample interval acc pa], invokes [start] at each subpath 
-      start and then [sample] at every distance [interval] on the curve. TODO
-   better doc.*)
+  type linear_fold = [ `Sub of p2 | `Line of p2 | `Close ]
+  (** The type for linear folds. *)
+
+  val linear_fold : ?tol:float -> ('a -> linear_fold -> 'a) -> 'a -> path -> 'a
+  (** [linear_fold tol f acc p] approximates the subpaths of [p] by a
+      sequence of line segments and applies [f] to those with an
+      accumulator. Subpaths are traversed in the order they were
+      specified, always start with a [`Sub], but may not be
+      [`Close]d. The maximal distance between the original path and
+      the linear approximation does not exceed [tol] (defaults to
+      [1e-3]). *)
+
+  type sampler = [ `Sub of p2 | `Sample of p2 ]
+  (** The type for path samplers. *)
+
+  val sample : ?tol:float -> float -> ('a -> sampler -> 'a) -> 'a -> path -> 'a
+  (** [sample tol dt f acc p], samples the subpaths of [p] at every
+      distance [dt] on the curve and applies [f] to those with an
+      accumulator. Subpaths are traversed in the order they were
+      specified, always start with a [`Sub], followed by 
+      [`Sample]s at every distance [dt] along the curve. TODO
+      [tol] doc. *)
+
+  (** {1 Predicates and comparisons} *) 
+
+  val is_empty : path -> bool
+  (** [is_empty p] is [true] iff [p] is [empty]. *)
+
+  val equal : path -> path -> bool 
+  (** [equal p p'] is [p = p']. *)
+
+  val equal_f : (float -> float -> bool) -> path -> path -> bool 
+  (** [equal_f eq p p'] is like {!equal} but uses [eq] to test floating
+      point values. *)
+
+  val compare : path -> path -> int 
+  (** [compare p p'] is {!Pervasives.compare}[ p p']. *)
+
+  val compare_f : (float -> float -> int) -> path -> path -> int 
+  (** [compare_f cmp p p'] is like {!compare} but uses [cmp] to compare 
+      floating point values. *)
+
+  (** {1 Printers} *)
+
+  val to_string : path -> unit 
+  (** [to_string p] is a textual representation of [p]. *) 
+
+  val pp : Format.formatter -> path -> unit
+  (** [pp ppf p] prints a textual representation of [p] on [ppf]. *)
+  
+  val pp_f : (Format.formatter -> float -> unit) -> Format.formatter -> 
+    path -> unit
+  (** [pp_f pp_float ppf p] prints [p] like {!pp} but uses [pp_float] to 
+      print floating point values. *)
 end
 
 
@@ -228,34 +314,8 @@ module I : sig
 
   (** {1:cut Cutting images} *)
 
-  type cap = [ `Butt | `Round | `Square ]
-  (** The type for path caps. {{:Vg.html#semcaps}Semantics}.*)
-
-  type join = [ `Bevel | `Miter | `Round ]
-  (** The type for segment jointures. {{:Vg.html#semjoins}Semantics}.*)
-
-  type dashes = float * float list
-  (** The type for dashes. {{:Vg.html#semdashes}Semantics}. *)
-  type outline = 
-      { width : float;          (** Outline width. *)
-	cap : cap;              (** Shape at the end points of open subpaths
-				    an dashes. *)
-	join : join;            (** Shape at segment jointures. *)
-	miter_angle : float;    (** Limit {e angle} for miter joins.*)
-	dashes : dashes option; (** Outline dashes. *) }
-  (** The type for specifying a path outline. 
-      {{:Vg.html#semoutlines}Semantics}.*)
-
-  val ol : outline 
-  (** [ol] holds a default set of values. [width] is [1.],
-      [cap] is [`Butt], [join] is [`Miter], [miter_angle] is 
-      [0.] and [dashes] is [None]. *)
-      
-  type area_rule = [ `Aeo | `Anz | `Ol of outline ]
-  (** The type for area rules. {{:Vg.html#semareas}Semantics}.*)
-
-  val cut : area_rule -> image -> path -> image
-  (** [cut a i pa] is [i] with the {{:Vg.html#semareas}area} outside 
+  val cut : P.area -> image -> path -> image
+  (** [cut a i pa] is [i] with the {{!sempaths}area} outside 
       \[[a], [pa]\] cut out.
       {ul 
       {- \[[cut a pa i]\]{_[p]} [=] \[[i]\]{_[p]} if \[[a], [pa]\]{_[p]}}
@@ -264,7 +324,7 @@ module I : sig
   type glyph = int * v2
   type text = string * (int * int) list * bool (* reverse *)
   (* cluster is an indivisble mapping of M character to N glyphs. *)
-  val cut_glyphs : ?text:text -> area_rule -> glyph list -> image ->
+  val cut_glyphs : ?text:text -> P.area -> glyph list -> image ->
   image
   (** TODO *)
 
