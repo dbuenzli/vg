@@ -1,0 +1,36 @@
+obuild-ver: 1
+Name: vg
+Synopsis: Declarative 2D vector graphics for OCaml
+Version: repo
+Authors: Daniel Bünzli <daniel.buenzli at erratique.ch>
+License: BSD3
+Homepage: http://erratique.ch/software/vg
+Description:
+ Vg is a library for declarative 2D vector graphics. The render
+ backend is open and built-in support for rendering to PDF, SVG and
+ the HTML5 canvas element is provided.
+ .
+ Vg depends on [Gg][1] and is distributed under the BSD3 license.
+ .
+ [1]: http://erratique.ch/software/gg
+
+Flag jsoo
+ Description: build js_of_ocaml support
+ Default: true
+
+Library vg
+ Modules: Vg, Vgr_pdf, Vgr_svg
+ Path: src
+ BuildDepends: gg
+
+ Library jsoo
+  Path: src
+  Modules: Vgr_jsoo
+  Buildable: $jsoo
+  BuildDepends: js_of_ocaml, js_of_ocaml.syntax
+  pp: camlp4o
+
+Test vgtest
+  Path: vgtest
+  MainIs: vg_test.ml
+  
