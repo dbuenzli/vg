@@ -1,11 +1,8 @@
-#directory "_build/gg";;
 #directory "_build/src";;
 #directory "_build/test";;
 
-#load "gg.cmo";;
+#use "topfind"
+#require "gg"
+ 
 #load "vg.cmo";;
-
-#use "gg_init.ml";;
-
-open Gg;;
 open Vg;;

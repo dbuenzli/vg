@@ -16,7 +16,7 @@ Description:
  .
  [1]: http://erratique.ch/software/gg
 
-OCamlVersion: >= 3.12.0
+OCamlVersion: >= 4.00.0
 Plugins: META (0.3)
 BuildTools:ocamlbuild
 
