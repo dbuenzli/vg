@@ -59,6 +59,7 @@
 
 
 * Samples
+** Test degenerate subpaths rendering. 
 ** Dash offset is for start of each subpath, negative dashoffsets. 
 ** Primitives, special cases axial with p = p', radial with c = c'. 
 ** join + cap styles add white spots.

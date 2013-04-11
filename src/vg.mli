@@ -26,13 +26,13 @@ type path
 type image 
 (** The type for images. *)
 
-(** Paths. 
+(** Paths.
     
     Consult their {{!sempaths}semantics}. 
 
     Path combinators always take the path to act upon as the last
     argument. Use {!Vg.(>>)} to build paths from the empty path.  *)
-    module P : sig
+module P : sig
 
   (** {1 Path areas} *)
 
@@ -64,7 +64,7 @@ type image
   (** The type for path area specifications. 
       {{!sempaths}Semantics}.*)
 
-  (** {1 Path} *)
+  (** {1 Paths} *)
 
   type t = path
   (** The type for paths. *)
@@ -85,7 +85,8 @@ type image
       point} of the path or {!Gg.P2.o} if the path is empty. *)
 
   val sub : ?rel:bool -> p2 -> path -> path
-  (** [sub pt p] is [p] with a new subpath starting at [pt]. *)
+  (** [sub pt p] is [p] with a new subpath starting at [pt]. If [p]'s last 
+      subpath had no segment it is automatically {!close}d. *)
  
   val line : ?rel:bool -> p2 -> path -> path
   (** [line pt p] is [p] with a straight line from [p]'s last point to [pt]. *)
@@ -98,16 +99,16 @@ type image
   (** [ccurve c c' pt p] is [p] with a cubic bézier curve from [p]'s 
       last point to [pt] with control points [c] and [c']. *)
 
-  val earc : ?rel:bool -> ?large:bool -> ?cw:bool -> size2 -> float -> p2 -> 
+  val earc : ?rel:bool -> ?large:bool -> ?ccw:bool -> size2 -> float -> p2 -> 
     path -> path
   (** [earc r angle pt p] is [p] with an elliptical arc from [p]'s
       last point to [pt].  The ellipse is defined by the horizontal
       and vertical radii [r] which are rotated by [angle] with respect
       to the current coordinate system. In the general case this
       defines four possible arcs, thus [large] indicates if more than
-      pi radians of the arc is to be traversed and [cw] if the arc is
-      to be traversed in the clockwise direction (both default to
-      [false]). See
+      pi radians of the arc is to be traversed and [ccw] if the arc is
+      to be traversed in the counter clockwise direction (both default
+      to [false]). See
       {{:http://www.w3.org/TR/2000/CR-SVG-20001102/images/paths/arcs02.png}this
       figure}. If parameters do not define a valid ellipse (coincident
       or too far apart points, zero radius) the arc collapses to a
@@ -115,8 +116,7 @@ type image
 
   val close : path -> path
   (** [close p] is [p] with a straight line from [p]'s last point to
-      [p]'s current subpath starting point, this ends the subpath. A
-      new segment addition on the result will start a new subpath. *)
+      [p]'s current subpath starting point, this ends the subpath. *)
 
   (** {2 Derived subpaths} 
 
@@ -133,11 +133,12 @@ type image
 
   val rect : ?rel:bool -> box2 -> path -> path
   (** [rect r p] is [p] with an axis-aligned rectangle subpath 
-      [r]. *)
+      [r]. If [r] is empty, [p] is returned. *)
 
   val rrect :?rel:bool -> box2 -> size2 -> path -> path
   (** [rrect r cr p] is [p] with an axis-aligned rectangle subpath
-      [r] with round corners of radii [cr]. *)
+      [r] with round corners of radii [cr]. If [r] is empty, [p]
+      is returned. *)
 
   (** {1 Functions} *)
 
@@ -145,9 +146,9 @@ type image
   (** [last_pt p] is the last point of [p]'s last subpath.
       @raise Invalid_argument if [p] is [empty]. *)
 
-  val append : ?tr:m3 -> path -> path -> path
-  (** [append tr p p'] appends [p] transformed by [tr] to [p']. [tr]
-      defaults to {!M3.id}.  
+  val append : path -> path -> path
+  (** [append p' p] appends [p'] to [p]. If [p]'s last subpath had no
+      segment it is closed.
 
       {b Warning.} To accomodate {!(>>)} the argument order is the opposite of
       {!List.append}. *)
@@ -184,15 +185,16 @@ type image
     ]
   (** The type for path folds. *)
 
-
-  val fold : ('a -> fold -> 'a) -> 'a -> path -> 'a
-  (** [fold f acc p], applies [f] to each subpath and subpath segments
+  val fold : ?rev:bool -> ('a -> fold -> 'a) -> 'a -> path -> 'a
+  (** [fold ~rev f acc p], applies [f] to each subpath and subpath segments
       with an accumulator. Subpaths are traversed in the order they
       were specified, always start with a [`Sub], but may not be
-      [`Close]d. *)
+      [`Close]d. If [rev] is [true] (defaults to [false]) the segments
+      and subpaths are traversed in reverse order. *)
 
-  val iter : (fold -> unit) -> path -> unit
-  (** [iter f p] is the imperative incarnation of {!fold}. *)
+  (** {b TODO} the following two folds are strictly speaking not needed
+      but they are nice for effects. They do however add ~100 lines to 
+      vg. Do we keep them here ? *)
 
   type linear_fold = [ `Sub of p2 | `Line of p2 | `Close ]
   (** The type for linear folds. *)
@@ -206,7 +208,7 @@ type image
       the linear approximation does not exceed [tol] (defaults to
       [1e-3]). *)
 
-  type sampler = [ `Sub of p2 | `Sample of p2 ]
+  type sampler = [ `Sub of p2 | `Sample of p2 | `Close ]
   (** The type for path samplers. *)
 
   val sample : ?tol:float -> float -> ('a -> sampler -> 'a) -> 'a -> path -> 'a
@@ -214,8 +216,9 @@ type image
       distance [dt] on the curve and applies [f] to those with an
       accumulator. Subpaths are traversed in the order they were
       specified, always start with a [`Sub], followed by 
-      [`Sample]s at every distance [dt] along the curve. TODO
-      [tol] doc. *)
+      [`Sample]s at every distance [dt] along the curve. If the subpath
+      is closed [`Close] is called aswell. [tol] has the same meaning
+      as in {!linear_fold}. *)
 
   (** {1 Predicates and comparisons} *) 
 
@@ -238,7 +241,7 @@ type image
 
   (** {1 Printers} *)
 
-  val to_string : path -> unit 
+  val to_string : path -> string
   (** [to_string p] is a textual representation of [p]. *) 
 
   val pp : Format.formatter -> path -> unit
@@ -386,7 +389,6 @@ module Vgr : sig
   (** The type for pages. The physical size of the rendering surface in 
       millimeters, the view rectangle and the image to render. *)
 
-
   (** {1:warnings Rendering warnings}
       
       Backends do their best to support [Vg]'s rendering
@@ -413,11 +415,12 @@ module Vgr : sig
   (** Metadata dictionaries. *)
   module Meta : sig
 
+
     (** {1:dict Dictionaries} *)    
 
     type t 
     (** The type for metadata dictionaries. *)
-
+(*
     type 'a key
     (** The type for keys whose lookup value is of type ['a]. *)
 
@@ -463,6 +466,7 @@ module Vgr : sig
 
     val subject : string key 
     (** [subject] is the subject of the image. *)
+*)
   end
 
   (** {1:out Output abstractions} 
@@ -549,7 +553,6 @@ module Vgr : sig
       (** [output_html5 o props page] outputs an javascript function on [o]
 	  whose metadata information is specified by [props] and 
 	  whose content is [page]. *)
-  
 
   (** {1:backend  Backend support} *)
 
@@ -589,6 +592,7 @@ module Vgr : sig
 	  This module allows to create new image property keys. 
 
 	  {b Warning.} Key creation is not thread-safe. *)
+(*
       module Key : sig
 	    
 	val string : unit -> string Meta.key
@@ -606,6 +610,7 @@ module Vgr : sig
               (** [create ()] is a new key for the type [T.t]. *)
 	end
       end
+*)
     end
 end
 
