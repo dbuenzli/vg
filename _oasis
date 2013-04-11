@@ -7,12 +7,11 @@ Copyrights: (c) 2013 Daniel C. Bünzli
 License: BSD3
 Homepage: http://erratique.ch/software/vg
 Description:
- Vg is an OCaml module for declarative 2D vector graphics. It has a precise
- denotational semantics and an open backend. Built-in support for PDF, SVG 
- and HTML5 2D canvas output is provided.
+ Vg is a library for declarative 2D vector graphics. The render
+ backend is open and built-in support for rendering to PDF, SVG and
+ the HTML5 canvas element is provided.
  .
- Vg is made of a single module, depends on [Gg][1] and is distributed under 
- the BSD3 license.
+ Vg depends on [Gg][1] and is distributed under the BSD3 license.
  .
  [1]: http://erratique.ch/software/gg
 
@@ -25,15 +24,15 @@ Library vg
  Modules: Vg
  BuildDepends: gg
 
-Executable vgtest
- Path: vgtest
- MainIs: vgtest.ml
- CompiledObject: Best
- BuildDepends: vg
- Install: false
+#Executable vgtest
+# Path: vgtest
+# MainIs: vgtest.ml
+# CompiledObject: Best
+# BuildDepends: vg
+# Install: false
 
-Test vgtest
- Command: $test
+#Test vgtest
+# Command: $test
 
 Document api
  Title: Vg's documentation and API reference
