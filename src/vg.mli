@@ -72,7 +72,6 @@ module P : sig
   val empty : path
   (** [empty] is the empty path. *)
 
-
   (** {1 Subpaths and segments} 
 
       If a path segment is directly added to a path [p] which is
@@ -256,55 +255,90 @@ end
 
 (** Images.
   
-    Consult their {{:Vg.html#semimages}semantics}. *)
+    Consult their {{!semimages}semantics} aswell as 
+    the semantics of {{!semcolors}colors} and {{!semstops}color stops}. 
+
+    Image combinators always take the image as the last
+    argument, to use {!Vg.(>>)} compose them.  *)
 module I : sig
 
-  (** {1:prim Primitive images} *)
+  (** {1:prims Primitive images} *)
 
   type t = image
-  (** The type for vector images. *)
+  (** The type for images. *)
 
   val mono : color -> image
   (** [mono c] is a monochrome image of color [c].
-      {ul {- \[[mono c]\]{_[p]} [= c] for any [p].}} *)
+      {ul {- \[[mono c]\]{_[pt]} [= c] for any [pt].}} *)
 
   val void : image
-  (** [void] is [mono (color 0. 0. 0. 0.)], the invisible black image. *)
+  (** [void] is [mono ]{!Gg.Color.void}, the invisible black image. *)
 
   val axial : Color.stops -> p2 -> p2 -> image
-  (** [axial stops p p'] is an image with an axial color gradient 
-      varying between [p] and [p'] according to [stops].
+  (** [axial stops pt pt'] is an image with an axial color gradient 
+      varying between [pt] and [pt'] according to {{!semstops} color stops} 
+      [stops].
 
-      Let d([t]) be the line perpendicular to the segment [pp'] at the point 
-      [p + tpp'] :
-      {ul {- \[[axial stops p p']\]{_[q]} [=] \[[stops]\]{_[t]} iff [q] is
-      on d([t]).}} *) 
+      {ul {- \[[axial stops pt pt']\]{_[q]} [=] \[[stops]\]{_[t]} if [q] is 
+      on the line perpendicular to the line [pt] and [pt'] at
+      the point [pt + t * (pt' - pt)].}} *) 
 
-  val radial : Color.stops -> f:p2 -> p2 -> float -> image 
-  (** [radial stops ~f c r] is an image with a color gradient
-      varying according to [stops] on circles whose center are on the
-      axis [fc] and radius vary from [0] to [r]. The focus [f] defaults 
-      to [c], in any case it must be inside the circle [(c, r)]. 
+  val radial : Color.stops -> ?f:p2 -> p2 -> float -> image 
+  (** [radial stops ~f c r] is an image with a color gradient varying
+      according to {{!semstops} color stops} [stops] on circles whose
+      center are on the segment from [f] to [c] and radius vary,
+      respectively, from [0] to [r]. The focus [f] defaults to [c], it
+      must be inside the circle [(c, r)]. 
 
-      Let C([t]) be the circle defined by radius [tr] and center [f + tfc] :
-      {ul {- \[[radial stops ~f c r]\]{_[p]} [=] \[[stops]\]{_[t]} if [p] is 
-      on C([t]).}} *)
+      {b TODO} Semantics is wrong.
+
+      {ul {- \[[radial stops ~f c r]\]{_[p]} [=] \[[stops]\]{_[t]} if [p] is
+      on the circle defined by radius [t * r] and center [f + t * (c - f)].}} 
+  *)
 
 
   val raster : box2 -> Raster.t -> image 
-  (** [raster r ri] is an infinite image with [ri] framed in the rectangle
-      [r] (TODO filtering).
+  (** [raster r ri] is an image with [ri] framed in the rectangle
+      [r] 
+
+      {b TODO} Semantics and filtering.
+
       {ul 
-      {- \[[raster r ri]\]{_[p]} [=] TODO if [p] in [r].}
-      {- \[[raster r ri]\]{_[p]} [= (0, 0, 0, 0)] otherwise.}} *)
+      {- \[[raster r ri]\]{_[p]} [=] TODO if [p] is in {{!aboxes}S([r])}.}
+      {- \[[raster r ri]\]{_[p]} [= Gg.color.void] otherwise.}} *)
+
+  (** {1:cut Cutting images} *)
+
+  val cut : ?area:P.area -> path -> image -> image
+  (** [cut area p i] is [i] with the {{!sempaths}area} outside 
+      \[[a], [p]\] cut out, i.e. mapped to {!Gg.Color.void}. [area]
+      defaults to {{!P.area}[`Anz]}.
+      {ul 
+      {- \[[cut area p i]\]{_[pt]} [=] \[[i]\]{_[pt]} if \[[a], [p]\]{_[pt]}}
+      {- \[[cut area p i]\]{_[pt]} [=] {!Gg.Color.void} otherwise.}} *)
+
+(* TODO
+
+  type glyph = int * v2
+
+  type text = string * (int * int) list * bool (* reverse *)
+  (* cluster is an indivisble mapping of M character to N glyphs. *)
+
+  val cut_glyphs : ?text:text -> P.area -> glyph list -> image ->
+  image
+*)
 
   (** {1:transf Transforming images} *)
 
   val move : v2 -> image -> image
   (** [move v i] is [i] translated by [v].
-      {ul {- \[[transl v i]\]{_[p]} [=] \[[i]\]{_[p - v]} for any [p]}} *)
+      {ul {- \[[move v i]\]{_[pt]} [=] \[[i]\]{_[pt-v]} for any [pt]}} *)
 
   val rot : float -> image -> image
+  (** [rot a i] is [i] rotated by [a]. 
+      {ul {- \[[rot a i]\]{_[pt]} [=] \[[i]\]{_[m⋅pt]} for any [pt] with
+       [m = M2.rot -a].}} *)
+
   val scale : v2 -> image -> image
   (** [scale s i] is [i] scaled by [s].
       {ul {- \[[scale s i]\]{_[(x,y)]} [=] \[[i]\]{_[(x/s]{_x}[,y/s]{_y}[)]} 
@@ -313,23 +347,7 @@ module I : sig
   val tr : m3 -> image -> image
   (** [tr m i] is the affine transform in homogenous 2D space of 
       each point of [i] by [m] (see {!P2.tr}). 
-      {ul {- \[[tr m i]\]{_[p]} [=] \[[i]\]{_[m]{^-1}[p]} for any [p]}} *)
-
-  (** {1:cut Cutting images} *)
-
-  val cut : P.area -> image -> path -> image
-  (** [cut a i pa] is [i] with the {{!sempaths}area} outside 
-      \[[a], [pa]\] cut out.
-      {ul 
-      {- \[[cut a pa i]\]{_[p]} [=] \[[i]\]{_[p]} if \[[a], [pa]\]{_[p]}}
-      {- \[[cut a pa i]\]{_[p]} [= (0,0,0,0)] otherwise.}} *)
-
-  type glyph = int * v2
-  type text = string * (int * int) list * bool (* reverse *)
-  (* cluster is an indivisble mapping of M character to N glyphs. *)
-  val cut_glyphs : ?text:text -> P.area -> glyph list -> image ->
-  image
-  (** TODO *)
+      {ul {- \[[tr m i]\]{_[p]} [=] \[[i]\]{_[m]{^-1}⋅[p]} for any [p]}} *)
 
   (** {1:blend Blending images} *)
   
@@ -339,35 +357,47 @@ module I : sig
   (** [blend i i'] blends the colors of [i] over those of [i']. If [a] is 
       specified this value is used as the alpha value for each color of the 
       resulting image.
+
+      {b TODO.} Semantics. Blender, support just `Over ? 
       {ul 
       {- \[[blend i i']\]{_[p]} [=] (\[[i]\]{_[p]}) \[\] (\[[i']\]{_[p]}) 
          for any [p] if [a] is unspecified.}
       {- \[[blend i i']\]{_[p]} [= (c]{_r}[,c]{_g}[,c]{_b}[,a)] 
          for any [p] with
          c = \[[i]\]{_[p]} \[\] \[[i']\]{_[p]} otherwise.}} 
-      (* TODO ?blender docs *)
    *)
 
 
-  (** {1:predicates Comparisons} *)
+  (** {1:predicates Predicates and comparisons} *)
+
+  val is_void : image -> bool 
+  (** [is_void i] is [i == void]. *)
 
   val equal : image -> image -> bool
   (** [equal i i'] is [i = i']. *)
 
+  val equal_f : (float -> float -> bool) -> image -> image -> bool
+  (** [equal eq i i'] is [i = i'] is like {!equal} but uses [eq] 
+      to test floating point values. *)
+
   val compare : image -> image -> int   
   (** [compare i i'] is [Pervasives.compare i i']. *) 
+
+  val compare_f : (float -> float -> bool) -> image -> image -> int
+  (** [compare_f cmp i i'] is like {!compare} but uses [cmp] to
+      compare floating point values. *)
 
   (** {1:printers Printers} *)
 
   val to_string : image -> string
   (** [to_string i] is a textual representation of [i]. *)
 
-  val print : Format.formatter -> image -> unit
-  (** [print ppf i] prints a textual representation of [i] on [ppf]. *)
+  val pp : Format.formatter -> image -> unit
+  (** [pp ppf i] prints a textual representation of [i] on [ppf]. *)
 
-  val print_f : (Format.formatter -> float -> unit) -> Format.formatter -> 
+  val pp_f : (Format.formatter -> float -> unit) -> Format.formatter -> 
     image -> unit
-  (** [print_f pp_fl ppf b] prints [i] like {!print} but uses [pp_fl]
+  (** [pp_f pp_float ppf i] prints [i] like {!pp} but uses [pp_float]
       to print floating point values. *)
 end
 
@@ -382,7 +412,7 @@ module Vgr : sig
 
       A page value specifies the extents of a rendering surface and
       its contents. It defines the mapping between [Vg]'s coordinate
-      space and the surface,  see {{:Vg.html#coordinates} this section} 
+      space and the surface,  see {{!coordinates} this section} 
       for more informations. *)
 
   type page = size2 * box2 * image
@@ -410,7 +440,7 @@ module Vgr : sig
       Some backends allow to specify a dictionary of metadata for the image.
 
       Consult the documentation of each backend to see which
-      dictionary {{:Vg.Vgo.Prop.html#keys}keys} they support. *)
+      dictionary {{!Vgr.keys}keys} they support. *)
 
   (** Metadata dictionaries. *)
   module Meta : sig
@@ -571,7 +601,7 @@ module Vgr : sig
          called [Vgo_bla] (lowercase).}
       {- Name the rendering function [Vgo_bla.output].}
       {- Follow [Vg]'s 
-         {{:Vg.html#coordinates}coordinate system conventions} to 
+         {{!coordinates}coordinate system conventions} to 
          specify the relationship between a surface and the view 
          rectangle to render. If possible reuse the {!page} type.}
       {- If you are writing a serializing backend, use the 
@@ -627,7 +657,7 @@ open Vg;;]}
     {!Gg} gives us types for points ({!Gg.p2}), vectors ({!Gg.v2}), 2D
     extents ({!Gg.size2}), rectangles ({!Gg.box2}) and colors
     ({!Gg.color}). Later you may want to read {!Gg}'s documentation
-    basics but for now it is sufficient to know that each of these
+    {{!Gg.basics}basics} but for now it is sufficient to know that each of these
     types has a constructor [v] in a module named after the
     capitalized type name ({!P2.v}, {!V2.v}, etc.).
 
@@ -784,7 +814,7 @@ let red_circle = I.cut `Aeo red circle]}
     {- Everything is tail-recursive unless otherwise mentionned.}
     {- [to_string] functions are not thread-safe. Thread-safety
        can be achieved with [print] functions.}
-    {- Angles follow [Gg]'s {{:Gg.html#mathconv}conventions}.}
+    {- Angles follow [Gg]'s {{!Gg.mathconv}conventions}.}
     {- Do not rely on the output of printer functions, they
        are subject to change.}
     {- Rendering results are undefined if path
@@ -833,7 +863,7 @@ let red_circle = I.cut `Aeo red circle]}
     The following notations and definitions are used to give precise 
     meaning to the combinators. 
 
-    {2:semcolor Color}
+    {2:semcolors Colors}
 
     The semantics of colors is the one ascribed to {{!Gg.Color.t}[Gg.color]}. 
 
@@ -841,8 +871,8 @@ let red_circle = I.cut `Aeo red circle]}
     mixes two colors [c = (r,g,b,a)] and [c' = (r',g',b',a')] into a
     new color value written [c] \[\] [c'] defined as follows :
 {[c \[\] c' = ((a'r' + (1 - a')ar) / a'',
-           (a'g' + (1 - a')ag) / a'', 
-           (a'b' + (1 - a')ab) / a'', 
+           (a'g' + (1 - a')ag) / a'',
+           (a'b' + (1 - a')ab) / a'',
             a'') 
           with a'' = a' + (1 - a')a]}
 
@@ -866,27 +896,27 @@ let red_circle = I.cut `Aeo red circle]}
       [c]{_i} and [c]{_i+1}. Pairs whose [t]{_i} lies outside [0] to
       [1] or such that [t]{_i-1} >= [t]{_i} are discarded.
 
-      Given a stops value [stops = \[][(t]{_0}[,c]{_0}[);]
-      [(t]{_1}[,c]{_1}[);] ... [(t]{_n}[,c]{_n}[)][\]] and any point
+      Given a stops value [stops = \[][(t]{_0}[, c]{_0}[);]
+      [(t]{_1}[, c]{_1}[);] ... [(t]{_n}[, c]{_n}[)][\]] and any point
       [t] of 1D space, the semantic function \[\] [: Color.stops ->
       float -> color] maps them to a color value written
       \[[stops]\]{_t} as follows.
       {ul
-      {- \[[]\]{_t} = (0, 0, 0, 0) for any [t]}
+      {- \[[]\]{_t} = [(0, 0, 0, 0)] for any [t]}
       {- \[[stops]\]{_t} [= c]{_0} if [t < t]{_0}.}
       {- \[[stops]\]{_t} [= c]{_n} if [t >= t]{_n}.}
       {- \[[stops]\]{_t} [= (1-u)c]{_i}[ + uc]{_i+1} 
       with [u = (t - t]{_i}[)/(t]{_i+1}[-t]{_i}[)]
-      if [t]{_i} [<= t <] [t]{_i+1}}
-    {- Ulala}}
+      if [t]{_i} [<= t <] [t]{_i+1}}}
 
     {2:semimages Images}    
 
     An image is a mapping from the infinite 2D euclidian space to
-    colors. Values of type {!image} represent infinite images. Given
-    an image [i] and a point [p] of the plane the semantic function
-    \[\][: image -> p2 -> color] maps them to a color value written
-    \[i\]{_[p]} representing the image's color at this point.
+    {{!semcolors}colors}. Values of type {!image} represent infinite
+    images. Given an image [i] and a point [pt] of the plane the
+    semantic function \[\][: image -> p2 -> Gg.color] maps them to a
+    color value written \[[i]\]{_[pt]} representing the image's color
+    at this point.
 
     {2:sempaths Paths and areas}
     

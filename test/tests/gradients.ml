@@ -16,18 +16,19 @@ let () = test
     ~size: (size 0.24 0.24)
     ~view: (rect (pt (-0.1) (-0.1)) (size 1.2 1.2))
     & lazy begin 
-      let square = P.empty >> P.rect (rect (pt 0. 0.) (size 1. 1.)) in
-      let stops = [ (0.0, C.r); (0.5, C.g); (1.0, C.b) ] in
-      let axial = I.axial V2.o V2.ex stops in
-      let radial = I.radial ~f:(Pt2.v 0.25 0.25) (Pt2.v 0.5 0.5) 0.5 stops in 
-      let gscale = size 0.5 1. in
-      let sq x y cloth = 
-	I.transl (pt x y) & I.scale (size 0.5 0.5) & 
-	I.cloth cloth & I.acut square 
+      let square = P.empty >> P.rect (Box2.v (P2.v 0. 0.) (Size2.v 1. 1.)) in
+      let stops = [ 0.0, Color.red; 0.5, Color.green; 1.0, C.blue ] in
+      let axial = I.axial V2.o V2.ox stops in
+      let radial = I.radial ~f:(P2.v 0.25 0.25) (P2.v 0.5 0.5) 0.5 stops in
+      let scaled i = i >> I.scale (Size2.v 0.5 1.0) in
+      let gradient_scale = size 0.5 1. in
+      let framed x y i = 
+        I.cut square i >> I.scale (Size2.v 0.4 0.4) >> I.move (P2.v x y)
       in
-      sq 0.0 0.0 radial ++ sq 0.5 0.0 axial ++
-      sq 0.0 0.5 (I.scale gscale & radial) ++
-      sq 0.5 0.5 (I.scale gscale & axial)
+      framed 0.0 0.0 radial 
+      I.blend (framed 0.0 0.5 (scaled radial)) >>
+      I.blend (framed 0.5 0.0 axial) >> 
+      I.blend (framed 0.5 0.5 (scaled axial))
   end
 
 

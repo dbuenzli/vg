@@ -567,9 +567,11 @@ module P = struct
   let to_string p = to_string_of_formatter pp p 
 end
 
-module I = struct
-  type tr = Move of v2 | Rot of float | Scale of v2 | Shear of v2 | Matrix of m3
+(* Images *)
 
+module I = struct
+  
+  type tr = Move of v2 | Rot of float | Scale of v2 | Shear of v2 | Matrix of m3
   type blender = [ `Atop | `In | `Out | `Over | `Plus | `Copy | `Xor ]
 
   type prim = 
@@ -584,13 +586,19 @@ module I = struct
     | Blend of blender * float option * t * t
     | Tr of tr list * t
 
+  (* Primitive images. *)
+
   let mono c = Prim (Mono c) 
   let void = mono Color.void 
   let axial stops p p' = Prim (Axial (stops, p, p'))
-  let radial stops ~f c r = Prim (Radial (stops, f, c, r))
+  let radial stops ?f c r = 
+    let f = match f with None -> c | Some f -> f in
+    Prim (Radial (stops, f, c, r))
   let raster b r = Prim (Raster (b, r))
 
-  let cut ar i pa = Cut (ar, i, pa)  
+  (* Cutting images. *)
+
+  let cut ?(area = `Anz) p i = Cut (area, i, p)  
   type glyph = int * v2
   type text = string * (int * int) list * bool (* reverse *)
   let cut_glyphs ?text ar gl i = failwith "unimplemented"
@@ -607,10 +615,13 @@ module I = struct
   let shear s i = push_tr (Shear s) i
   let tr m i = push_tr (Matrix m) i
 
-  let compare i i' = Pervasives.compare i i' 
+  let is_void i = i == void 
   let equal i i' = i = i' 
-  let print fmt i = failwith "TODO"
-  let print_f fmt i = failwith "TODO"
+  let equal_f i i' = failwith "TODO"
+  let compare i i' = Pervasives.compare i i' 
+  let compare_f cmp i i' = failwith "TODO"
+  let pp fmt i = failwith "TODO"
+  let pp_f fmt i = failwith "TODO"
   let to_string i = failwith "TODO"
 end
 

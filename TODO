@@ -15,7 +15,7 @@
 ** ? Is I.blend order the right thing to do, YES but review semant. order
    of c [] c' 
 ** also review other orders so that >> can be used ?
-** ? Image.mono -> Image.const
+** ? I.mono -> I.const
 ** ? gradient add spread mode, or not.
 ** TODO semantics of radial is wrong. 
 ** TODO semantics of rimage. Provide rendering intent attribute or part of 
@@ -31,34 +31,24 @@
    backend user can plug to use "external" tools to improve normalisation.
 
 * Path
-** Maybe, Boolean operations, minkowski. 
-** TODO rethink the api, which representation. path-subpath-segment
-   path-subpath-points with interpolation scheme. contours ? 
-   have a look at what contour mean in tt. Have a look at CL-vectors.
+** Maybe, Boolean operations, minkowski.
 ** Do we really want ellipses ? YES and circles, however maybe we don't
    want them *internally*. We could just have cubic bezier and 
    linear segments internally. 
 ** Subdivision http://www.antigrain.com/research/adaptive_bezier/index.html
-** Introduce type Path.rev_t ?
-   val rev t -> rev_t
-   val rev_append : ?tr:M3 -> rev_t -> t -> t
-   better write a t.r. append.
 ** Check P. for tail recursion and numerical stability.
-** P.to_string ? really ?
-** Path continuations ?
 ** ? expose cubic ellipse and ellipse parametrization. 
 ** Review bounds of ellipse
-** Sort out the tolerance stuff. 
-** Elliptical arc,  angle optional ?
+** Elliptical arc, angle optional ?
+** Sort out the tolerance stuff
 ** ? P.map_pts : (p2 -> p2) -> path -> path 
-** P.tr : M3.t -> path -> path
-** P.mem : path -> p2 -> bool
-** P.length : path -> float (arc length)
-** P.split : path -> float -> path * path 
-** P.cubic_fold
-
+** P.mem : area -> path -> p2 -> bool
+** P.length : path -> float (* arc length *)
+** P.split : path -> float -> path * path (* split at given distance on path *)
+** ? P.cubic_fold
 
 * Samples
+** Test degenerate color stops discarding.
 ** Test degenerate subpaths rendering. 
 ** Dash offset is for start of each subpath, negative dashoffsets. 
 ** Primitives, special cases axial with p = p', radial with c = c'. 
