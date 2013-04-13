@@ -492,53 +492,55 @@ module P = struct
 
   let is_empty = function [] -> true | _ -> false 
   let equal p p' = p = p' 
-  let equal_seg eq s s' = match s, s' with 
-  | `Sub pt, `Sub pt' | `Line pt, `Line pt' -> 
-      V2.equal_f eq pt pt' 
-  | `Qcurve (c0, pt), `Qcurve (c0', pt') -> 
-      V2.equal_f eq c0 c0' && V2.equal_f eq pt pt'
-  | `Ccurve (c0, c1, pt), `Ccurve (c0', c1', pt') -> 
-      V2.equal_f eq c0 c0' && V2.equal_f eq c1 c1' && V2.equal_f eq pt pt'
-  | `Earc (l, ccw, r, a, pt), `Earc (l', ccw', r', a', pt') ->
-      l = l' && ccw = ccw' && V2.equal_f eq r r' && eq a a' && 
-      V2.equal_f eq pt pt'
-  | `Close, `Close -> true
-  | _, _ -> false 
+  let rec equal_f eq p p' = 
+    let equal_seg eq s s' = match s, s' with 
+    | `Sub pt, `Sub pt' | `Line pt, `Line pt' -> 
+        V2.equal_f eq pt pt' 
+    | `Qcurve (c0, pt), `Qcurve (c0', pt') -> 
+        V2.equal_f eq c0 c0' && V2.equal_f eq pt pt'
+    | `Ccurve (c0, c1, pt), `Ccurve (c0', c1', pt') -> 
+        V2.equal_f eq c0 c0' && V2.equal_f eq c1 c1' && V2.equal_f eq pt pt'
+    | `Earc (l, ccw, r, a, pt), `Earc (l', ccw', r', a', pt') ->
+        l = l' && ccw = ccw' && V2.equal_f eq r r' && eq a a' && 
+        V2.equal_f eq pt pt'
+    | `Close, `Close -> true
+    | _, _ -> false 
+    in
+    match p, p' with 
+    | s :: p, s' :: p' -> if equal_seg eq s s' then equal_f eq p p' else false
+    | [], [] -> true
+    | _ -> false
 
-  let rec equal_f eq p p' = match p, p' with 
-  | s :: p, s' :: p' -> if equal_seg eq s s' then equal_f eq p p' else false
-  | [], [] -> true
-  | _ -> false
-
-  let compare p p' = Pervasives.compare p p' 
-  let compare_seg cmp s s' = match s, s' with 
-  | `Sub pt, `Sub pt' | `Line pt, `Line pt' -> 
-      V2.compare_f cmp pt pt' 
-  | `Qcurve (c0, pt), `Qcurve (c0', pt') -> 
-      let c = V2.compare_f cmp c0 c0' in 
-      if c <> 0 then c else V2.compare_f cmp pt pt'
-  | `Ccurve (c0, c1, pt), `Ccurve (c0', c1', pt') -> 
-      let c = V2.compare_f cmp c0 c0' in 
-      if c <> 0 then c else 
-      let c = V2.compare_f cmp c1 c1' in 
-      if c <> 0 then c else V2.compare_f cmp pt pt'
-  | `Earc (l, ccw, r, a, pt), `Earc (l', ccw', r', a', pt') ->
-      let c = Pervasives.compare l l' in 
-      if c <> 0 then c else
-      let c = Pervasives.compare ccw ccw' in 
-      if c <> 0 then c else 
-      let c = V2.compare_f cmp r r' in 
-      if c <> 0 then c else 
-      let c = cmp a a' in 
-      if c <> 0 then c else V2.compare_f cmp pt pt'
-  | s, s' -> Pervasives.compare s s'
-
-  let rec compare_f cmp p p' = match p, p' with 
-  | s :: p, s' :: p' ->
-      let c = compare_seg cmp s s' in 
-      if c <> 0 then c else compare_f cmp p p' 
-  | p, p' -> Pervasives.compare p p'
-  
+  let compare p p' = Pervasives.compare p p'
+  let rec compare_f cmp p p' = 
+    let compare_seg cmp s s' = match s, s' with 
+    | `Sub pt, `Sub pt' | `Line pt, `Line pt' -> 
+        V2.compare_f cmp pt pt' 
+    | `Qcurve (c0, pt), `Qcurve (c0', pt') -> 
+        let c = V2.compare_f cmp c0 c0' in 
+        if c <> 0 then c else V2.compare_f cmp pt pt'
+    | `Ccurve (c0, c1, pt), `Ccurve (c0', c1', pt') -> 
+        let c = V2.compare_f cmp c0 c0' in 
+        if c <> 0 then c else 
+        let c = V2.compare_f cmp c1 c1' in 
+        if c <> 0 then c else V2.compare_f cmp pt pt'
+    | `Earc (l, ccw, r, a, pt), `Earc (l', ccw', r', a', pt') ->
+        let c = Pervasives.compare l l' in 
+        if c <> 0 then c else
+        let c = Pervasives.compare ccw ccw' in 
+        if c <> 0 then c else 
+        let c = V2.compare_f cmp r r' in 
+        if c <> 0 then c else 
+        let c = cmp a a' in 
+        if c <> 0 then c else V2.compare_f cmp pt pt'
+    | s, s' -> Pervasives.compare s s'
+    in
+    match p, p' with 
+    | s :: p, s' :: p' ->
+        let c = compare_seg cmp s s' in 
+        if c <> 0 then c else compare_f cmp p p' 
+    | p, p' -> Pervasives.compare p p'
+                 
   (* Printers *)
 
   let pp_seg pp_f pp_v2 ppf = function
