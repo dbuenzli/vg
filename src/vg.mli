@@ -60,9 +60,15 @@ module P : sig
       [cap] is [`Butt], [join] is [`Miter], [miter_angle] is 
       [0.] and [dashes] is [None]. *)
       
+  val pp_outline : Format.formatter -> outline -> unit 
+  (** [pp_outline ppf o] prints a textual representation of [o] on [ppf]. *)
+
   type area = [ `Aeo | `Anz | `O of outline ]
   (** The type for path area specifications. 
       {{!sempaths}Semantics}.*)
+
+  val pp_area : Format.formatter -> area -> unit
+  (** [pp_area ppf a] print a textual representation of [a] on [ppf] *)
 
   (** {1 Paths} *)
 
@@ -328,6 +334,24 @@ module I : sig
   image
 *)
 
+  (** {1:blend Blending images} *)
+  
+  type blender = [ `Atop | `In | `Out | `Over | `Plus | `Copy | `Xor ]
+
+  val blend : ?a:float -> ?blender:blender -> image -> image -> image 
+  (** [blend i i'] blends the colors of [i] over those of [i']. If [a] is 
+      specified this value is used as the alpha value for each color of the 
+      resulting image.
+
+      {b TODO.} Semantics. Blender, support just `Over ? 
+      {ul 
+      {- \[[blend i i']\]{_[p]} [=] (\[[i]\]{_[p]}) \[\] (\[[i']\]{_[p]}) 
+         for any [p] if [a] is unspecified.}
+      {- \[[blend i i']\]{_[p]} [= (c]{_r}[,c]{_g}[,c]{_b}[,a)] 
+         for any [p] with
+         c = \[[i]\]{_[p]} \[\] \[[i']\]{_[p]} otherwise.}} 
+   *)
+
   (** {1:transf Transforming images} *)
 
   val move : v2 -> image -> image
@@ -349,25 +373,6 @@ module I : sig
       each point of [i] by [m] (see {!P2.tr}). 
       {ul {- \[[tr m i]\]{_[p]} [=] \[[i]\]{_[m]{^-1}⋅[p]} for any [p]}} *)
 
-  (** {1:blend Blending images} *)
-  
-  type blender = [ `Atop | `In | `Out | `Over | `Plus | `Copy | `Xor ]
-
-  val blend : ?a:float -> ?blender:blender -> image -> image -> image 
-  (** [blend i i'] blends the colors of [i] over those of [i']. If [a] is 
-      specified this value is used as the alpha value for each color of the 
-      resulting image.
-
-      {b TODO.} Semantics. Blender, support just `Over ? 
-      {ul 
-      {- \[[blend i i']\]{_[p]} [=] (\[[i]\]{_[p]}) \[\] (\[[i']\]{_[p]}) 
-         for any [p] if [a] is unspecified.}
-      {- \[[blend i i']\]{_[p]} [= (c]{_r}[,c]{_g}[,c]{_b}[,a)] 
-         for any [p] with
-         c = \[[i]\]{_[p]} \[\] \[[i']\]{_[p]} otherwise.}} 
-   *)
-
-
   (** {1:predicates Predicates and comparisons} *)
 
   val is_void : image -> bool 
@@ -378,14 +383,18 @@ module I : sig
 
   val equal_f : (float -> float -> bool) -> image -> image -> bool
   (** [equal eq i i'] is [i = i'] is like {!equal} but uses [eq] 
-      to test floating point values. *)
+      to test floating point values. 
+
+      {b Note.} Raster images are tested with {!Raster.equal}. *)
 
   val compare : image -> image -> int   
   (** [compare i i'] is [Pervasives.compare i i']. *) 
 
-  val compare_f : (float -> float -> bool) -> image -> image -> int
+  val compare_f : (float -> float -> int) -> image -> image -> int
   (** [compare_f cmp i i'] is like {!compare} but uses [cmp] to
-      compare floating point values. *)
+      compare floating point values. 
+
+      {b Note.} Raster images are tested with {!Raster.compare}. *)
 
   (** {1:printers Printers} *)
 

@@ -13,6 +13,7 @@ let err_empty = "empty path"
 (* A few useful definitions. *)
 
 let pr = Format.fprintf 
+let pp_float ppf f = Format.fprintf ppf "%g" f
 let to_string_of_formatter pp v =                        (* NOT thread safe. *)
   Format.fprintf Format.str_formatter "%a" pp v; 
   Format.flush_str_formatter ()
@@ -36,7 +37,69 @@ module P = struct
   let o = 
     { width = 1.; cap = `Butt; join = `Miter; miter_angle = 0.; dashes = None }
 
+  let pp_outline_f pp_f ppf o =
+    let pp_cap ppf = function 
+    | `Butt -> pr ppf "Butt" | `Round -> pr ppf "Round" 
+    | `Square -> pr ppf "Square"
+    in
+    let pp_join ppf = function 
+    | `Bevel -> pr ppf "Bevel" | `Miter -> pr ppf "Miter" 
+    | `Round -> pr ppf "Round"
+    in
+    let pp_dashes ppf = function 
+    | None -> () | Some (f, ds) -> 
+        let pp_dashes ppf ds = List.iter (fun d -> pr ppf "@ %a" pp_f d) ds in
+        pr ppf "(dashes %a,%a)" pp_f f pp_dashes ds
+    in
+    pr ppf "<outline@ (width %a)@ (cap %a)@ (join %a)@ (miter_angle %a)%a>"
+      pp_f o.width pp_cap o.cap pp_join o.join pp_f o.miter_angle 
+      pp_dashes o.dashes
+
+  let pp_outline ppf o = pp_outline_f pp_float ppf o
+
   type area = [ `Aeo | `Anz | `O of outline ]
+
+  let eq_dashes eq d d' = match d, d' with 
+  | Some (f, ds), Some (f', ds') -> 
+      eq f f' && (try List.for_all2 eq ds ds' with Invalid_argument _ -> false)
+  | d, d' -> d = d'
+        
+  let eq_area eq a a' = match a, a' with
+  | `O o, `O o' ->
+      o.cap = o'.cap && o.join = o'.join && eq o.width o'.width && 
+      eq o.miter_angle o'.miter_angle && eq_dashes eq o.dashes o'.dashes
+  | a, a' -> a = a'
+          
+  let cmp_dashes cmp d d' = match d, d' with
+  | Some (f, ds), Some (f', ds') -> 
+      let rec dashes ds ds' = match ds, ds' with 
+      | d :: ds, d' :: ds' -> 
+          let c = cmp d d' in 
+          if c <> 0 then c else dashes ds ds'
+      | ds, ds' -> Pervasives.compare ds ds' 
+      in
+      let c = cmp f f' in 
+      if c <> 0 then c else dashes ds ds'
+  | d, d' -> Pervasives.compare d d'
+
+  let cmp_area cmp a a' = match a, a' with
+  | `O o, `O o' ->
+      let c = cmp o.width o'.width in 
+      if c <> 0 then c else 
+      let c = Pervasives.compare o.cap o'.cap in 
+      if c <> 0 then c else
+      let c = Pervasives.compare o.join o'.join in 
+      if c <> 0 then c else
+      let c = cmp o.miter_angle o'.miter_angle in 
+      if c <> 0 then c else cmp_dashes cmp o.dashes o'.dashes
+  | a, a' -> Pervasives.compare a a'
+
+  let pp_area_f pp_f ppf = function 
+  | `Anz -> pr ppf "@[<1><area@ nz>@]"
+  | `Aeo -> pr ppf "@[<1><area@ eo>@]"
+  | `O o -> pr ppf "%a" (pp_outline_f pp_f) o
+
+  let pp_area ppf a = pp_area_f pp_float ppf a 
 
   (* Paths *)
   
@@ -510,7 +573,7 @@ module P = struct
     | s :: p, s' :: p' -> if equal_seg eq s s' then equal_f eq p p' else false
     | [], [] -> true
     | _ -> false
-
+          
   let compare p p' = Pervasives.compare p p'
   let rec compare_f cmp p p' = 
     let compare_seg cmp s s' = match s, s' with 
@@ -540,96 +603,245 @@ module P = struct
         let c = compare_seg cmp s s' in 
         if c <> 0 then c else compare_f cmp p p' 
     | p, p' -> Pervasives.compare p p'
-                 
+       
   (* Printers *)
 
   let pp_seg pp_f pp_v2 ppf = function
   | `Sub pt -> 
-      pr ppf "@ @[<1>S@ %a@]" pp_v2 pt 
+      pr ppf "@ S%a" pp_v2 pt 
   | `Line pt -> 
-      pr ppf "@ @[<1>L@ %a@]" pp_v2 pt
+      pr ppf "@ L%a" pp_v2 pt
   | `Qcurve (c, pt) -> 
-      pr ppf "@ @[<1>Qc@ %a@ %a@]" pp_v2 c pp_v2 pt
+      pr ppf "@ @[<2>Qc(%a@ %a)@]" pp_v2 c pp_v2 pt
   | `Ccurve (c, c', pt) -> 
-      pr ppf "@ @[<1>Cc@ %a@ %a@ %a@]" pp_v2 c pp_v2 c' pp_v2 pt
+      pr ppf "@ @[<2>Cc(%a@ %a@ %a@)]" pp_v2 c pp_v2 c' pp_v2 pt
   | `Earc (l, ccw, r, a, pt) -> 
-      pr ppf "@ @[<1>Ea@ %B@ %B@ %a@ %a@ %a@]" l ccw pp_v2 r pp_f a pp_v2 pt
+      pr ppf "@ @[<2>Ea(%B@ %B@ %a@ %a@ %a)@]" l ccw pp_v2 r pp_f a pp_v2 pt
   | `Close ->
       pr ppf "@ C"
-               
-  let pp_path pp_f pp_v2 ppf p = 
+        
+  let pp_path pp_f ppf p = 
+    let pp_v2 = V2.pp_f pp_f in
     let pp_segs ppf ss = List.iter (pp_seg pp_f pp_v2 ppf) ss in 
-    pr ppf "@[<1><path %a>@]" pp_segs (List.rev p)
+    pr ppf "@[<1><path%a>@]" pp_segs (List.rev p)
 
-  let pp_f pp_f ppf p = pp_path pp_f (V2.pp_f pp_f) ppf p    
-  let pp ppf p =
-    let pp_f ppf f = pr ppf "%g" f in
-    pp_path pp_f V2.pp ppf p     
-
+  let pp_f pp_f ppf p = pp_path pp_f ppf p    
+  let pp ppf p = pp_path pp_float ppf p
   let to_string p = to_string_of_formatter pp p 
 end
 
 (* Images *)
 
 module I = struct
-  
-  type tr = Move of v2 | Rot of float | Scale of v2 | Shear of v2 | Matrix of m3
-  type blender = [ `Atop | `In | `Out | `Over | `Plus | `Copy | `Xor ]
 
-  type prim = 
+  type blender = [ `Atop | `In | `Out | `Over | `Plus | `Copy | `Xor ]  
+  type tr = Move of v2 | Rot of float | Scale of v2 | Matrix of m3
+
+  type primitive = 
     | Mono of color
     | Axial of Color.stops * p2 * p2
     | Radial of Color.stops * p2 * p2 * float
-    | Raster of box2 * Raster.t
+    | Raster of box2 * raster
     
   type t = 
-    | Prim of prim
-    | Cut of P.area * t * P.t
+    | Primitive of primitive
+    | Cut of P.area * P.t * t
     | Blend of blender * float option * t * t
-    | Tr of tr list * t
+    | Tr of tr * t
 
   (* Primitive images. *)
 
-  let mono c = Prim (Mono c) 
-  let void = mono Color.void 
-  let axial stops p p' = Prim (Axial (stops, p, p'))
+  let mono c = Primitive (Mono c)
+  let void = mono Color.void
+  let axial stops pt pt' = Primitive (Axial (stops, pt, pt'))
+  let raster b r = Primitive (Raster (b, r))
   let radial stops ?f c r = 
     let f = match f with None -> c | Some f -> f in
-    Prim (Radial (stops, f, c, r))
-  let raster b r = Prim (Raster (b, r))
+    Primitive (Radial (stops, f, c, r))
 
   (* Cutting images. *)
 
-  let cut ?(area = `Anz) p i = Cut (area, i, p)  
-  type glyph = int * v2
-  type text = string * (int * int) list * bool (* reverse *)
-  let cut_glyphs ?text ar gl i = failwith "unimplemented"
+  let cut ?(area = `Anz) p i = Cut (area, p, i)  
+
+  (* Blending images *)
 
   let blend ?a ?(blender = `Over) i i' = Blend (blender, a, i, i')
 
-  let push_tr tr = function (* collects sucessive transforms in a single Tr. *)
-    | Tr (tl, i) -> Tr (tr :: tl, i)
-    | i -> Tr ([tr], i) 
+  (* Transforming images *)
 
-  let move v i = push_tr (Move v) i 
-  let rot a i = push_tr (Rot a) i
-  let scale s i = push_tr (Scale s) i 
-  let shear s i = push_tr (Shear s) i
-  let tr m i = push_tr (Matrix m) i
+  let move v i = Tr (Move v, i)
+  let rot a i = Tr (Rot a, i)
+  let scale s i = Tr (Scale s, i)
+  let tr m i = Tr (Matrix m, i)
+
+  (* Predicates and comparisons *)  
 
   let is_void i = i == void 
-  let equal i i' = i = i' 
-  let equal_f i i' = failwith "TODO"
+  let equal i i' = i = i'
+  let rec eq_stops eq ss ss' = match ss, ss' with 
+  | (s, c) :: ss, (s', c') :: ss' -> 
+      eq s s' && V4.equal_f eq c c' && eq_stops eq ss ss'
+  | [], [] -> true
+  | _, _ -> false
+
+  let eq_tr eq tr tr' = match tr, tr' with 
+  | Move v, Move v' -> V2.equal_f eq v v' 
+  | Rot r, Rot r' -> eq r r' 
+  | Scale s, Scale s' -> V2.equal_f eq s s' 
+  | Matrix m, Matrix m' -> M3.equal_f eq m m' 
+  | _, _ -> false
+
+  let eq_primitive eq i i' = match i, i' with 
+  | Mono c, Mono c' -> 
+      V4.equal_f eq c c'
+  | Axial (stops, p1, p2), Axial (stops', p1', p2') -> 
+      V2.equal_f eq p1 p1' && V2.equal_f eq p2 p2' && eq_stops eq stops stops'
+  | Radial (stops, p1, p2, r), Radial (stops', p1', p2', r') -> 
+      V2.equal_f eq p1 p1' && V2.equal_f eq p2 p2' && eq r r' && 
+      eq_stops eq stops stops'
+  | Raster (r, ri), Raster (r', ri') ->
+      Box2.equal_f eq r r' && Raster.equal ri ri'
+  | _, _ -> false
+
+  let eq_alpha eq a a' = match a, a' with 
+  | Some a, Some a' -> eq a a' 
+  | None, None -> true
+  | _, _ -> false
+
+  let equal_f eq i i' = 
+    let rec loop = function
+    | [] -> false 
+    | (i, i') :: acc -> 
+        match i, i' with
+        | Primitive i, Primitive i' -> 
+            eq_primitive eq i i'
+        | Cut (a, p, i), Cut (a', p', i') -> 
+            P.eq_area eq a a' && P.equal_f eq p p' && loop ((i, i') :: acc)
+        | Blend (b, a, i1, i2), Blend (b', a', i1', i2') -> 
+            b = b' && eq_alpha eq a a' && loop ((i1, i1') :: (i2, i2') :: acc)
+        | Tr (tr, i), Tr (tr', i') -> 
+            eq_tr eq tr tr' && loop ((i, i') :: acc)
+        | _, _ -> false
+    in
+    loop [(i, i')]
+      
   let compare i i' = Pervasives.compare i i' 
-  let compare_f cmp i i' = failwith "TODO"
-  let pp fmt i = failwith "TODO"
-  let pp_f fmt i = failwith "TODO"
-  let to_string i = failwith "TODO"
+  let compare_tr cmp tr tr' = match tr, tr' with 
+  | Move v, Move v' -> V2.compare_f cmp v v' 
+  | Rot r, Rot r' -> cmp r r' 
+  | Scale s, Scale s' -> V2.compare_f cmp s s' 
+  | Matrix m, Matrix m' -> M3.compare_f cmp m m' 
+  | tr, tr' -> compare tr tr'
+
+  let rec compare_stops cmp ss ss' = match ss, ss' with
+  | (s, sc) :: ss, (s', sc') :: ss' -> 
+      let c = cmp s s' in
+      if c <> 0 then c else 
+      let c = V4.compare_f cmp sc sc' in 
+      if c <> 0 then c else compare_stops cmp ss ss' 
+  | ss, ss' -> Pervasives.compare ss ss'
+                 
+  let compare_primitive cmp i i' = match i, i' with 
+  | Mono c, Mono c' -> 
+      V4.compare_f cmp c c' 
+  | Axial (stops, p1, p2), Axial (stops', p1', p2') -> 
+      let c = compare_stops cmp stops stops' in 
+      if c <> 0 then c else 
+      let c = V2.compare_f cmp p1 p1' in 
+      if c <> 0 then c else V2.compare_f cmp p2 p2'
+  | Radial (stops, p1, p2, r), Radial (stops', p1', p2', r') -> 
+      let c = compare_stops cmp stops stops' in 
+      if c <> 0 then c else 
+      let c = V2.compare_f cmp p1 p1' in 
+      if c <> 0 then c else 
+      let c = V2.compare_f cmp p2 p2' in 
+      if c <> 0 then c else cmp r r'
+  | Raster (r, ri), Raster (r', ri') ->
+      let c = Box2.compare_f cmp r r' in 
+      if c <> 0 then c else Raster.compare ri ri'
+  | i, i' -> Pervasives.compare i i'
+
+  let compare_alpha cmp a a' = match a, a' with 
+  | Some a, Some a' -> cmp a a' 
+  | a, a' -> Pervasives.compare a a'
+
+  let compare_f cmp i i' =
+    let rec loop = function
+    | [] -> assert false
+    | (i, i') :: acc -> 
+        match i, i' with
+        | Primitive i, Primitive i' -> 
+            compare_primitive cmp i i'
+        | Cut (a, p, i), Cut (a', p', i') ->
+            let c = P.cmp_area cmp a a' in 
+            if c <> 0 then c else 
+            let c = P.compare_f cmp p p' in 
+            if c <> 0 then c else loop ((i, i') :: acc)
+        | Blend (b, a, i1, i2), Blend (b', a', i1', i2') -> 
+            let c = Pervasives.compare b b' in 
+            if c <> 0 then c else 
+            let c = compare_alpha cmp a a' in 
+            if c <> 0 then c else 
+            loop ((i1, i1') :: (i2, i2') :: acc)
+        | Tr (tr, i), Tr (tr', i') -> 
+            let c = compare_tr cmp tr tr' in 
+            if c <> 0 then c else 
+            loop ((i, i') :: acc)
+        | i, i' -> Pervasives.compare i i'
+    in
+    loop [(i, i')]
+
+  (* Printesr *)
+
+  let pp_stops pp_f ppf ss =
+    let pp_stop ppf (s, c) = pr ppf "@ %a@ %a" pp_f s (V4.pp_f pp_f) c in 
+    pr ppf "(stops %a)" (fun ppf ss -> List.iter (pp_stop ppf) ss) ss
+
+  let pp_blender ppf = function
+  | `Atop -> pr ppf "Atop" | `Copy -> pr ppf "Copy" | `In -> pr ppf "In" 
+  | `Out -> pr ppf "Out" | `Over -> pr ppf "Over" | `Plus -> pr ppf "Plus"
+  | `Xor -> pr ppf "Xor"
+
+  let pp_alpha pp_f ppf = function
+  | None -> () | Some a -> pr ppf "(alpha@ %a)" pp_f a
+
+  let pp_tr pp_f ppf = function 
+  | Move v -> pr ppf "Move%a" (V2.pp_f pp_f) v
+  | Rot a -> pr ppf "Rot(%a)" pp_f a
+  | Scale s -> pr ppf "Scale%a" (V2.pp_f pp_f) s
+  | Matrix m -> pr ppf "%a" (M3.pp_f pp_f) m
+
+  let pp_primitive pp_f ppf = function
+  | Mono c -> 
+      pr ppf "@[<1>(Mono@ %a)@]" (V4.pp_f pp_f) c
+  | Axial (stops, p, p') -> 
+      pr ppf "@[<1>(Axial@ %a@ %a@ %a)@]" 
+        (pp_stops pp_f) stops (V2.pp_f pp_f) p (V2.pp_f pp_f) p'
+  | Radial (stops, p, p', r) ->
+      pr ppf "@[<1>(Radial@ %a@ %a@ %a@ %a)@]"
+        (pp_stops pp_f) stops (V2.pp_f pp_f) p (V2.pp_f pp_f) p' pp_f r
+  | Raster (r, ri) -> 
+      pr ppf "@[<1>(Raster %a@ %a)@]" (Box2.pp_f pp_f) r Raster.pp ri
+      
+  let rec pp_image pp_f ppf = function                      (* TODO not t.r. *)
+  | Primitive i ->
+      pr ppf "%a" (pp_primitive pp_f) i
+  | Cut (a, p, i) -> 
+      pr ppf "@[<1>(Cut@ %a@ %a@ %a)@]" 
+        (P.pp_area_f pp_f) a (P.pp_f pp_f) p (pp_image pp_f) i
+  | Blend (b, a, i, i') -> 
+      pr ppf "@[<1>(Blend@ %a,@ %a,@ %a,@ %a)@]" pp_blender b (pp_alpha pp_f) a
+        (pp_image pp_f) i (pp_image pp_f) i'
+  | Tr (tr, i) ->
+      pr ppf "@[<1>(Tr@ %a@ %a)@]" (pp_tr pp_f) tr (pp_image pp_f) i
+        
+  let pp_f pp_f ppf i = pp_image pp_f ppf i
+  let pp ppf i = pp_image pp_float ppf i
+  let to_string p = to_string_of_formatter pp p 
 end
 
 type path = P.t
 type image = I.t
-
 
 module Vgr = struct
   type surface = size2 * box2  * image
@@ -642,6 +854,7 @@ module Vgr = struct
   type svg_warning = [ `Blend ]
   type html5_warning = [ `Dashes | `Aeo ]
   type output       
+  
   let make_output d = failwith "TODO"
   let output_html5 a = failwith "TODO"
   let output_pdf a = failwith "TODO"

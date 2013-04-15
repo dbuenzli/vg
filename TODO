@@ -15,7 +15,6 @@
 ** ? Is I.blend order the right thing to do, YES but review semant. order
    of c [] c' 
 ** also review other orders so that >> can be used ?
-** ? I.mono -> I.const
 ** ? gradient add spread mode, or not.
 ** TODO semantics of radial is wrong. 
 ** TODO semantics of rimage. Provide rendering intent attribute or part of 
