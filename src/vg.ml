@@ -719,6 +719,7 @@ module I = struct
     | Cut of P.area * P.t * t
     | Blend of blender * float option * t * t
     | Tr of tr * t
+    | Meta of meta * t
 
   (* Primitive images. *)
 
@@ -744,6 +745,10 @@ module I = struct
   let rot a i = Tr (Rot a, i)
   let scale s i = Tr (Scale s, i)
   let tr m i = Tr (Matrix m, i)
+
+  (* Tagging images with metadata *)
+
+  let tag m i = Meta (m, i)
 
   (* Predicates and comparisons *)  
 
@@ -792,6 +797,8 @@ module I = struct
             b = b' && eq_alpha eq a a' && loop ((i1, i1') :: (i2, i2') :: acc)
         | Tr (tr, i), Tr (tr', i') -> 
             eq_tr eq tr tr' && loop ((i, i') :: acc)
+        | Meta (m, i), Meta (m', i') -> 
+            failwith "TODO"
         | _, _ -> false
     in
     loop [(i, i')]
@@ -858,6 +865,8 @@ module I = struct
             let c = compare_tr cmp tr tr' in 
             if c <> 0 then c else 
             loop ((i, i') :: acc)
+        | Meta (m, i), Meta (m', i') -> 
+            failwith "TODO"
         | i, i' -> Pervasives.compare i i'
     in
     loop [(i, i')]
@@ -905,6 +914,8 @@ module I = struct
         (pp_image pp_f) i (pp_image pp_f) i'
   | Tr (tr, i) ->
       pr ppf "@[<1>(Tr@ %a@ %a)@]" (pp_tr pp_f) tr (pp_image pp_f) i
+  | Meta (tr, i) -> 
+      pr ppf "@[<1>(Meta@ TODO %a)@]" (pp_image pp_f) i
         
   let pp_f pp_f ppf i = pp_image pp_f ppf i
   let pp ppf i = pp_image pp_float ppf i
@@ -994,6 +1005,7 @@ module Vgr = struct
       | Cut of P.area * P.t * image
       | Blend of I.blender * float option * image * image
       | Tr of tr * image
+      | Meta of meta * image
 
 (*     external image : I.t -> image = "%id" *)
 

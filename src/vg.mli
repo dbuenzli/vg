@@ -468,7 +468,13 @@ module I : sig
   val tr : m3 -> image -> image
   (** [tr m i] is the affine transform in homogenous 2D space of 
       each point of [i] by [m] (see {!P2.tr}). 
-      {ul {- \[[tr m i]\]{_[p]} [=] \[[i]\]{_[m]{^-1}⋅[p]} for any [p]}} *)
+      {ul {- \[[tr m i]\]{_[pt]} [=] \[[i]\]{_[m]{^-1}⋅[pt]} for any [pt]}} *)
+
+  (** {1:tag Tagging images with metadata} *)
+    
+  val tag : meta -> image -> image 
+  (** [tag m i] is [i] but tagged with [m]. 
+      {ul {- \[[tr m i]\]{_[pt]} [=] \[[i]\]{_[pt]} for any [pt]}} *)
 
   (** {1:predicates Predicates and comparisons} *)
 
@@ -715,6 +721,7 @@ module Vgr : sig
       | Cut of P.area * path * image
       | Blend of I.blender * float option * image * image
       | Tr of tr * image
+      | Meta of meta * image
 
 (*
     val image : I.t -> image
