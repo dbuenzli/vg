@@ -37,6 +37,61 @@ let to_string_of_formatter pp v =                        (* NOT thread safe. *)
 external ( >> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
 let eps = 1e-9
 
+
+(* Render metadata *)
+
+module Vgm = struct
+    
+  (* Heterogenous dictionaries, see http://mlton.org/PropertyList. *)
+
+  module Id = struct
+    type t = int
+    let compare : int -> int -> int = compare
+    let create =        (* thread-safe UID, don't use Oo.id (object end). *)
+      let c = ref min_int in
+      fun () ->
+        let id = !c in
+        incr c; if id > !c then assert false (* too many ids *) else id
+  end
+  
+  (* Keys *)
+  
+  type 'a key = Id.t * ('a -> exn) * (exn -> 'a option)
+  let key () (type v) =
+    let module M = struct exception E of v end in
+    Id.create (), (fun x -> M.E x), (function M.E x -> Some x | _ -> None)
+    
+  (* Metadata *)
+    
+  module M = (Map.Make (Id) : Map.S with type key = Id.t)
+  type t = exn M.t
+      
+  let compare = M.compare compare 
+  let equal = M.equal ( = )      
+  let empty = M.empty 
+  let is_empty = M.is_empty
+  let mem m (id, _, _ ) = M.mem id m
+  let add m (id, inj, _) v = M.add id (inj v) m
+  let rem m (id, _, _) = M.remove id m
+  let find m (id, _, proj) = try proj (M.find id m) with Not_found -> None
+  let get m (id, _, proj) =
+    try match proj (M.find id m) with Some v -> v | None -> raise Not_found 
+    with Not_found -> invalid_arg err_meta_unbound
+                        
+  let res = key ()
+  let quality = key ()
+  let author = key () 
+  let creator = key () 
+  type date = (int * int * int) * (int * int * int)
+  let date = key ()
+  let keywords = key () 
+  let title = key () 
+  let subject = key ()
+end
+
+type meta = Vgm.t
+type 'a key = 'a Vgm.key
+
 (* Paths *)
 
 module P = struct
@@ -864,57 +919,6 @@ module Vgr = struct
 
   type renderable = size2 * box2  * image
 
-  (* Render metadata *)
-
-  module Meta = struct
-    
-    (* Heterogenous dictionaries, see http://mlton.org/PropertyList. *)
-
-    module Id = struct
-      type t = int
-      let compare : int -> int -> int = compare
-      let create =        (* thread-safe UID, don't use Oo.id (object end). *)
-        let c = ref min_int in
-        fun () ->
-          let id = !c in
-          incr c; if id > !c then assert false (* too many ids *) else id
-    end
-
-    (* Keys *)
-
-    type 'a key = Id.t * ('a -> exn) * (exn -> 'a option)
-    let key () (type v) =
-      let module M = struct exception E of v end in
-      Id.create (), (fun x -> M.E x), (function M.E x -> Some x | _ -> None)
-
-    (* Metadata *)
-      
-    module M = (Map.Make (Id) : Map.S with type key = Id.t)
-    type t = exn M.t
-
-    let compare = M.compare compare 
-    let equal = M.equal ( = )      
-    let empty = M.empty 
-    let is_empty = M.is_empty
-    let mem m (id, _, _ ) = M.mem id m
-    let add m (id, inj, _) v = M.add id (inj v) m
-    let rem m (id, _, _) = M.remove id m
-    let find m (id, _, proj) = try proj (M.find id m) with Not_found -> None
-    let get m (id, _, proj) =
-      try match proj (M.find id m) with Some v -> v | None -> raise Not_found 
-      with Not_found -> invalid_arg err_meta_unbound
-             
-    let res = key ()
-    let quality = key ()
-    let author = key () 
-    let creator = key () 
-    type date = (int * int * int) * (int * int * int)
-    let date = key ()
-    let keywords = key () 
-    let title = key () 
-    let subject = key ()
-  end
-
   (* Rendering *)
 
   type dst_stored = 
@@ -926,7 +930,7 @@ module Vgr = struct
       mutable o : string;            (* current output chunk (stored dsts). *)
       mutable o_pos : int;                (* next output position to write. *)
       mutable o_max : int;             (* maximal output position to write. *)
-      meta : Meta.t;                    (* render metadata (user provided). *)
+      meta : meta;                      (* render metadata (user provided). *)
       mutable k :                                   (* render continuation. *)
         [`Await | `End | `Image of size2 * box2 * image ] -> t -> 
         [ `Ok | `Partial ] }
@@ -963,7 +967,7 @@ module Vgr = struct
       val pp_warning : Format.formatter -> warning -> unit
       (** [pp_warning ppf w] prints a textual representation of [w] on [ppf]. *)
 
-      val warn : (warning -> unit) Meta.key
+      val warn : (warning -> unit) key
       (** [warn] is a function called whenever missing features are 
           encountered during rendering. *)
     end
@@ -1029,7 +1033,7 @@ module Vgr = struct
     | `Image _ as i -> rfun state i (ok (r_loop state rfun)) r
     | `Await -> ok (r_loop state rfun) r
 
-    let create_renderer ?(meta = Meta.empty) ?(once = false) dst state rfun = 
+    let create_renderer ?(meta = Vgm.empty) ?(once = false) dst state rfun = 
       let o, o_pos, o_max = match dst with 
       | `Manual | `Immediate -> "", 1, 0          (* implies [o_rem e = 0]. *)
       | `Buffer _ 

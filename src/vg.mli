@@ -19,6 +19,100 @@
 
 open Gg;;
 
+  (** {1:meta Metadata} *)
+
+  type meta 
+  (** The type for metadata. *)
+
+  type 'a key
+  (** The type for metadata keys whose lookup value is ['a]. *)
+
+  (** Render and image metadata.  
+
+      A metadata value is set of {{!keys}keys} mapping to typed
+      values.  It is used to provide renderers with additional data
+      about rendering and images. This data may be renderer specific
+      or common to more than one renderer by using
+      {{!stdkeys}standard} keys.
+
+      Consult the documentation of renderers to see which 
+      keys they support. *)
+  module Vgm : sig
+
+    (** {1:keys Keys} *)
+    
+    val key : unit -> 'a key 
+    (** [key ()] is a new metadata key. *)
+    
+    (** {1:metadata Metadata} *)    
+
+    type t = meta
+    (** The type for metadata. *)
+
+    val empty : t 
+    (** [empty] is the empty metadata. *)
+
+    val is_empty : t -> bool 
+    (** [is_empty m] is [true] iff [m] is empty. *)
+
+    val mem : t -> 'a key -> bool 
+    (** [mem m k]  is [true] iff [k] has a mapping in [m]. *)
+
+    val add : t -> 'a key -> 'a -> t
+    (** [add m k v] is [m] with [k] mapping to [v]. *)
+
+    val rem : t -> 'a key -> t
+    (** [rem m k] is [m] with [k] unbound. *)
+
+    val find : t -> 'a key -> 'a option
+    (** [find m k] is [k]'s mapping in [m], if any. *)
+
+    val get : t -> 'a key -> 'a
+    (** [get m k] is [k]'s mapping in [m].
+        @raise Invalid_argument if [k] is not bound in [m]. *)
+
+    (** {1:stdkeys Standard keys} 
+
+      {b Note.} All string values must be UTF-8 encoded. *)
+
+    (** {2:renderingmeta Rendering metadata} *)
+
+    val res : v2 key
+    (** [res] specifies the rendering resolution in samples per meters. *)
+
+    val quality : [`Best | `Speed] key
+    (** [quality] specifies the rendering quality. *)
+
+    (** {2:imagemeta Image metadata} *)
+
+    val author : string key 
+    (** [author] is the author of the image. *)
+
+    val creator : string key 
+    (** [creator] is the name of the application creating the image. *)
+
+    val date : ((int * int * int) * (int * int * int)) key
+    (** [date] is the date of creation of the image. 
+
+        The first triple is the year (0-9999), the month (1-12) and
+	the day (1-31). The second triple is the time in UTC, the hour
+	(0-23), minutes (0-59) and seconds (0-59). 
+
+        {b Warning.} Numerical constraints are not checked by
+        the renderers. *)
+
+    val title : string key 
+    (** [title] is the title of the image. *)
+
+    val subject : string key 
+    (** [subject] is the subject of the image. *)
+
+    val keywords : string list key 
+    (** [keywords] is a list of keywords for the image. *)
+  end
+
+
+
 (** {1 Paths and images} *)
 
 type path 
@@ -445,95 +539,6 @@ module Vgr : sig
       surface in millimeters, the view rectangle and the image to
       render. *)
 
-  (** {1:meta Render metadata} 
-
-      Render metadata specifies additionnal data (e.g. quality hints)
-      for the renderer aswell as image metadata (date, title, etc.)
-      for the image.  Consult the documentation of renderers to see
-      which keys they support. *)
-
-  (** Render metadata. 
-
-      Render metadata is a set of {{!keys}keys} mapping to typed values. 
-      Renderers can define their own keys but should favor {{!stdkeys}standard}
-      ones if appropriate. *)
-  module Meta : sig
-
-    (** {1:keys Keys} *)
-    
-    type 'a key 
-    (** The type for metadata keys whose lookup value is ['a]. *)
-
-    val key : unit -> 'a key 
-    (** [key ()] is a new metadata key. *)
-    
-    (** {1:metadata Metadata} *)    
-
-    type t 
-    (** The type for metadata. *)
-
-    val empty : t 
-    (** [empty] is the empty metadata. *)
-
-    val is_empty : t -> bool 
-    (** [is_empty m] is [true] iff [m] is empty. *)
-
-    val mem : t -> 'a key -> bool 
-    (** [mem m k]  is [true] iff [k] has a mapping in [m]. *)
-
-    val add : t -> 'a key -> 'a -> t
-    (** [add m k v] is [m] with [k] mapping to [v]. *)
-
-    val rem : t -> 'a key -> t
-    (** [rem m k] is [m] with [k] unbound. *)
-
-    val find : t -> 'a key -> 'a option
-    (** [find m k] is [k]'s mapping in [m], if any. *)
-
-    val get : t -> 'a key -> 'a
-    (** [get m k] is [k]'s mapping in [m].
-        @raise Invalid_argument if [k] is not bound in [m]. *)
-
-    (** {1:stdkeys Standard keys} 
-
-      {b Note.} All string values must be UTF-8 encoded. *)
-
-    (** {2:renderingmeta Rendering metadata} *)
-
-    val res : v2 key
-    (** [res] specifies the rendering resolution in samples per meters. *)
-
-    val quality : [`Best | `Speed] key
-    (** [quality] specifies the rendering quality. *)
-
-    (** {2:imagemeta Image metadata} *)
-
-    val author : string key 
-    (** [author] is the author of the image. *)
-
-    val creator : string key 
-    (** [creator] is the name of the application creating the image. *)
-
-    val date : ((int * int * int) * (int * int * int)) key
-    (** [date] is the date of creation of the image. 
-
-        The first triple is the year (0-9999), the month (1-12) and
-	the day (1-31). The second triple is the time in UTC, the hour
-	(0-23), minutes (0-59) and seconds (0-59). 
-
-        {b Warning.} Numerical constraints are not checked by
-        the renderers. *)
-
-    val title : string key 
-    (** [title] is the title of the image. *)
-
-    val subject : string key 
-    (** [subject] is the subject of the image. *)
-
-    val keywords : string list key 
-    (** [keywords] is a list of keywords for the image. *)
-  end
-
   (** {1:warnings Render warnings} 
 
       TODO redo.
@@ -592,7 +597,7 @@ module Vgr : sig
   val renderer_dst : renderer -> dst
   (** [render_dst r] is [r]'s output destination. *)
 
-  val renderer_meta : renderer -> Meta.t 
+  val renderer_meta : renderer -> meta 
   (** [renderer_meta r] is [r]'s render metadata. *)
 
   (** {1 Manual render destinations} *)
@@ -664,7 +669,7 @@ module Vgr : sig
       val pp_warning : Format.formatter -> warning -> unit
       (** [pp_warning ppf w] prints a textual representation of [w] on [ppf]. *)
 
-      val warn : (warning -> unit) Meta.key
+      val warn : (warning -> unit) key
       (** [warn] is a function called whenever missing features are 
           encountered during rendering. *)
     end
@@ -730,7 +735,7 @@ module Vgr : sig
    type 'a render_fun = 'a -> [`End | `Image of size2 * box2 * image ] -> k -> k
    (** The type for rendering functions. TODO *)
 
-   val create_renderer : ?meta:Meta.t -> ?once:bool -> [< dst] -> 
+   val create_renderer : ?meta:meta -> ?once:bool -> [< dst] -> 
      'a -> 'a render_fun -> t
    (** [create_renderer meta multi dst state rfun] is a renderer
        [r] such that: 

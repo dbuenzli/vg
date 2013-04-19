@@ -22,7 +22,7 @@
 (** {1 Renderer} *)
 
 
-val renderer : ?meta:Vg.Vgr.Meta.t -> unit -> Vg.renderer
+val renderer : ?meta:Vg.meta -> unit -> Vg.renderer
 (** [renderer meta c] is an HTML canvas renderer rendering to [dst]. *)
 
 (** {1 Render metadata}  
@@ -44,7 +44,7 @@ type warning = [ `Dashes | `Aeo ]
 val pp_warning : Format.formatter -> warning -> unit
 (** [pp_warning ppf w] prints a textual representation of [w] on [ppf]. *)
 
-val warn : (warning -> unit) Vg.Vgr.Meta.key
+val warn : (warning -> unit) Vg.key
 (** [warn] is called when unsupported capababilites are encountered. *)
 
 (*---------------------------------------------------------------------------

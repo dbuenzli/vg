@@ -19,7 +19,7 @@
 
 (** {1 Renderer} *)
 
-val renderer : ?meta:Vg.Vgr.Meta.t -> [< Vg.Vgr.dst_stored] -> Vg.Vgr.t
+val renderer : ?meta:Vg.meta -> [< Vg.Vgr.dst_stored] -> Vg.renderer
 (** [renderer ?meta dst] is an SVG renderer rendering to [dst]. *)
 
 (** {1 Render metadata} *)
@@ -29,7 +29,7 @@ type warning = [`Blend]
     {ul
     {- [`Blend] a blend mode different from [`Over] was used.}} *)
 
-val warn : (warning -> unit) Vg.Vgr.Meta.key
+val warn : (warning -> unit) Vg.key
 (** [warn] is the function used to report unsupported capabilities. The warning
     are the following. *)
 

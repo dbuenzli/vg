@@ -17,7 +17,7 @@
 
 (** {1 Renderer} *)
 
-val renderer : ?meta:Vg.Vgr.Meta.t -> [< Vg.Vgr.dst_stored] -> Vg.renderer
+val renderer : ?meta:Vg.meta -> [< Vg.Vgr.dst_stored] -> Vg.renderer
 (** [renderer meta dst] is a PDF renderer rendering to [dst]. *)
 
 (** {1 Render metadata}

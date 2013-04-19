@@ -5,7 +5,8 @@
 * Renderer API
 ** Rectangle instead of Size ? 
 ** What about physical size ? 
-** Add name and pp to Meta.key ()
+** Add string name and pp to Vgm.key (), provide functions to pp.
+** Add Vgm.merge 
 
 * Api
 ** Make everything t.r.

@@ -8,9 +8,9 @@ open Vg;;
 
 type warning = [ `Blend ]
 
-let warn = Vgr.Meta.key ()
+let warn = Vgm.key ()
 
-let renderer ?(meta = Vgr.Meta.empty) dst = failwith "TODO"
+let renderer ?(meta = Vgm.empty) dst = failwith "TODO"
   
 
 (*---------------------------------------------------------------------------
