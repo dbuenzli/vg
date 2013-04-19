@@ -4,6 +4,49 @@
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
+(** Vg HTML canvas renderer.
+
+    Renders on an HTML canvas element via 
+    the {{:http://www.w3.org/TR/2dcontext/}HTML canvas} element.
+    
+    {b Unsupported capabilities.} Outlines cuts with dashes are
+    unsupported, they are rendered as if [None] was specified for
+    dashes and the [`Dashes] warning is reported.  The [`Aeo] cut
+    rule is unsupported, it falls back on the [`Anz] rules and the
+    c[`Aeo] warning is reported.
+
+    {b Bug reports.} TODO.
+
+    {e Release %%VERSION%% - %%AUTHORS%% } *)
+
+(** {1 Renderer} *)
+
+
+val renderer : ?meta:Vg.Vgr.Meta.t -> unit -> Vg.renderer
+(** [renderer meta c] is an HTML canvas renderer rendering to [dst]. *)
+
+(** {1 Render metadata}  
+
+    The following standard keys are supported:
+    
+    {ul 
+    {- {!Vg.Vgr.Meta.res}, specifies the rendering resolution. TODO}}
+*)
+
+type warning = [ `Dashes | `Aeo ]
+(** The type for rendering warnings. 
+    {ul
+    {- [`Dashes], dashed outlines are being used (TODO this seems supported
+       now).}
+    {- [`Aeo], a path area is defined by the [`Aeo] rule.}}
+*)
+
+val pp_warning : Format.formatter -> warning -> unit
+(** [pp_warning ppf w] prints a textual representation of [w] on [ppf]. *)
+
+val warn : (warning -> unit) Vg.Vgr.Meta.key
+(** [warn] is called when unsupported capababilites are encountered. *)
+
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
    All rights reserved.

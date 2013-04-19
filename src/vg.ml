@@ -9,6 +9,22 @@ open Gg;;
 (* Invalid_arg strings *)
 
 let err_empty = "empty path"
+let err_meta_unbound = "key unbound in metadata"
+let err_bounds j l = Printf.sprintf "invalid bounds (index %d, length %d)" j l 
+let err_exp_await = "`Await expected"
+let err_exp_image = "`Image expected"
+let err_end = "`End rendered, render can't be used on renderer"
+let err_once = "a single `Image can be rendered"
+
+(* Unsafe string byte manipulations. If you don't believe the authors's 
+   invariants, replacing with safe versions makes everything safe in the 
+   module. He won't be upset. *)
+
+let io_buffer_size = 65536                          (* IO_BUFFER_SIZE 4.0.0 *)
+
+let unsafe_blit = String.unsafe_blit
+let unsafe_set_byte s j byte = String.unsafe_set s j (Char.unsafe_chr byte)
+let unsafe_byte s j = Char.code (String.unsafe_get s j)
 
 (* A few useful definitions. *)
 
@@ -515,9 +531,9 @@ module P = struct
     let acc, _, _ = linear_fold ?tol sample (acc, P2.o, 0.) p in
     acc
 
-  (* TODO This is needed by the PDF backend to approximate elliptical arcs. 
+  (* TODO This is needed by the PDF renderer to approximate elliptical arcs. 
      To we add something like Vg.P.cubic_fold or just move that to 
-     the pdf backend ? *)
+     the pdf renderer ? *)
   
   let one_div_3 = 1. /. 3. 
   let two_div_3 = 2. /. 3. 
@@ -630,19 +646,19 @@ module P = struct
   let to_string p = to_string_of_formatter pp p 
 end
 
+type path = P.t
+
 (* Images *)
 
 module I = struct
-
   type blender = [ `Atop | `In | `Out | `Over | `Plus | `Copy | `Xor ]  
   type tr = Move of v2 | Rot of float | Scale of v2 | Matrix of m3
-
   type primitive = 
     | Mono of color
     | Axial of Color.stops * p2 * p2
     | Radial of Color.stops * p2 * p2 * float
     | Raster of box2 * raster
-    
+          
   type t = 
     | Primitive of primitive
     | Cut of P.area * P.t * t
@@ -840,34 +856,222 @@ module I = struct
   let to_string p = to_string_of_formatter pp p 
 end
 
-type path = P.t
 type image = I.t
 
 module Vgr = struct
-  type surface = size2 * box2  * image
-  type page = size2 * box2 * image
-  type meta_data
-  type dest = [ 
-    | `Buffer of Buffer.t | `Channel of Pervasives.out_channel 
-    | `Fun of int -> unit ]
-  type format = [ `PDF | `SVG_1_2 ]
-  type svg_warning = [ `Blend ]
-  type html5_warning = [ `Dashes | `Aeo ]
-  type output       
-  
-  let make_output d = failwith "TODO"
-  let output_html5 a = failwith "TODO"
-  let output_pdf a = failwith "TODO"
-  let output_svg a = failwith "TODO"
-  let create_output o = failwith "TODO"
-  let compact_warnings o = failwith "TODO"
-      
+
+  (* Renderable *)
+
+  type renderable = size2 * box2  * image
+
+  (* Render metadata *)
+
   module Meta = struct
-    type t
+    
+    (* Heterogenous dictionaries, see http://mlton.org/PropertyList. *)
+
+    module Id = struct
+      type t = int
+      let compare : int -> int -> int = compare
+      let create =        (* thread-safe UID, don't use Oo.id (object end). *)
+        let c = ref min_int in
+        fun () ->
+          let id = !c in
+          incr c; if id > !c then assert false (* too many ids *) else id
+    end
+
+    (* Keys *)
+
+    type 'a key = Id.t * ('a -> exn) * (exn -> 'a option)
+    let key () (type v) =
+      let module M = struct exception E of v end in
+      Id.create (), (fun x -> M.E x), (function M.E x -> Some x | _ -> None)
+
+    (* Metadata *)
+      
+    module M = (Map.Make (Id) : Map.S with type key = Id.t)
+    type t = exn M.t
+
+    let compare = M.compare compare 
+    let equal = M.equal ( = )      
+    let empty = M.empty 
+    let is_empty = M.is_empty
+    let mem m (id, _, _ ) = M.mem id m
+    let add m (id, inj, _) v = M.add id (inj v) m
+    let rem m (id, _, _) = M.remove id m
+    let find m (id, _, proj) = try proj (M.find id m) with Not_found -> None
+    let get m (id, _, proj) =
+      try match proj (M.find id m) with Some v -> v | None -> raise Not_found 
+      with Not_found -> invalid_arg err_meta_unbound
+             
+    let res = key ()
+    let quality = key ()
+    let author = key () 
+    let creator = key () 
+    type date = (int * int * int) * (int * int * int)
+    let date = key ()
+    let keywords = key () 
+    let title = key () 
+    let subject = key ()
   end
-  module Backend = struct
+
+  (* Rendering *)
+
+  type dst_stored = 
+    [ `Buffer of Buffer.t | `Channel of Pervasives.out_channel | `Manual ] 
+    
+  type dst = [ dst_stored | `Immediate ]
+  type t = 
+    { dst : dst;                                     (* output destination. *)
+      mutable o : string;            (* current output chunk (stored dsts). *)
+      mutable o_pos : int;                (* next output position to write. *)
+      mutable o_max : int;             (* maximal output position to write. *)
+      meta : Meta.t;                    (* render metadata (user provided). *)
+      mutable k :                                   (* render continuation. *)
+        [`Await | `End | `Image of size2 * box2 * image ] -> t -> 
+        [ `Ok | `Partial ] }
+                                              
+  let render r v = r.k (v :> [ `Await | `End | `Image of renderable ]) r
+  let renderer_dst r = r.dst
+  let renderer_meta r = r.meta
+  
+  (* Manual rendering destinations. *)
+      
+  module Manual = struct
+    let dst r s j l =                                (* set [r.o] with [s]. *)
+      if (j < 0 || l < 0 || j + l > String.length s) then 
+        invalid_arg (err_bounds j l);
+      r.o <- s; r.o_pos <- j; r.o_max <- j + l - 1
+          
+    let dst_rem r = r.o_max - r.o_pos + 1   (* rem bytes to write in [r.o]. *)
+  end
+
+  (* Implementing renderers. *)
+
+  module Private = struct
+    
+    (* Incomplete renderer *)
+
+    module type Incomplete_renderer = sig
+
+      (** {1 Rendering warnings} *)
+
+      type warning
+      (** The type for rendering warnings. Must be a polymorphic
+          variant with one case for each missing feature. *)
+
+      val pp_warning : Format.formatter -> warning -> unit
+      (** [pp_warning ppf w] prints a textual representation of [w] on [ppf]. *)
+
+      val warn : (warning -> unit) Meta.key
+      (** [warn] is a function called whenever missing features are 
+          encountered during rendering. *)
+    end
+
+    (* Path representation *)
+
+    type segment = P.segment
+    type path = P.t 
+(*     external path : P.t -> path = "%id" *)
+
+    (* Image representation *)
+    
+    type tr = I.tr = 
+      | Move of v2 | Rot of float | Scale of v2 | Matrix of m3
+      
+    type primitive = I.primitive = 
+      | Mono of color
+      | Axial of Color.stops * p2 * p2
+      | Radial of Color.stops * p2 * p2 * float
+      | Raster of box2 * raster
+
+    type image = I.t = 
+      | Primitive of primitive
+      | Cut of P.area * P.t * image
+      | Blend of I.blender * float option * image * image
+      | Tr of tr * image
+
+(*     external image : I.t -> image = "%id" *)
+
+    (* Renderer *)
+
+    type renderer = t
+    
+    type k = renderer -> [ `Ok | `Partial ]
+    type 'a render_fun = 'a -> [`End | `Image of size2 * box2 * image ] 
+      -> k -> k
+
+    let renderer r = r
+
+    let ok k r = r.k <- k; `Ok
+    let partial k r = 
+      let exp_await v r =
+        match v with `Await -> k r | v -> invalid_arg err_exp_await
+      in
+      r.k <- exp_await; `Partial
+
+    let stop = fun v r -> 
+      match v with  `Await | `End | `Image _ -> invalid_arg err_end
+ 
+    let rec r_once state (rfun : 'a render_fun) v r = match v with
+    | `End -> rfun state `End (ok stop) r
+    | (`Image _) as i -> 
+        let rec render_end v r = match v with
+        | `End -> rfun state `End (ok stop) r
+        | `Image _ -> invalid_arg err_once
+        | `Await -> ok render_end r
+        in
+        rfun state i (ok render_end) r
+    | `Await -> ok (r_once state rfun) r
+
+    let rec r_loop state (rfun : 'a render_fun) v r = match v with
+    | `End -> rfun state `End (ok stop) r
+    | `Image _ as i -> rfun state i (ok (r_loop state rfun)) r
+    | `Await -> ok (r_loop state rfun) r
+
+    let create_renderer ?(meta = Meta.empty) ?(once = false) dst state rfun = 
+      let o, o_pos, o_max = match dst with 
+      | `Manual | `Immediate -> "", 1, 0          (* implies [o_rem e = 0]. *)
+      | `Buffer _ 
+      | `Channel _ -> String.create io_buffer_size, 0, io_buffer_size - 1
+      in
+      { dst = (dst :> dst); o; o_pos; o_max; meta; 
+        k = if once then r_once state rfun else r_loop state rfun }
+
+    let o_rem = Manual.dst_rem
+      
+    let flush k r =               (* get free space in [r.o] and [k]ontinue. *)
+      match r.dst with
+      | `Manual -> partial k r
+      | `Buffer b -> Buffer.add_substring b r.o 0 r.o_pos; r.o_pos <- 0; k r
+      | `Channel oc -> output oc r.o 0 r.o_pos; r.o_pos <- 0; k r
+      | `Immediate -> assert false
+
+    let rec writeb b k r =                 (* write byte [b] and [k]ontinue. *)
+      if r.o_pos > r.o_max then flush (writeb b k) r else
+      (unsafe_set_byte r.o r.o_pos b; r.o_pos <- r.o_pos + 1; k r)
+
+    let rec writes s j l k r =  (* write [l] bytes from [s] starting at [j]. *)
+      let rem = o_rem r in 
+      if rem >= l
+      then (unsafe_blit s j r.o r.o_pos l; r.o_pos <- r.o_pos + l; k r)
+      else begin 
+        unsafe_blit s j r.o r.o_pos rem; r.o_pos <- r.o_pos + rem; 
+        flush (writes s (j + rem) (l - rem) k) r
+      end
+
+    let rec writebuf buf j l k r = (* write [l] bytes from [buf] start at [j].*)
+      let rem = o_rem r in
+      if rem >= l 
+      then (Buffer.blit buf j r.o r.o_pos l; r.o_pos <- r.o_pos + l; k r)
+      else begin 
+        Buffer.blit buf j r.o r.o_pos rem; r.o_pos <- r.o_pos + rem; 
+        flush (writebuf buf (j + rem) (l - rem) k) r
+      end 
   end
 end
+
+type renderer = Vgr.t
 
 (*---------------------------------------------------------------------------
    Copyright %%COPYRIGHT%%

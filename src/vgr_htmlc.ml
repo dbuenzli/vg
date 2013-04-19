@@ -4,6 +4,15 @@
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
+open Vg;;
+
+type warning = [ `Dashes | `Aeo ]
+
+let warn = Vgr.Meta.key ()
+let pp_warning ppf w = failwith "TODO"
+let renderer ?(meta = Vgr.Meta.empty) () = failwith "TODO"
+
+
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
    All rights reserved.

@@ -1,20 +1,19 @@
 Test images for Vg
 ==================
 
-The images are a collection of backend independent tests. Ideally, for
-each test, backends should produce identical results. However due to
-differences in backend expressiveness and purposes this may not be
+The images are a collection of renderer independent tests. Ideally,
+for each test, renderers should produce identical results. However due
+to differences in renderer expressiveness and purposes this may not be
 possible or desirable.
 
+## Using the tests
 
-# Using the tests
-
-Backend writers that want to use the database should consult
-`test.mli` and `../vgtest.ml`. For non-interactive backends, it should
+Renderer writers that want to use the database should consult
+`test.mli` and `../vgtest.ml`. For non-interactive renderers, it should
 be a matter of adding a line to `vgtest.ml`.
 
 
-# Adding new tests
+## Adding new tests
 
 To add a new test either add it to an existing file with a relevant
 name or create a new file for it. In the latter case the new file must

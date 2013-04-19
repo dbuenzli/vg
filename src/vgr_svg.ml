@@ -4,6 +4,15 @@
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
+open Vg;;
+
+type warning = [ `Blend ]
+
+let warn = Vgr.Meta.key ()
+
+let renderer ?(meta = Vgr.Meta.empty) dst = failwith "TODO"
+  
+
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
    All rights reserved.

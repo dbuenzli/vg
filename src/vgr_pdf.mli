@@ -3,6 +3,34 @@
    Distributed under the BSD3 license, see license at the end of the file.
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
+(** Vg PDF renderer. 
+
+    Renders a sequence of renderables as a multi-page PDF/A-2
+    document. Each renderable defines a page of the document.
+   
+    {b Bug reports.}  PDF being an insane standard, rendering
+    abilities of PDF readers vary wildly. No rendering bug report for
+    this renderer will be considered if it cannot be reproduced by
+    Adobe Acrobat Reader 9.0 or a later version.  
+
+    {e Release %%VERSION%% - %%AUTHORS%% } *)
+
+(** {1 Renderer} *)
+
+val renderer : ?meta:Vg.Vgr.Meta.t -> [< Vg.Vgr.dst_stored] -> Vg.renderer
+(** [renderer meta dst] is a PDF renderer rendering to [dst]. *)
+
+(** {1 Render metadata}
+
+    The following standard metadata keys are supported and
+    used to fill the PDF document's information dictionary. 
+    {ul
+    {- {!Vg.Vgr.Meta.author}, the document's author.}
+    {- {!Vg.Vgr.Meta.creator}, name of the application creating the image.}
+    {- {!Vg.Vgr.Meta.date}, name of the application creating the image.}
+    {- {!Vg.Vgr.Meta.keywords}, list of keywords for the document.}
+    {- {!Vg.Vgr.Meta.title}, title of the document.}
+    {- {!Vg.Vgr.Meta.subject}, subject of the document.}} *)
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

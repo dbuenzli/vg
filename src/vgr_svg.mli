@@ -3,6 +3,35 @@
    Distributed under the BSD3 license, see license at the end of the file.
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
+(** Vg SVG renderer.
+
+    The SVG renderer outputs a {!renderable} value as an
+    {{:http://www.w3.org/Graphics/SVG/} SVG} 1.1 document.
+
+    {b Render metadata.} The following metadata keys are supported.
+    {ul
+    {- {!Vg.Vgr.Meta.title}, title of the document.}}
+
+    {b Unsupported capabilities.} Only the default [`Over] blend mode 
+    is supported. Any use of other blend mode falls back on [`Over].
+
+    {e Release %%VERSION%% - %%AUTHORS%% } *)
+
+(** {1 Renderer} *)
+
+val renderer : ?meta:Vg.Vgr.Meta.t -> [< Vg.Vgr.dst_stored] -> Vg.Vgr.t
+(** [renderer ?meta dst] is an SVG renderer rendering to [dst]. *)
+
+(** {1 Render metadata} *)
+
+type warning = [`Blend]
+(** The type for rendering warnings. 
+    {ul
+    {- [`Blend] a blend mode different from [`Over] was used.}} *)
+
+val warn : (warning -> unit) Vg.Vgr.Meta.key
+(** [warn] is the function used to report unsupported capabilities. The warning
+    are the following. *)
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

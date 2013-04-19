@@ -4,6 +4,28 @@
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
+open Vg;;
+
+let render state v k r = match v with 
+| `Image i -> failwith "TODO"
+| `End -> Vgr.Private.flush k r
+
+type pid = int
+type state = 
+  { buf : Buffer.t; 
+    mutable bytes : int; 
+    mutable id : int; 
+    mutable index : (int * int) list;      (* object id, byte offset index. *)
+    mutable page_objs : int list;                      (* pages object ids. *)
+    mutable pid : pid; 
+    paths : (P.t, pid) Hashtbl.t; }                  (* maps paths to pids. *)
+
+let renderer ?meta dst = 
+  let state = { buf = Buffer.create 1024; bytes = 0; id = 0; index = []; 
+                page_objs = []; pid = 0; paths = Hashtbl.create 255; }
+  in
+  Vgr.Private.create_renderer ?meta dst state render
+
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
    All rights reserved.

@@ -6,13 +6,17 @@ Authors: Daniel Bünzli <daniel.buenzli at erratique.ch>
 License: BSD3
 Homepage: http://erratique.ch/software/vg
 Description:
- Vg is a library for declarative 2D vector graphics. The render
- backend is open and built-in support for rendering to PDF, SVG and
- the HTML5 canvas element is provided.
+ Vg is a module for declarative 2D vector graphics. Renderers for
+ PDF, SVG and the HTML canvas element are bundled with the library 
+ and an API allows to implement new renderers.
  .
- Vg depends on [Gg][1] and is distributed under the BSD3 license.
+ Vg depends on [Gg][1] and, optionally, on [js_of_ocaml][2] 
+ for the HTML canvas element renderer. 
+ .
+ Vg is distributed under the BSD3 license.
  .
  [1]: http://erratique.ch/software/gg
+ [2]: http://ocsigen.org/js_of_ocaml/
 
 Flag jsoo
  Description: build js_of_ocaml support
@@ -22,15 +26,15 @@ Library vg
  Modules: Vg, Vgr_pdf, Vgr_svg
  Path: src
  BuildDepends: gg
-
- Library jsoo
+ 
+ Library htmlc 
   Path: src
-  Modules: Vgr_jsoo
+  Modules: Vgr_htmlc
   Buildable: $jsoo
-  BuildDepends: js_of_ocaml, js_of_ocaml.syntax
+  BuildDepends: vg, js_of_ocaml, js_of_ocaml.syntax
   pp: camlp4o
 
 Test vgtest
   Path: vgtest
-  MainIs: vg_test.ml
+  Main: vg_test.ml
   

@@ -45,15 +45,15 @@ let print_info tests =
   Format.printf "@\n@?"
 
 
-(* Backend output *)
+(* Renderer output *)
 
 
-let backend_list () = "pdf, svg, printf" (* TODO *)
+let renderer_list () = "pdf, svg, printf" (* TODO *)
 
 let main = 
   let usage = 
     str "Usage: %s <options>\n\
-         Without any options selects all tests, all backends and outputs\n\
+         Without any options selects all tests, all renderers and outputs\n\
          the result in %s.\n\
 	 Options:" exec tmp_dir
   in
@@ -64,7 +64,7 @@ let main =
   let names, add_name = list () in 
   let prefixes, add_prefix = list () in 
   let keywords, add_keyword = list () in 
-  let backends, add_backend = list () in 
+  let renderers, add_renderer = list () in 
   let info = ref false in 
   let dest = ref tmp_dir in 
   let options = [
@@ -74,11 +74,11 @@ let main =
     "<prefix>, selects any test whose name matches <prefix>.";
     "-k", Arg.String add_keyword, 
     "<keyword>, selects any test whose name, info or note matches <keyword>.";
-    "-b", Arg.String add_backend, 
-    (str "<backend>, selects backend <backend>.\n\
-          <backend> should be one of %s." (backend_list ()));
+    "-b", Arg.String add_renderer, 
+    (str "<renderer>, selects backend <renderer>.\n\
+          <renderer> should be one of %s." (renderer_list ()));
     "-i", Arg.Set info, 
-    "outputs info about selected tests on stdout (no backend generation).";
+    "outputs info about selected tests on stdout (no renderer generation).";
     "-d", Arg.Set_string dest,
     (str "<dir>, directory in which files are output (defaults to %s)." 
        Filename.temp_dir_name); ]

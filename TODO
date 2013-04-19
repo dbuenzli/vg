@@ -1,12 +1,11 @@
 * Next steps
-** Finish tutorial.
-** Finish semantics of I module.
 ** Test use thunk instead of lazy avoids ugly begin end
-** Non-blocking IO. 
 
-* Documentation
-** "f a b" is style. 
-** What's the most common area rule ? Use that in the tutorial. NZ I think.
+
+* Renderer API
+** Rectangle instead of Size ? 
+** What about physical size ? 
+** Add name and pp to Meta.key ()
 
 * Api
 ** Make everything t.r.
@@ -14,20 +13,15 @@
 * Image
 ** ? Is I.blend order the right thing to do, YES but review semant. order
    of c [] c' 
-** also review other orders so that >> can be used ?
 ** ? gradient add spread mode, or not.
 ** TODO semantics of radial is wrong. 
 ** TODO semantics of rimage. Provide rendering intent attribute or part of 
    rimage.
 ** let miter_angle_to_miter_limit a = 1. /. (sin (0.5 *. a))
-** stops, regarding constraints on s_i look what it gives when we write the 
-   backend. It may be better to declare it as a private type, check the
-   constraint so that backends are guaranteed to get clean data.
-   stops replace that by tone curve ? 
-** Image.raster. Accept any raster value, backend does its
+** Image.raster. Accept any raster value, renderer does its
    best, but it also accepts a 
    raster:Gg.raster -> [`Await | `Ok of Gg.raster ] function that the
-   backend user can plug to use "external" tools to improve normalisation.
+   renderer user can plug to use "external" tools to improve normalisation.
 
 * Path
 ** Maybe, Boolean operations, minkowski.
@@ -54,7 +48,7 @@
 ** join + cap styles add white spots.
 ** base.ml only base images (the renderer needs to crop). 
 ** Cantor draw the unit line.
-** Test geometric primitives, quadric and ellipse for pdf backend.
+** Test geometric primitives, quadric and ellipse for pdf renderer.
 ** fill rules.
 ** gradient stops as premultiplied color value cannot blend red to blue
    while alpha 1.0 to alpha 0.0.
@@ -74,12 +68,12 @@
 ** Glyph. 
    Maybe an approach similar to raster. Define a type that allows for
    quite different font specification and provide a normalizer in the
-   backends for resolution.
+   renderers for resolution.
 ** OTFm
 ** Cairo, pdf & fonts
    http://lists.cairographics.org/archives/cairo/2007-February/009452.html
    http://lists.cairographics.org/archives/cairo/2007-September/011427.html
-** output, font resolver ? to accomodate different backends ? 
+** output, font resolver ? to accomodate different renderers ? 
 ** OpenVG, 
   VGFont, just maps indices to glyphs, applications are responsible for 
           creating the map. No metric or layout info in the font. 
@@ -99,15 +93,13 @@
 ** Test miànjï 面积 (area, surface area), vector.
 ** Test font http://www.twardoch.com/fonts/ Nadeyezhda 
 
-* Backend
+* Renderers
 ** What about NaNs ? 
 ** Primitive images careful when a transform immediatly follows add it
    e.g. to the gradient transform. Test.
-** introduce a type for meta-data.
 ** allow to choose rendering intent.
 ** Use mm as units so that they can be represented precisely. 
 ** Generate PDF/A
-** Prop or Dict or Meta 
 
 * Misc pointers
 ** http://www.fontconfig.org/fontconfig-user.html
@@ -116,7 +108,7 @@
 ** http://portal.acm.org/citation.cfm?id=129906 
 ** http://books.google.com/books?q=vatti+clipping+agoston
 
-* PDF backend old notes
+* PDF renderer old notes
 ** Rewrite to use Form XObjects. 
 ** Rewrite to use Gs dictionaries.
 ** Ellipse output. [done ?]

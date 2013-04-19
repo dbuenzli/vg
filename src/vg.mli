@@ -6,9 +6,10 @@
 
 (** Declarative 2D vector graphics.
 
-    [Vg] is a module for declarative 2D vector graphics. The render
-    backend is open and built-in support for rendering to PDF, SVG and
-    the HTML5 canvas element is provided.
+    [Vg] is a module for declarative 2D vector graphics. Renderers for
+    {{!Vgr_pdf}PDF}, {{!Vgr_svg}SVG} and the HTML {{!Vgr_htmlc}canvas}
+    element are bundled with the library and an API allows to
+    implement new renderers.
 
     Consult the {{!basics}basics} and the {{!semantics}semantics}. 
     Open the module to use it, this defines only modules and types in 
@@ -16,15 +17,19 @@
 
     {e Release %%VERSION%% - %%AUTHORS%% } *)
 
-(** {1 Interface} *)
-
 open Gg;;
+
+(** {1 Paths and images} *)
 
 type path 
 (** The type for paths. *)
 
 type image 
 (** The type for images. *)
+
+val ( >> ) : 'a -> ('a -> 'b) -> 'b
+(** [x >> f] is [f x]. Associates to left. 
+    Used as the path and image composition operator. *)
 
 (** Paths.
     
@@ -258,7 +263,6 @@ module P : sig
       print floating point values. *)
 end
 
-
 (** Images.
   
     Consult their {{!semimages}semantics} aswell as 
@@ -301,7 +305,6 @@ module I : sig
       {ul {- \[[radial stops ~f c r]\]{_[p]} [=] \[[stops]\]{_[t]} if [p] is
       on the circle defined by radius [t * r] and center [f + t * (c - f)].}} 
   *)
-
 
   val raster : box2 -> Raster.t -> image 
   (** [raster r ri] is an image with [ri] framed in the rectangle
@@ -410,77 +413,100 @@ module I : sig
       to print floating point values. *)
 end
 
-(** Image rendering. 
+(** {1 Renderers} *)
 
-    This module defines functions to render images to PDF, SVG and 
-    the HTML5 canvas. *)
+type renderer
+(** The type for image renderers. *)
+
+(** Image renderers. 
+
+    Renderer render finite rectangular regions of images on
+    rectangular surfaces. The following renderers are distributed with
+    the library:
+    {ul 
+    {- {!Vgr_pdf}, renders sequence of images as a multi-page PDF/A document.}
+    {- {!Vgr_svg}, renders a single image as an 
+       {{:http://www.w3.org/TR/SVGTiny12/}SVG Tiny 1.2} document.}
+    {- {!Vgr_htmlc}, renders sequence of images on an 
+       {{:http://www.w3.org/TR/2dcontext/}HTML canvas} 
+       element via {{:http://ocsigen.org/js_of_ocaml/}js_of_ocaml}.}}
+*) 
 module Vgr : sig
 
+  (** {1:renderable Renderable} 
 
-  (** {1:page Pages} 
+      A renderable specifies the physical size of a render surface and
+      a view rectangle for an image. It implicetly defines the mapping
+      between [Vg]'s coordinate space and the surface, see
+      {{!coordinates} this section} for more information. *)
 
-      A page value specifies the extents of a rendering surface and
-      its contents. It defines the mapping between [Vg]'s coordinate
-      space and the surface,  see {{!coordinates} this section} 
-      for more informations. *)
+  type renderable = size2 * box2 * image
+  (** The type for renderables. The physical size of the rendering
+      surface in millimeters, the view rectangle and the image to
+      render. *)
 
-  type page = size2 * box2 * image
-  (** The type for pages. The physical size of the rendering surface in 
-      millimeters, the view rectangle and the image to render. *)
+  (** {1:meta Render metadata} 
 
-  (** {1:warnings Rendering warnings}
-      
-      Backends do their best to support [Vg]'s rendering
-      model and semantics. However they may sometimes lack capabilities 
-      provided by
-      [Vg]'s api. If a backend renders an image using capabilities it
-      doesn't support, it ignores the unsupported rendering
-      instruction and adds a warning to a list. This list is returned
-      by the backend's output function.
+      Render metadata specifies additionnal data (e.g. quality hints)
+      for the renderer aswell as image metadata (date, title, etc.)
+      for the image.  Consult the documentation of renderers to see
+      which keys they support. *)
 
-      Consult the documentation of each backend to see which capabilities are
-      supported. *)
+  (** Render metadata. 
 
-  val compact_warnings : 'a list -> 'a list 
-  (** [compact_warning l] is [l] with duplicate warnings removed. *)
-
-  (** {1:meta Image metadata} 
-
-      Some backends allow to specify a dictionary of metadata for the image.
-
-      Consult the documentation of each backend to see which
-      dictionary {{!Vgr.keys}keys} they support. *)
-
-  (** Metadata dictionaries. *)
+      Render metadata is a set of {{!keys}keys} mapping to typed values. 
+      Renderers can define their own keys but should favor {{!stdkeys}standard}
+      ones if appropriate. *)
   module Meta : sig
 
+    (** {1:keys Keys} *)
+    
+    type 'a key 
+    (** The type for metadata keys whose lookup value is ['a]. *)
 
-    (** {1:dict Dictionaries} *)    
+    val key : unit -> 'a key 
+    (** [key ()] is a new metadata key. *)
+    
+    (** {1:metadata Metadata} *)    
 
     type t 
-    (** The type for metadata dictionaries. *)
-(*
-    type 'a key
-    (** The type for keys whose lookup value is of type ['a]. *)
+    (** The type for metadata. *)
 
     val empty : t 
-    (** The empty dictionary. *)
+    (** [empty] is the empty metadata. *)
 
     val is_empty : t -> bool 
-    (** [is_empty d] is [true] iff [d] is empty. *)
- 
-    val add : 'a key -> 'a -> t -> t 
-    (** [add k v d] is [d] with [k] mapping to [v]. *)
+    (** [is_empty m] is [true] iff [m] is empty. *)
 
-    val remove : 'a key -> t -> t
-    (** [remove k d] is [d] without a binding for [k]. *)
+    val mem : t -> 'a key -> bool 
+    (** [mem m k]  is [true] iff [k] has a mapping in [m]. *)
 
-    val find : 'a key -> t -> 'a option
-    (** [find k d] is the value of [k] in [d], if any. *)
+    val add : t -> 'a key -> 'a -> t
+    (** [add m k v] is [m] with [k] mapping to [v]. *)
 
-    (** {1:keys Keys} 
+    val rem : t -> 'a key -> t
+    (** [rem m k] is [m] with [k] unbound. *)
 
-      {b Note.} String values are assumed to be UTF-8 encoded. *)
+    val find : t -> 'a key -> 'a option
+    (** [find m k] is [k]'s mapping in [m], if any. *)
+
+    val get : t -> 'a key -> 'a
+    (** [get m k] is [k]'s mapping in [m].
+        @raise Invalid_argument if [k] is not bound in [m]. *)
+
+    (** {1:stdkeys Standard keys} 
+
+      {b Note.} All string values must be UTF-8 encoded. *)
+
+    (** {2:renderingmeta Rendering metadata} *)
+
+    val res : v2 key
+    (** [res] specifies the rendering resolution in samples per meters. *)
+
+    val quality : [`Best | `Speed] key
+    (** [quality] specifies the rendering quality. *)
+
+    (** {2:imagemeta Image metadata} *)
 
     val author : string key 
     (** [author] is the author of the image. *)
@@ -488,173 +514,256 @@ module Vgr : sig
     val creator : string key 
     (** [creator] is the name of the application creating the image. *)
 
-    type date = (int * int * int) * (int * int * int)
-    (** The type for dates. The first triple is the 
-	year (0-9999), the month (1-12) and 
-	the day (1-31). The second triple is the time in 
-	UTC, the hour (0-23), minutes (0-59) and seconds (0-59). *)
+    val date : ((int * int * int) * (int * int * int)) key
+    (** [date] is the date of creation of the image. 
 
-    val date : date key
-    (** [date] is the date of creation of the image. *)
+        The first triple is the year (0-9999), the month (1-12) and
+	the day (1-31). The second triple is the time in UTC, the hour
+	(0-23), minutes (0-59) and seconds (0-59). 
 
-    val keywords : string list key 
-    (** [keywords] is a list of keywords for the image. *)
+        {b Warning.} Numerical constraints are not checked by
+        the renderers. *)
 
     val title : string key 
     (** [title] is the title of the image. *)
 
     val subject : string key 
     (** [subject] is the subject of the image. *)
-*)
+
+    val keywords : string list key 
+    (** [keywords] is a list of keywords for the image. *)
   end
 
-  (** {1:out Output abstractions} 
+  (** {1:warnings Render warnings} 
 
-      Serializing backends use output abstractions to output images to 
-      different destinations via a single interface. *)
+      TODO redo.
 
-  type dest = [ 
-    | `Buffer of Buffer.t | `Channel of out_channel | `Fun of int -> unit ]
-  (** The type for output destinations. For [`Buffer], the buffer won't 
-      be cleared. For [`Fun] the function is called with the
-      output {e bytes} as [int]s. *)
+      Renderers do their best to support [Vg]'s rendering model and
+      semantics. However they may sometimes lack capabilities provided
+      by [Vg]'s api. If a renderer encounters a capabilities it
+      doesn't support, it must ignore the unsupported rendering
+      instruction and add a warning to a list returned by the
+      {!render} function.
 
-  type output 
-  (** The type for output abstractions. *)
-	
-  val create_output : dest -> output
-  (** [create_output dest] is an output abstraction on [dest]. *)
+      Consult the documentation of renderers to see which capabilities are
+      supported. *)
 
+  (** {1:render Rendering} *)
 
-  (** {1:pdf PDF output}
+  type dst_stored = 
+    [ `Buffer of Buffer.t | `Channel of Pervasives.out_channel | `Manual ]
+  (** The type for stored renderer destination. With a [`Manual]
+      destination the client must provide output storage see
+      {!Manual.dst}. *)
+
+  type dst = [ dst_stored | `Immediate ]
+  (** The type for renderer destinations. Either a stored destination 
+      or an [`Immediate] surface destination, usually denoting some
+      kind of interactive renderer. *)
+
+  type t = renderer
+  (** The type for renderers. Values of this type are created by the renderer
+      modules. The type parameter specifies the type for warnings. *)
+    
+  val render : t -> [< `Image of renderable | `Await | `End ] -> 
+    [ `Ok | `Partial ]
+  (** [render r v] is:
+        {ul
+        {- [`Partial] iff [r] has a [`Manual] destination and needs more 
+        output storage. The client must use {!Manual.dst} to provide a new
+        buffer can then call {!render} with [`Await] until [`Ok] is returned.}
+        {- [`Ok] when the encoder is ready to encode a new [`Image]
+        (if the renderer supports it) or [`End].}}
+        For [`Manual] destinations, encoding [`End] always returns [`Partial]
+        the client should as usual use {!Manual.dst} and continue with [`Await]
+        until [`Ok] is returned at which point {!Manual.dst_rem}[ r] is 
+        guaranteed to be the size of the last provided buffer (i.e. nothing
+        was written). 
+
+        {b Semantics of multiple images render.} If multiple images are 
+        rendered the previous image is cleared from the render surface. 
+        This can take the form of defining a new page like in {!Vgr_pdf} or
+        simply clearing the render surface like in {!Vgr_htmlc}.
+
+        @raise Invalid_argument if [`Image] or [`End] is encoded after
+        a [`Partial] encode. Or if multiple [`Image]s are encoded in 
+        a renderer that doesn't support them. *)
+       
+  val renderer_dst : renderer -> dst
+  (** [render_dst r] is [r]'s output destination. *)
+
+  val renderer_meta : renderer -> Meta.t 
+  (** [renderer_meta r] is [r]'s render metadata. *)
+
+  (** {1 Manual render destinations} *)
+
+  (** Manual render destinations. 
+
+      {b Warning.} Only use with [`Manual] renderers. *)
+  module Manual : sig
+    val dst : renderer -> string -> int -> int -> unit 
+    (** [dst r s j l] provides [r] with [l] bytes to write, starting
+          at [j] in [s]. This byte range is written by calls to {!render}
+          until [`Partial] is returned. Use {!dst_rem} to know the remaining
+          number of non-written free byte in [s]. *)
       
-      The PDF backend outputs a list of {!page} values as a PDF/A document.
+    val dst_rem : renderer -> int 
+      (** [dst_rem r] is the remaining number of non-written, free bytes
+          in the last buffer provided with {!dst}. *)
+  end
 
-      {b Image properties.} 
-      The dictionary of image properties is used to fill in the PDF
-      document's information dictionary.  Supported keys are
-      {!Meta.author}, {!Meta.creator}, {!Meta.date}, {!Meta.keywords},
-      {!Meta.title}, {!Meta.subject}.
+  (** {1:renderer  Implementing renderers} *)
 
-      {b Unsupported capabilities.} None, thus no warning list is returned.
+  (** Private functions for implementing renderers.
 
-      {b Bug reports.} 
-      Rendering abilities of PDF readers vary wildly. No rendering
-      bug report for this backend will be considered if it cannot be
-      reproduced by Adobe Acrobat Reader 9.0 or a later version. *)
+      [Vg] users should not use these definitions, they exposes [Vg]'s
+      internals for implementing renderers.  This functionality is
+      subject to change {e even between minor versions of the
+      library}.
 
-
-      val output_pdf : output -> Meta.t -> page list -> unit
-      (** [output_pdf o props pages] outputs a PDF document on [o]. 
-	  The metadata information of the document is [props] and 
-	  its pages are [pages]. *)
-
-  (** {1:svg SVG output} 
-      
-      The SVG backend outputs a {!page} value as an 
-      {{:http://www.w3.org/Graphics/SVG/} SVG} 1.1 document.
-
-      {b Image properties.} The only supported key is {!Meta.title}. 
-
-      {b Unsupported ĉapabilities.} Only the default [`Over] blend mode 
-      is supported. Any use of other blend mode falls back
-      on [`Over].
-     
-   *)
-      
-      type svg_warning = [ `Blend ]
-      (** The type for SVG rendering warnings. *)
-
-      val output_svg : output -> Meta.t -> page -> svg_warning list
-      (** [output_svg o props page] outputs an SVG document on [o]
-	  whose metadata information is specified by [props] and 
-	  whose content is [page]. *)
-
-  (** {1:html5 HTML5 canvas output}
-
-      The HTML5 canvas element outputs a javascript function that
-      renders the image using the canvas api TODO link. 
-
-      {b Image properties.} No image property is supported.
-
-      {b Unsupported capabilities.} 
-      Outlines cuts with dashes are unsupported,
-      they are rendered as if [None] was specified for dashes and the [`Dashes]
-      warning is reported. 
-      
-      The [`Aeo] cut rule is unsupported, it falls back
-      on the [`Anz] rules and the [`Aeo] warning is reported. *)
-
-      type html5_warning = [ `Dashes | `Aeo ]
-      (** The type for HTML5 rendering warnings. *)
-
-      val output_html5 : output -> Meta.t -> page -> html5_warning list
-      (** [output_html5 o props page] outputs an javascript function on [o]
-	  whose metadata information is specified by [props] and 
-	  whose content is [page]. *)
-
-  (** {1:backend  Backend support} *)
-
-  (** Backend support.  
-
-      This module can be used to define new rendering backends.  It
-      exposes [Vg]'s internals which are subject to change even between
-      minor versions of the library. Users of the module should not use 
-      these definitions.
-
-      In order to provide a consistant interface for backend users,
-      backend writers should follow the guidelines below.  You may
-      want to drop me an email at (%%EMAIL%%) for help and discussion.
+      In order to provide a consistant interface for [Vg] users,
+      renderer writers should follow the guidelines below.  You may
+      want to drop an email to %%AUTHORS%% for help and discussion.
       {ul
-      {- If you call your backend Bla, define it in a module
-         called [Vgo_bla] (lowercase).}
-      {- Name the rendering function [Vgo_bla.output].}
+      {- If you render to "Bla", define you renderer in a module
+         called [Vgr_bla] (lowercase).}
+      {- The renderer creation function must be named [Vgr_bla.renderer], 
+         have an optional argument [?meta:Vgr.Meta.t] and 
+         return a [Vgr.t] value.}
+      {- Images must be rendered via the {!render} function. If you 
+         are writing a batch renderer provide support for each of the 
+         {!dst} types and especially the non-blocking interface.}
+      {- If your renderer supports render metadata or needs user-defined
+         parameters use the {!Meta.t} type to define it. Whenever possible
+         reuse the the existing {{!Meta.stdkeys}standard} keys.}
       {- Follow [Vg]'s 
          {{!coordinates}coordinate system conventions} to 
          specify the relationship between a surface and the view 
-         rectangle to render. If possible reuse the {!page} type.}
-      {- If you are writing a serializing backend, use the 
-         types {!dest} and {!output} to output the data, 
-         see the {!Backend.Out} module. The signature of the output
-         function should be [output -> Meta.t -> output -> warning list].}
-      {- If your backend supports image metadata use the
-         the {!Meta.t} type to define it. Reuse the 
-         {{:Vg.Vgo.Meta.html#keys}existing keys}.
-         New keys can be defined
-         with functions in {!Backend.Key}.}
-      {- Reuse and extend the {!warning} type to report 
-         unsupported features to backend users.}}
+         rectangle to render.}
+      {- If the renderer doesn't support [Vg]'s full rendering model or
+         diverges from its semantics it must ignore unsupported features
+         and warn the client by implementing the 
+         {!Incomplete_renderer} interface.}}
 *)
-  module Backend : sig
-      (** Image property keys. 
+  module Private : sig
+    
+    (** {1 Incomplete renderer} 
+        
+        Interface to implement if your renderer doesn't fully support
+        [Vg]'s rendering model. *)
 
-	  This module allows to create new image property keys. 
+    (** The type for incomplete renderers. *)
+    module type Incomplete_renderer = sig
 
-	  {b Warning.} Key creation is not thread-safe. *)
-(*
-      module Key : sig
-	    
-	val string : unit -> string Meta.key
-	(** [string ()] is a new key for UTF-8 encoded string value. *)
+      (** {1 Rendering warnings} *)
 
-        val string_list : unit -> string list Meta.key
-        (** [string_list ()] is a new key for a list of UTF-8 encoded
-	    string values. *)
-	    
-        val date : unit -> Meta.date Meta.key 
-        (** [date ()] is a new key for a {!Meta.date} value. *)
+      type warning
+      (** The type for rendering warnings. Must be a polymorphic
+          variant with one case for each missing feature. *)
 
-	module ForType (T : sig type t end) : sig
-	  val create : unit -> T.t Meta.key
-              (** [create ()] is a new key for the type [T.t]. *)
-	end
-      end
-*)
+      val pp_warning : Format.formatter -> warning -> unit
+      (** [pp_warning ppf w] prints a textual representation of [w] on [ppf]. *)
+
+      val warn : (warning -> unit) Meta.key
+      (** [warn] is a function called whenever missing features are 
+          encountered during rendering. *)
     end
-end
 
-val ( >> ) : 'a -> ('a -> 'b) -> 'b
-(** [x >> f] is [f x], associates to the left. *)
+    (** {1 Path representation} *)
+
+    type segment = 
+      [ `Sub of p2
+      | `Line of p2
+      | `Qcurve of p2 * p2 
+      | `Ccurve of p2 * p2 * p2 
+      | `Earc of bool * bool * size2 * float * p2
+      | `Close ]
+    (** The type for path segments. *)
+      
+    type path = segment list
+    (** The type for paths. The segment list is reversed. A few invariants
+        apply. TODO See Vg's source. *)
+
+(* 
+    val path : P.t -> path 
+    (** [path p] is [p]'s internal representation. *)
+*)
+
+    (** {1 Image representation} *)
+
+    (** The type for transforms. We don't uniformely express as a
+        matrix since renderers may have shorter syntaxes for some
+        transforms. *)
+    type tr = Move of v2 | Rot of float | Scale of v2 | Matrix of m3
+    
+    (** The type for image primitives. *)    
+    type primitive = 
+      | Mono of color
+      | Axial of Color.stops * p2 * p2
+      | Radial of Color.stops * p2 * p2 * float
+      | Raster of box2 * raster
+    
+            
+    (** The type for images. *)
+    type image = 
+      | Primitive of primitive
+      | Cut of P.area * path * image
+      | Blend of I.blender * float option * image * image
+      | Tr of tr * image
+
+(*
+    val image : I.t -> image
+    (** [image i] is [i]'s internal representation. *)
+*)
+
+   (** {1 Renderers } *)
+   
+   type renderer
+   (** The type for renderers. *)
+    
+   val renderer : t -> renderer
+   (** [renderer r] is [r]'s internal representation. *)
+
+   type k = renderer -> [ `Ok | `Partial ] 
+   (** The type for renderer continuations. *)
+
+   type 'a render_fun = 'a -> [`End | `Image of size2 * box2 * image ] -> k -> k
+   (** The type for rendering functions. TODO *)
+
+   val create_renderer : ?meta:Meta.t -> ?once:bool -> [< dst] -> 
+     'a -> 'a render_fun -> t
+   (** [create_renderer meta multi dst state rfun] is a renderer
+       [r] such that: 
+       {ul
+       {- [render r (`Image i)] invokes [rfun state (`Image i)]}
+       {- [render r `End] invokes [rfun state `End]}}
+       If [once] is [true] (defaults to [false]) calling {!render}
+       with more than one [`Image] will raise an [Invalid_argument] exception.
+   *)
+       
+    val partial : k -> renderer -> [> `Partial]
+    (** [partial k r] suspends the renderer [r] and returns [`Partial]. 
+        Rendering will continue with [k r], on [`Await] {!render}. *)
+
+    (** {1 Writing {!dst_storage} destinations} *)
+
+    val flush : k -> renderer -> [ `Ok | `Partial ]
+    (** [flush k r] flushes the renderer [r]. This must be called
+        by the rendering function on [`End]. *)
+
+    val writeb : int -> k -> renderer -> [ `Ok | `Partial ]
+    (** [writeb b k r] writes the byte [b] and [k]ontinues. *)
+        
+    val writes : string -> int -> int -> k -> renderer -> [ `Ok | `Partial ]
+    (** [writes s j l k r]  writes [l] bytes from [s] starting at [j]
+        and [k]ontinues. *)
+
+    val writebuf : Buffer.t -> int -> int -> k -> renderer -> [`Ok | `Partial ]
+    (** [writebuf buf j l k r] write [l] bytes from [buf] starting at [j]
+        and [k]ontinues. *)
+      
+  end
+end
 
 (** {1:basics Basics} 
 
@@ -687,19 +796,20 @@ open Vg;;]}
 
     Manipulating infinite images with combinators is blissful but
     seeing them is more interesting. Images defined with [Vg] can be
-    rendered to multiple backends. The module {!Vgr} defines a few
-    functions common to certain backends and allows to specify image
-    metadata for non-interactive backends.
+    rendered to multiple renderers. The module {!Vgr} defines a few
+    functions common to certain renderers and allows to specify image
+    metadata for non-interactive renderers.
 
     The following code outputs the unit square of [red] on a
     4x4 centimeters PDF surface in the file [/tmp/vg-tutorial.pdf]: 
-{[let usquare_to_pdf i  = 
+{[let usquare_to_pdf i = 
   let size = Size2.v 40. 40. in
   let view = Box2.v P2.o (Size2.v 1. 1.) in
   try
     let oc = open_out "/tmp/vg-tutorial.pdf" in
-    let r = Vgr.create (`Channel oc) in
-    Vgr_pdf.render r Vgr.Meta.empty [(size, view, i)];
+    let r = Vgr_pdf.renderer (`Channel oc) in
+    ignore (Vgr.render r (`Image (size, view, i));
+    ignore (Vgr.render r `End);
     close_out oc
   with Sys_error e -> prerr_endline e
 
@@ -714,7 +824,7 @@ let () = usquare_to_pdf red]}
 
     On rendering the corners of the specified view rectangle are
     mapped one to one to the surface's corners. This is done
-    regardless of the (backend dependent) surface coordinate's system,
+    regardless of the (renderer dependent) surface coordinate's system,
     appropriate transforms are applied so that the bottom-left corner
     of the view rectangle maps to the bottom-left corner of the
     surface and so forth for each corner.
@@ -836,7 +946,7 @@ let red_circle = I.cut `Aeo red circle]}
        of transforming. E.g. elliptic gradient. Others 
        are not possible e.g. canvas radial gradients. 
        Design choices are a tension between supporting 
-       rendering to many backends in a least surprising way.}
+       rendering to many renderers in a least surprising way.}
     {- Images are said to be immutable. This is only true if you 
        don't change the samples of raster images given o {!I.raster}.}
     {- The renderers support [Vg]'s imaging model which is
@@ -868,9 +978,9 @@ let red_circle = I.cut `Aeo red circle]}
     University, 2004. *)
 
 (** {1:semantics Semantics} 
-    
-    The following notations and definitions are used to give precise 
-    meaning to the combinators. 
+
+    The following notations and definitions are used to give precise
+    meaning to the images and [Vg]'s combinators.
 
     {2:semcolors Colors}
 
