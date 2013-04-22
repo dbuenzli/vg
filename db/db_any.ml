@@ -14,7 +14,6 @@ include Uncut
 
 include Arrowhead
 
-
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
    All rights reserved.
