@@ -1,10 +1,10 @@
 (*---------------------------------------------------------------------------
-   Copyright (c) %%COPYRIGHT%%. All rights reserved.
-   Distributed under a BSD3 license, see license at the end of the file.
-   %%PROJECTNAME%% release %%VERSION%%
+   Copyright 2013 Daniel C. Bünzli. All rights reserved.
+   Distributed under the BSD3 license, see license at the end of the file.
+   %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
-open Gg;;
+open Gg
 
 (* Invalid_arg strings *)
 
@@ -36,7 +36,6 @@ let to_string_of_formatter pp v =                        (* NOT thread safe. *)
 
 external ( >> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
 let eps = 1e-9
-
 
 (* Render metadata *)
 
@@ -120,9 +119,9 @@ module P = struct
     let pp_dashes ppf = function 
     | None -> () | Some (f, ds) -> 
         let pp_dashes ppf ds = List.iter (fun d -> pr ppf "@ %a" pp_f d) ds in
-        pr ppf "(dashes %a,%a)" pp_f f pp_dashes ds
+        pr ppf "dashes:(%a,%a)" pp_f f pp_dashes ds
     in
-    pr ppf "<outline@ (width %a)@ (cap %a)@ (join %a)@ (miter_angle %a)%a>"
+    pr ppf "(outline@ width:%a@ cap:%a@ join:%a@ miter-angle:%a%a)"
       pp_f o.width pp_cap o.cap pp_join o.join pp_f o.miter_angle 
       pp_dashes o.dashes
 
@@ -166,8 +165,8 @@ module P = struct
   | a, a' -> Pervasives.compare a a'
 
   let pp_area_f pp_f ppf = function 
-  | `Anz -> pr ppf "@[<1><area@ nz>@]"
-  | `Aeo -> pr ppf "@[<1><area@ eo>@]"
+  | `Anz -> pr ppf "@[<1>anz@]"
+  | `Aeo -> pr ppf "@[<1>aeo@]"
   | `O o -> pr ppf "%a" (pp_outline_f pp_f) o
 
   let pp_area ppf a = pp_area_f pp_float ppf a 
@@ -679,22 +678,22 @@ module P = struct
 
   let pp_seg pp_f pp_v2 ppf = function
   | `Sub pt -> 
-      pr ppf "@ S%a" pp_v2 pt 
+      pr ppf "@ @[<h>S%a@]" pp_v2 pt 
   | `Line pt -> 
-      pr ppf "@ L%a" pp_v2 pt
+      pr ppf "@ @[<h>L%a@]" pp_v2 pt
   | `Qcurve (c, pt) -> 
-      pr ppf "@ @[<2>Qc(%a@ %a)@]" pp_v2 c pp_v2 pt
+      pr ppf "@ @[<3>Qc(%a@ %a)@]" pp_v2 c pp_v2 pt
   | `Ccurve (c, c', pt) -> 
-      pr ppf "@ @[<2>Cc(%a@ %a@ %a@)]" pp_v2 c pp_v2 c' pp_v2 pt
+      pr ppf "@ @[<3>Cc(%a@ %a@ %a@)]" pp_v2 c pp_v2 c' pp_v2 pt
   | `Earc (l, ccw, r, a, pt) -> 
-      pr ppf "@ @[<2>Ea(%B@ %B@ %a@ %a@ %a)@]" l ccw pp_v2 r pp_f a pp_v2 pt
+      pr ppf "@ @[<3>Ea(%B@ %B@ %a@ %a@ %a)@]" l ccw pp_v2 r pp_f a pp_v2 pt
   | `Close ->
       pr ppf "@ C"
         
   let pp_path pp_f ppf p = 
     let pp_v2 = V2.pp_f pp_f in
     let pp_segs ppf ss = List.iter (pp_seg pp_f pp_v2 ppf) ss in 
-    pr ppf "@[<1><path%a>@]" pp_segs (List.rev p)
+    pr ppf "@[<1>(P%a)@]" pp_segs (List.rev p)
 
   let pp_f pp_f ppf p = pp_path pp_f ppf p    
   let pp ppf p = pp_path pp_float ppf p
@@ -875,7 +874,7 @@ module I = struct
 
   let pp_stops pp_f ppf ss =
     let pp_stop ppf (s, c) = pr ppf "@ %a@ %a" pp_f s (V4.pp_f pp_f) c in 
-    pr ppf "(stops %a)" (fun ppf ss -> List.iter (pp_stop ppf) ss) ss
+    pr ppf "@[<1>(stops %a)@]" (fun ppf ss -> List.iter (pp_stop ppf) ss) ss
 
   let pp_blender ppf = function
   | `Atop -> pr ppf "Atop" | `Copy -> pr ppf "Copy" | `In -> pr ppf "In" 
@@ -883,39 +882,39 @@ module I = struct
   | `Xor -> pr ppf "Xor"
 
   let pp_alpha pp_f ppf = function
-  | None -> () | Some a -> pr ppf "(alpha@ %a)" pp_f a
+  | None -> () | Some a -> pr ppf "alpha(%a)" pp_f a
 
   let pp_tr pp_f ppf = function 
-  | Move v -> pr ppf "Move%a" (V2.pp_f pp_f) v
-  | Rot a -> pr ppf "Rot(%a)" pp_f a
-  | Scale s -> pr ppf "Scale%a" (V2.pp_f pp_f) s
+  | Move v -> pr ppf "move%a" (V2.pp_f pp_f) v
+  | Rot a -> pr ppf "rot(%a)" pp_f a
+  | Scale s -> pr ppf "scale%a" (V2.pp_f pp_f) s
   | Matrix m -> pr ppf "%a" (M3.pp_f pp_f) m
 
   let pp_primitive pp_f ppf = function
   | Mono c -> 
-      pr ppf "@[<1>(Mono@ %a)@]" (V4.pp_f pp_f) c
+      pr ppf "@[<1>(I-mono@ %a)@]" (V4.pp_f pp_f) c
   | Axial (stops, p, p') -> 
-      pr ppf "@[<1>(Axial@ %a@ %a@ %a)@]" 
+      pr ppf "@[<1>(I-axial@ %a@ %a@ %a)@]" 
         (pp_stops pp_f) stops (V2.pp_f pp_f) p (V2.pp_f pp_f) p'
   | Radial (stops, p, p', r) ->
-      pr ppf "@[<1>(Radial@ %a@ %a@ %a@ %a)@]"
+      pr ppf "@[<1>(I-radial@ %a@ %a@ %a@ %a)@]"
         (pp_stops pp_f) stops (V2.pp_f pp_f) p (V2.pp_f pp_f) p' pp_f r
   | Raster (r, ri) -> 
-      pr ppf "@[<1>(Raster %a@ %a)@]" (Box2.pp_f pp_f) r Raster.pp ri
+      pr ppf "@[<1>(I-raster %a@ %a)@]" (Box2.pp_f pp_f) r Raster.pp ri
       
   let rec pp_image pp_f ppf = function                      (* TODO not t.r. *)
   | Primitive i ->
       pr ppf "%a" (pp_primitive pp_f) i
   | Cut (a, p, i) -> 
-      pr ppf "@[<1>(Cut@ %a@ %a@ %a)@]" 
+      pr ppf "@[<1>(I-cut@ %a@ %a@ %a)@]" 
         (P.pp_area_f pp_f) a (P.pp_f pp_f) p (pp_image pp_f) i
   | Blend (b, a, i, i') -> 
-      pr ppf "@[<1>(Blend@ %a,@ %a,@ %a,@ %a)@]" pp_blender b (pp_alpha pp_f) a
-        (pp_image pp_f) i (pp_image pp_f) i'
+      pr ppf "@[<1>(I-blend@ %a @ %a@ %a@ %a)@]" 
+        pp_blender b (pp_alpha pp_f) a (pp_image pp_f) i (pp_image pp_f) i'
   | Tr (tr, i) ->
-      pr ppf "@[<1>(Tr@ %a@ %a)@]" (pp_tr pp_f) tr (pp_image pp_f) i
+      pr ppf "@[<1>(I-tr@ %a@ %a)@]" (pp_tr pp_f) tr (pp_image pp_f) i
   | Meta (tr, i) -> 
-      pr ppf "@[<1>(Meta@ TODO %a)@]" (pp_image pp_f) i
+      pr ppf "@[<1>(I-meta@ TODO %a)@]" (pp_image pp_f) i
         
   let pp_f pp_f ppf i = pp_image pp_f ppf i
   let pp ppf i = pp_image pp_float ppf i
@@ -1090,7 +1089,7 @@ end
 type renderer = Vgr.t
 
 (*---------------------------------------------------------------------------
-   Copyright %%COPYRIGHT%%
+   Copyright 2013 Daniel C. Bünzli.
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -1105,7 +1104,7 @@ type renderer = Vgr.t
       disclaimer in the documentation and/or other materials provided
       with the distribution.
 
-   3. Neither the name of the Daniel C. Bünzli nor the names of
+   3. Neither the name of Daniel C. Bünzli nor the names of
       contributors may be used to endorse or promote products derived
       from this software without specific prior written permission.
 
@@ -1121,3 +1120,4 @@ type renderer = Vgr.t
    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ---------------------------------------------------------------------------*)
+

@@ -6,11 +6,13 @@ Authors: Daniel Bünzli <daniel.buenzli at erratique.ch>
 License: BSD3
 Homepage: http://erratique.ch/software/vg
 Description:
- Vg is a module for declarative 2D vector graphics. Renderers for
- PDF, SVG and the HTML canvas element are bundled with the library 
- and an API allows to implement new renderers.
+ Vg is declarative 2D vector graphics library. It provides combinators
+ to compose images as first class values denoting functions from the
+ infinite plane to colors. Renderers for PDF, SVG and the HTML canvas
+ element are bundled with the library and an API allows to implement
+ new renderers.
  .
- Vg depends on [Gg][1] and, optionally, on [js_of_ocaml][2] 
+ Vg depends on [Gg][1] and, *optionally*, on [js_of_ocaml][2] 
  for the HTML canvas element renderer. 
  .
  Vg is distributed under the BSD3 license.

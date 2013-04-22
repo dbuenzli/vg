@@ -1,17 +1,15 @@
-* Next steps
-** Test use thunk instead of lazy avoids ugly begin end
-
 
 * Renderer API
 ** Rectangle instead of Size ? 
 ** What about physical size ? 
 ** Add string name and pp to Vgm.key (), provide functions to pp.
-** Add Vgm.merge 
+** Add Vgm.{merge, compare, equal}
 
 * Api
 ** Make everything t.r.
 
 * Image
+** TODO I.mono I.const 
 ** ? Is I.blend order the right thing to do, YES but review semant. order
    of c [] c' 
 ** ? gradient add spread mode, or not.

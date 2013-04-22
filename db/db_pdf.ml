@@ -1,51 +1,15 @@
 (*---------------------------------------------------------------------------
-   Copyright %%COPYRIGHT%%. All rights reserved.
+   Copyright 2013 Daniel C. Bünzli. All rights reserved.
    Distributed under the BSD3 license, see license at the end of the file.
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
-open Gg;;
-open Vg;;
-open Test;;
+(** Vgr_pdf test images *)
 
-(*
-
-let trans_layer () = 
-  let r = Path.empty >> Path.rect (rect (pt 0.0 0.3) (size 0.5 0.7)) in
-  let r' = Path.empty >> Path.rect (rect (pt 0.25 0.0) (size 0.4 0.6)) in
-  let r'' = Path.empty >> Path.rect (rect (pt 0.4 0.4) (size 0.5 0.4)) in
-  let blue = Si.mono (color 0. 0. 1. 1.) in
-  let yellow = Si.mono (color 1. 1. 0.5 0.5) in
-  let green = Si.mono (color 0.5 1. 0.5 0.5) in
-  Si.fill ~i:blue r <+>
-  Si.fill ~i:yellow r' <+>
-  Si.fill ~i:green r'' 
-
-let trans_layer () = 
-  let r = Path.empty >> Path.rect (rect (pt 0.0 0.3) (size 0.5 0.7)) in
-  let r' = Path.empty >> Path.rect (rect (pt 0.25 0.0) (size 0.4 0.6)) in
-  let r'' = Path.empty >> Path.rect (rect (pt 0.4 0.4) (size 0.5 0.4)) in
-  let blue = Si.mono (color 0. 0. 1. 1.) in
-  let yellow = Si.mono (color 1. 1. 0.5 1.) in
-  let green = Si.mono (color 0.5 1. 0.5 1.) in
-  Si.fill ~i:blue r <+>
-  Si.fill ~i:yellow r' <+>
-  Si.fill ~i:green r'' 
-
-
-
-let () = Test.register {
-  name = "translayer";
-  description = "Transparent layer";
-  dsize = size 0.12 0.12;
-  uview = rect (pt (-0.1) (-0.1)) (size 1.2 1.2);
-  img = lazy (trans_layer ()) }
-
-*)  
-
+include Db_any
 
 (*---------------------------------------------------------------------------
-   Copyright %%COPYRIGHT%%
+   Copyright 2013 Daniel C. Bünzli.
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -76,7 +40,4 @@ let () = Test.register {
    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ---------------------------------------------------------------------------*)
-
-
-
 

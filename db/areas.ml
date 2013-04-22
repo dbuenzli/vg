@@ -1,46 +1,51 @@
 (*---------------------------------------------------------------------------
-   Copyright %%COPYRIGHT%%. All rights reserved.
+   Copyright 2013 Daniel C. Bünzli. All rights reserved.
    Distributed under the BSD3 license, see license at the end of the file.
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
-open Gg;;
-open Vg;;
-open Testing;;
+open Gg
+open Vg
 
-test "path-square-area"
-~info: "Square area in black."
-~size: (Size2.v 20. 20.)
-~view: (Box2.v P2.o (P2.v 1. 1.))
-& lazy begin 
-  let square = P.empty >> P.rect (Box2.v P2.o (P2.v 1. 1.)) in
-  let black = I.mono Color.black in
-  I.cut `Aeo black square
-end;;
+(** Test images for path areas. *)
 
-test "path-square-outline"
-~info: "Square outline in black."
-~note: "Line width is 0.1 as we are on the surface edge."
-~size: (Size2.v 20. 20.)
-~view: (Box2.v P2.o (P2.v 1. 1.))
-& lazy begin 
-  let r = P.empty >> P.rect (Box2.v P2.o (P2.v 1. 1.)) in
-  let black = I.mono Color.black in
-  let o = `Ol { I.ol with I.width = 0.2 } in
-  I.cut o black r
-end;;
+let author = "Daniel C. Bünzli <daniel.buenzl i@erratique.ch>"
+;;
 
-test "path-square-dashed-outline"
-~info: "Dashed square outline in black."
-~note: "Line width is 0.1 as we are on the surface edge."
-~size: (Size2.v 20. 20.)
-~view: (Box2.v P2.o (P2.v 1. 1.))
-& lazy begin
-  let r = P.empty >> P.rect (Box2.v P2.o (P2.v 1. 1.)) in
-  let black = I.mono Color.black in
-  let o = `Ol { I.ol with I.width = 0.2; dashes = Some (0., [0.1]); } in
-  I.cut o black r 
-end;;
+Db.image "area-square" ~author
+  ~title:"Square area in black"
+  ~tags:["area"; "area-nz"]
+  ~size:(Size2.v 20. 20.)
+  ~view:(Box2.v P2.o (Size2.v 1. 1.))
+  begin fun () ->
+    let sq = P.empty >> P.rect (Box2.v P2.o (P2.v 1. 1.)) in
+    I.mono Color.black >> I.cut sq
+  end;
+
+Db.image "area-square-outline" ~author
+  ~title:"Square outline in black."
+  ~tags:["area"; "area-outline"]
+  ~note:"Line width is 0.1 as we are on the surface edge."
+  ~size:(Size2.v 20. 20.)
+  ~view:(Box2.v P2.o (P2.v 1. 1.))
+  begin fun () -> 
+    let sq = P.empty >> P.rect (Box2.v P2.o (Size2.v 1. 1.)) in
+    let area = `O { P.o with P.width = 0.2 } in
+    I.mono Color.black >> I.cut ~area sq 
+  end;
+
+Db.image "area-square-outline-dashed" ~author 
+  ~title:"Dashed square outline in black."
+  ~tags:["area"; "area-outline"; "dashes";]
+  ~note:"Line width is 0.1 as we are on the surface edge."  
+  ~size:(Size2.v 20. 20.)
+  ~view:(Box2.v P2.o (Size2.v 1. 1.))
+  begin fun () -> 
+    let sq = P.empty >> P.rect (Box2.v P2.o (P2.v 1. 1.)) in
+    let area = `O { P.o with P.width = 0.2; dashes = Some (0., [0.1]); } in
+    I.mono Color.black >> I.cut ~area sq 
+  end;
+
 
 (*
 
@@ -180,6 +185,11 @@ let () = test
     ~name: "path-cantor"
     ~description: "Cantor Set, level 6, drawn with dashes"
     ~size: cm15
+    ~note:"This test strokes horizontal lines from 0 to 1, using dashes to
+represent Cantor's set gaps. There seem to be quite strong
+(undocumented) limitations in pdf readers about the size of a dash
+array. The only library that seems to be able to handle this is MacOS
+X native pdf support."
     ~view: sq
     & lazy begin 
       let cantor i = 
@@ -258,7 +268,7 @@ let () = test
 *)
 
 (*---------------------------------------------------------------------------
-   Copyright %%COPYRIGHT%%
+   Copyright 2013 Daniel C. Bünzli.
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without

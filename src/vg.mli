@@ -1,15 +1,18 @@
 (*---------------------------------------------------------------------------
-   Copyright (c) %%COPYRIGHT%%. All rights reserved.
-   Distributed under a BSD3 license, see license at the end of the file.
-   %%PROJECTNAME%% release %%VERSION%%
+   Copyright 2013 Daniel C. Bünzli. All rights reserved.
+   Distributed under the BSD3 license, see license at the end of the file.
+   %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
 (** Declarative 2D vector graphics.
 
-    [Vg] is a module for declarative 2D vector graphics. Renderers for
-    {{!Vgr_pdf}PDF}, {{!Vgr_svg}SVG} and the HTML {{!Vgr_htmlc}canvas}
-    element are bundled with the library and an API allows to
-    implement new renderers.
+
+    [Vg] is a declarative 2D vector graphics library. It provides
+    {{!Vg.I}combinators} to compose images as first class values
+    denoting functions from the infinite plane to colors. Renderers
+    for {{!Vgr_pdf}PDF}, {{!Vgr_svg}SVG} and the HTML
+    {{!Vgr_htmlc}canvas} element are bundled with the library and an
+    API allows to implement new renderers.
 
     Consult the {{!basics}basics} and the {{!semantics}semantics}. 
     Open the module to use it, this defines only modules and types in 
@@ -17,18 +20,18 @@
 
     {e Release %%VERSION%% - %%AUTHORS%% } *)
 
-open Gg;;
+open Gg
 
-  (** {1:meta Metadata} *)
+(** {1:meta Metadata} *)
 
-  type meta 
-  (** The type for metadata. *)
-
-  type 'a key
-  (** The type for metadata keys whose lookup value is ['a]. *)
-
-  (** Render and image metadata.  
-
+type meta 
+(** The type for metadata. *)
+  
+type 'a key
+(** The type for metadata keys whose lookup value is ['a]. *)
+    
+(** Render and image metadata.  
+    
       A metadata value is set of {{!keys}keys} mapping to typed
       values.  It is used to provide renderers with additional data
       about rendering and images. This data may be renderer specific
@@ -37,80 +40,79 @@ open Gg;;
 
       Consult the documentation of renderers to see which 
       keys they support. *)
-  module Vgm : sig
-
-    (** {1:keys Keys} *)
+module Vgm : sig
+  
+  (** {1:keys Keys} *)
+  
+  val key : unit -> 'a key 
+  (** [key ()] is a new metadata key. *)
+      
+  (** {1:metadata Metadata} *)    
+      
+  type t = meta
+  (** The type for metadata. *)
     
-    val key : unit -> 'a key 
-    (** [key ()] is a new metadata key. *)
+  val empty : meta
+  (** [empty] is the empty metadata. *)
     
-    (** {1:metadata Metadata} *)    
-
-    type t = meta
-    (** The type for metadata. *)
-
-    val empty : t 
-    (** [empty] is the empty metadata. *)
-
-    val is_empty : t -> bool 
-    (** [is_empty m] is [true] iff [m] is empty. *)
-
-    val mem : t -> 'a key -> bool 
-    (** [mem m k]  is [true] iff [k] has a mapping in [m]. *)
-
-    val add : t -> 'a key -> 'a -> t
-    (** [add m k v] is [m] with [k] mapping to [v]. *)
-
-    val rem : t -> 'a key -> t
-    (** [rem m k] is [m] with [k] unbound. *)
-
-    val find : t -> 'a key -> 'a option
-    (** [find m k] is [k]'s mapping in [m], if any. *)
-
-    val get : t -> 'a key -> 'a
-    (** [get m k] is [k]'s mapping in [m].
+  val is_empty : meta -> bool 
+  (** [is_empty m] is [true] iff [m] is empty. *)
+    
+  val mem : meta -> 'a key -> bool 
+  (** [mem m k]  is [true] iff [k] has a mapping in [m]. *)
+    
+  val add : meta -> 'a key -> 'a -> t
+  (** [add m k v] is [m] with [k] mapping to [v]. *)
+    
+  val rem : meta -> 'a key -> t
+  (** [rem m k] is [m] with [k] unbound. *)
+    
+  val find : meta -> 'a key -> 'a option
+  (** [find m k] is [k]'s mapping in [m], if any. *)
+      
+  val get : meta -> 'a key -> 'a
+  (** [get m k] is [k]'s mapping in [m].
         @raise Invalid_argument if [k] is not bound in [m]. *)
-
-    (** {1:stdkeys Standard keys} 
-
+    
+  (** {1:stdkeys Standard keys} 
+      
       {b Note.} All string values must be UTF-8 encoded. *)
+    
+  (** {2:renderingmeta Rendering metadata} *)
+    
+  val res : v2 key
+  (** [res] specifies the rendering resolution in samples per meters. *)
+      
+  val quality : [`Best | `Speed] key
+  (** [quality] specifies the rendering quality. *)
+      
+  (** {2:imagemeta Image metadata} *)
+      
+  val author : string key 
+  (** [author] is the author of the image. *)
+      
+  val creator : string key 
+  (** [creator] is the name of the application creating the image. *)
+      
+  val date : ((int * int * int) * (int * int * int)) key
+  (** [date] is the date of creation of the image. 
+      
+      The first triple is the year (0-9999), the month (1-12) and
+      the day (1-31). The second triple is the time in UTC, the hour
+      (0-23), minutes (0-59) and seconds (0-59). 
+      
+      {b Warning.} Numerical constraints are not checked by
+      renderers. *)
 
-    (** {2:renderingmeta Rendering metadata} *)
-
-    val res : v2 key
-    (** [res] specifies the rendering resolution in samples per meters. *)
-
-    val quality : [`Best | `Speed] key
-    (** [quality] specifies the rendering quality. *)
-
-    (** {2:imagemeta Image metadata} *)
-
-    val author : string key 
-    (** [author] is the author of the image. *)
-
-    val creator : string key 
-    (** [creator] is the name of the application creating the image. *)
-
-    val date : ((int * int * int) * (int * int * int)) key
-    (** [date] is the date of creation of the image. 
-
-        The first triple is the year (0-9999), the month (1-12) and
-	the day (1-31). The second triple is the time in UTC, the hour
-	(0-23), minutes (0-59) and seconds (0-59). 
-
-        {b Warning.} Numerical constraints are not checked by
-        the renderers. *)
-
-    val title : string key 
-    (** [title] is the title of the image. *)
-
-    val subject : string key 
-    (** [subject] is the subject of the image. *)
-
-    val keywords : string list key 
-    (** [keywords] is a list of keywords for the image. *)
-  end
-
+  val title : string key 
+  (** [title] is the title of the image. *)
+      
+  val subject : string key 
+  (** [subject] is the subject of the image. *)
+      
+  val keywords : string list key 
+  (** [keywords] is a list of keywords for the image. *)
+end
 
 
 (** {1 Paths and images} *)
@@ -973,7 +975,6 @@ let red_circle = I.cut `Aeo red circle]}
       painter's model is stroking a self-intersecting path with a
       translucent color.}}
 
-
     {2:refs References}
 
     [Vg]'s collage model draws from the following works of Conal Elliott 
@@ -985,7 +986,7 @@ let red_circle = I.cut `Aeo red circle]}
 
     Antony Courtney. {e Haven : Functional Vector Graphics}, chapter 6
     in
-    {{:http://yufind.library.yale.edu/yufind/Record/9844025/Description}Modeling
+    {{:http://web.archive.org/web/20060207195702/http://www.apocalypse.org/pub/u/antony/work/pubs/ac-thesis.pdf}Modeling
     User Interfaces in a Functional Language}, Ph.D. Thesis, Yale
     University, 2004. *)
 
@@ -1145,7 +1146,7 @@ let red_circle = I.cut `Aeo red circle]}
 *)
 
 (*---------------------------------------------------------------------------
-   Copyright %%COPYRIGHT%%
+   Copyright 2013 Daniel C. Bünzli.
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -1160,7 +1161,7 @@ let red_circle = I.cut `Aeo red circle]}
       disclaimer in the documentation and/or other materials provided
       with the distribution.
 
-   3. Neither the name of the Daniel C. Bünzli nor the names of
+   3. Neither the name of Daniel C. Bünzli nor the names of
       contributors may be used to endorse or promote products derived
       from this software without specific prior written permission.
 
@@ -1176,3 +1177,4 @@ let red_circle = I.cut `Aeo red circle]}
    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ---------------------------------------------------------------------------*)
+

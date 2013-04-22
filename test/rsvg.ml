@@ -1,29 +1,24 @@
 (*---------------------------------------------------------------------------
-   Copyright %%COPYRIGHT%%. All rights reserved.
+   Copyright 2013 Daniel C. Bünzli. All rights reserved.
    Distributed under the BSD3 license, see license at the end of the file.
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
-open Gg;;
-open Vg;;
+include Db_svg
 
-let suite = Suite.create () 
-let test = Suite.test suite 
+let renderer dst =
+  let meta = match is with 
+  | [i] -> Db.render_meta i 
+  | _ -> assert false
+  in
+  let meta = Vgm.add (Db.render_meta i) Vgm.creator "rsvg"  in
+  let meta = Vgm.add meta Vgm.date (Rstored.timestamp ()) in
+  Vgr_svg.renderer ~meta dst
 
-let () = test 
-    ~name: "color-rgb-squares"
-    ~description: "Red green and blue squares."
-    ~size: (size 0.1 0.1) 
-    ~view: (rect V2.o (size 40. 40.))
-    & lazy begin 
-      let rect = P.empty >> P.rect (rect V2.o (size 20. 20.)) in 
-      let sq pt color = I.transl pt & I.cloth (I.mono color) & I.acut rect in
-      sq Pt.o C.r ++ sq (pt 20. 0.) C.g ++ sq (pt 20. 20.) C.b
-    end
-
+let () = Rstored.main ~no_pack:true "SVG" "svg" renderer
 
 (*---------------------------------------------------------------------------
-   Copyright %%COPYRIGHT%%
+   Copyright 2013 Daniel C. Bünzli.
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without

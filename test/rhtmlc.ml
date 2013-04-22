@@ -1,11 +1,13 @@
 (*---------------------------------------------------------------------------
-   Copyright %%COPYRIGHT%%. All rights reserved.
+   Copyright 2013 Daniel C. Bünzli. All rights reserved.
    Distributed under the BSD3 license, see license at the end of the file.
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
+
+
 (*---------------------------------------------------------------------------
-   Copyright %%COPYRIGHT%%
+   Copyright 2013 Daniel C. Bünzli.
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -20,7 +22,7 @@
       disclaimer in the documentation and/or other materials provided
       with the distribution.
 
-   3. Neither the name of Daniel C. BÃ¼nzli nor the names of
+   3. Neither the name of Daniel C. Bünzli nor the names of
       contributors may be used to endorse or promote products derived
       from this software without specific prior written permission.
 

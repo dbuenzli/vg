@@ -1,8 +1,7 @@
 <**/*.{ml,mli}> : annot, package(gg)
 <dist> : not_hygienic
-<gg> : include
 <src> : include
 <test> : include
-<test/tests> : include
+<db> : include
 <test/*> : debug
-<test/vgtest.{byte,native}> : use_str
+<test/{rpdf,rsvg}.{byte,native}> : package(gg), package(unix)

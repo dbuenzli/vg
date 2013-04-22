@@ -1,35 +1,53 @@
 (*---------------------------------------------------------------------------
-   Copyright %%COPYRIGHT%%. All rights reserved.
+   Copyright 2013 Daniel C. Bünzli. All rights reserved.
    Distributed under the BSD3 license, see license at the end of the file.
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
-open Gg;;
-open Vg;;
+open Gg
+open Vg
 
-let err_unique_name n = "A test named '" ^ n ^ "' already exists." 
+(** Test images for gradients. *)
 
-let ( & ) f x = f x
-type t = 
-    { name : string;          (* Test identifier. *) 
-      info : string;          (* Short description of the image *)
-      note : string;          (* Details to look for. *)
-      size : Gg.size2;        (* Output surface size. *)
-      view : Gg.box2;         (* View rectangle. *)
-      image : Vg.image Lazy.t (* Image. *) }
+let author = "Daniel C. Bünzli <daniel.buenzl i@erratique.ch>"
+;;
 
-let tests = Hashtbl.create 200 
+Db.image "gradient-scaling" ~author
+  ~title:"Gradients and scaled ones side-by-side."
+  ~tags:["gradient"; "gradient-axial"; "gradient-radial"]
+  ~size:(Size2.v 24. 24.)
+  ~view:(Box2.v (P2.v ~-.0.1 ~-.0.1) (Size2.v 1.2 1.2))
+  begin fun () -> 
+    let r = P.empty >> P.rect (Box2.v (P2.v 0. 0.) (Size2.v 0.4 0.4)) in
+    let stops = [ 0.0, Color.red; 0.5, Color.green; 1.0, Color.blue ] in
+    let axial = I.axial stops P2.o V2.ox in
+    let radial = I.radial stops ~f:(P2.v 0.25 0.25) (P2.v 0.5 0.5) 0.5 in
+    let scaled i = i >> I.scale (Size2.v 0.5 1.0) in
+    let square ~at i = i >> I.cut r >> I.move at in
+    square ~at:(P2.v 0.0 0.5) axial >> 
+    I.blend (square ~at:(P2.v 0.5 0.5) (scaled axial)) >> 
+    I.blend (square ~at:(P2.v 0.0 0.0) radial) >> 
+    I.blend (square ~at:(P2.v 0.5 0.5) (scaled radial))
+  end;
 
-let test name ~info ?(note = "") ~size ~view image = 
-  let name = String.lowercase name in
-  try ignore (Hashtbl.find tests name); invalid_arg (err_unique_name name) with
-  | Not_found ->
-      Hashtbl.add tests name 
-	{ name = name; info = info; note = note; view = view; size = size;
-	  image = image }
+Db.image "gradient-rgb-squares" ~author
+  ~title:"Shaded red, green and blue squares."
+  ~tags:["gradient"; "gradient-axial"]
+  ~size:(Size2.v 10. 10.)
+  ~view:(Box2.v P2.o (Size2.v 4. 4.))
+  begin fun () -> 
+    let w = 2. in
+    let r = Box2.v P2.o (Size2.v w w) in
+    let p = P.empty >> P.rect r in
+    let shade c = I.axial [0., c; 1., Color.void] V2.ox V2.oy in
+    let sq ~at c = shade c >> I.scale (Box2.size r) >> I.cut p >> I.move at in
+    sq ~at:P2.o Color.red >> 
+    I.blend (sq ~at:(P2.v w 0.) Color.green) >>
+    I.blend (sq ~at:(P2.v w w) Color.blue)
+  end
 
 (*---------------------------------------------------------------------------
-   Copyright %%COPYRIGHT%%
+   Copyright 2013 Daniel C. Bünzli.
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -44,7 +62,7 @@ let test name ~info ?(note = "") ~size ~view image =
       disclaimer in the documentation and/or other materials provided
       with the distribution.
 
-   3. Neither the name of Daniel C. BÃ¼nzli nor the names of
+   3. Neither the name of Daniel C. Bünzli nor the names of
       contributors may be used to endorse or promote products derived
       from this software without specific prior written permission.
 
