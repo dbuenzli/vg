@@ -16,7 +16,7 @@ TR=${TR:="tr"}
 GIT=${GIT:="git"}
 OASISQ=${OASISQ:="oasis query"}
 
-VERSION=`$ECHO "\`$GIT describe --dirty\`" | $SED "s/^.\(.*\)/\1/"`
+VERSION=`$ECHO "\`$GIT describe master\`" | $SED "s/^.\(.*\)/\1/"`
 NAME=`$OASISQ Name`
 MODNAME=`$OASISQ Library\("$NAME"\).Modules`
 SYNOPSIS=`$OASISQ Synopsis`
