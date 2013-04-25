@@ -1,0 +1,91 @@
+#!/bin/sh
+
+# Usage: reload-browser [-b BROWSER] URI 
+#
+# -b BROWSER Specifies the browser, should be one of `browser`, `firefox`, 
+#            `chrome`, `safari`. If `browser` is used (default), $BROWSER
+#            is consulted, if empty `chrome` is used.
+#
+# The reload strategy should be: update the right most tab of the 
+# front most window that already has the URI as prefix. If there 
+# is none and the current tab of the front most window has no URL
+# use that tab, otherwise create a new tab.
+
+APP=browser
+
+case "$1" in 
+    -b) shift; APP=$1; shift
+esac
+
+if [ "$APP" = "browser" ]; then
+    APP=$BROWSER;
+    if [ "$APP" = "" ]; then APP=chrome; fi
+fi
+
+URI=$1
+OS=${OS:=`uname`}
+
+darwin_common () 
+{
+    osascript <<EOF
+            tell application "$APPNAME"
+              reopen                          # opens a window if needed
+              set found_tab to -1
+              repeat with wi from 1 to number of every window
+                 repeat with ti from 1 to number of tab of window wi
+                   set u to URL of tab ti of window wi as string
+                   if (u starts with "$URI") then 
+                      set found_tab to ti
+                   end if 
+                 end repeat
+                 if (found_tab is not -1) then 
+                   set index of window wi to 1
+                   $SET_ACTIVE_TAB
+                   $RELOAD
+                   exit repeat
+                 end if
+              end repeat
+              if (found_tab is equal to -1) then 
+                set t to $ACTIVE_TAB tab of window 1
+                set u to URL of t as string
+                if (u is not "chrome://newtab/" and u is not "") then
+                  set t to make new tab at the end of tabs of window 1
+                end
+                set URL of t to "$URI"
+              end
+            end tell
+EOF
+}
+
+darwin_reload ()
+{
+    case $APP in
+        chrome)
+            ACTIVE_TAB="active"
+            APPNAME="Google Chrome"
+            SET_ACTIVE_TAB="set active tab index of window wi to found_tab"
+            RELOAD="tell tab found_tab of window wi to reload"
+            darwin_common
+            ;;
+        safari)
+            ACTIVE_TAB="current"
+            APPNAME="Safari"
+            SET_ACTIVE_TAB="set $ACTIVE_TAB tab of window wi to \
+                            tab found_tab of window wi"
+            RELOAD="tell tab found_tab of window wi to do javascript \
+                    \"window.location.reload()\""
+            darwin_common
+            ;;
+        firefox)
+            # The best we can do it seems, annoying
+            open -a Firefox $URI;;
+        *)
+            echo "`basename $0`: unsupported browser: \`$APP'"
+
+    esac
+}
+
+case $OS in
+  Darwin) darwin_reload ;;
+  *)      echo "`basename $0`: platform $OS unsupported. Patches welcome.";;
+esac
