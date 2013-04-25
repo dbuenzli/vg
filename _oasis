@@ -43,7 +43,8 @@ Library vg_htmlc
  BuildDepends: vg, js_of_ocaml, js_of_ocaml.syntax
  XMETADescription: Vg's HTML canvas renderer
 
-Path: test
+Executable test
+ Path: test
  MainIs: test.ml
  CompiledObject: Best
  BuildDepends: vg
