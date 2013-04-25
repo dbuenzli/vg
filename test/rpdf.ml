@@ -4,6 +4,8 @@
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
+(* Renders the Vg image database to PDF. *)
+
 open Vg
 include Db_pdf
 

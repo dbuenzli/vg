@@ -157,7 +157,7 @@ let pp_image_info ppf i =
 let main ?(no_pack = false) rname ftype renderer = 
   let usage = Printf.sprintf 
       "Usage: %s [OPTION]... [ID1] [ID2]...\n\
-      \ Renders images of Vg's image database with given IDs to %s.\n\
+      \ Renders images of the Vg image database to %s.\n\
       \ Without any selector and ID specified renders all images.\n\
       Options:" exec rname
   in

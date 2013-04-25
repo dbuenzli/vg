@@ -40,6 +40,7 @@
 ** ? P.cubic_fold
 
 * Samples
+** vgrender that takes a cmxs and outputs svg or pdf.
 ** Test degenerate color stops discarding.
 ** Test degenerate subpaths rendering. 
 ** Dash offset is for start of each subpath, negative dashoffsets. 
@@ -134,3 +135,4 @@
    to get data and call the first one to output. Hard to integrate
    I think (input).
 ** %F or %f ?
+

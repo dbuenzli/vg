@@ -4,14 +4,14 @@
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
+open Gg
+open Vg
+
 include Db_svg
 
-let renderer dst =
-  let meta = match is with 
-  | [i] -> Db.render_meta i 
-  | _ -> assert false
-  in
-  let meta = Vgm.add (Db.render_meta i) Vgm.creator "rsvg"  in
+let renderer dst is =
+  let meta = match is with [i] -> Db.render_meta i | _ -> assert false in
+  let meta = Vgm.add meta Vgm.creator "rsvg"  in
   let meta = Vgm.add meta Vgm.date (Rstored.timestamp ()) in
   Vgr_svg.renderer ~meta dst
 
