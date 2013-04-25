@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# Usage: pkg-info
+# Retrieves meta data about the package and store it in variables for
+# other scripts to use.
+
+SITEGENROOT=${SITEGENROOT:="~/sync/erratique"}
+DEV_BUILD_ARTEFACTS=".typerex build _tags myocamlbuild.ml"
+
+set -e
+LOC=`dirname $0`
+
+ECHO=${ECHO:="echo"}
+SED=${SED:="sed"}
+TR=${TR:="tr"}
+GIT=${GIT:="git"}
+OASISQ=${OASISQ:="oasis query"}
+
+VERSION=`$ECHO "\`$GIT describe --dirty\`" | $SED "s/^.\(.*\)/\1/"`
+NAME=`$OASISQ Name`
+MODNAME=`$OASISQ Library\("$NAME"\).Modules`
+SYNOPSIS=`$OASISQ Synopsis`
+RAWDESCRIPTION=`$OASISQ Description`
+DESCRIPTION=`$OASISQ Description | $SED "s|$|\\\\\|"`
+HOMEPAGE=`$OASISQ Homepage`
+MAINTAINER=`$OASISQ Maintainers`
+AUTHORS=`$OASISQ Authors`
+OCAMLVERSION=`$OASISQ OCamlVersion`
+DEPS=`$OASISQ "Library(\"$NAME\").BuildDepends"`
+GITREPO=`$OASISQ "SrcRepo(head).Location"`
+if [ "$DEPS" ]; then
+ PPDEPS=`$ECHO ", $DEPS"| $SED "s|,|,   |g" | $TR "," "\n" | $SED "s|$|\\\\\|"`
+fi
+
+if [ -f $LOC/pkg-info-hook ]; then
+    . $LOC/pkg-info-hook
+fi

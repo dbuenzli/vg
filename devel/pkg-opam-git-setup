@@ -1,0 +1,26 @@
+#!/bin/sh
+
+## Usage: pkg-opam-git-setup
+## Prepare build system for an opam git package.
+
+OASIS=${OASIS:="oasis"}
+
+set -e
+LOC=`dirname $0`
+
+. $LOC/pkg-info
+
+if [ -f $LOC/pkg-opam-git-setup-hook ]; then
+    . $LOC/pkg-opam-git-setup-hook
+fi
+
+# Substitute a few things
+ROOTDIR=.
+. $LOC/pkg-varsubsts
+
+# Remove dev artefacts
+rm -f $DEV_BUILD_ARTEFACTS
+
+# Generate oasis artefacts
+$OASIS setup
+

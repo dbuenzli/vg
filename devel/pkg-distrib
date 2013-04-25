@@ -1,0 +1,52 @@
+#!/bin/sh
+
+# Usage: pkg-distrib 
+# Make a distribution tarball in /tmp.
+
+set -e
+LOC=`dirname $0`
+
+TAR=${TAR="tar"}
+GIT=${GIT="git"}
+
+. $LOC/pkg-info
+
+DIRNAME=$NAME-$VERSION
+ROOTDIR=/tmp/$DIRNAME
+
+# TODO this should start from a git checkout 
+
+rm -R -f $ROOTDIR
+git clone -b master . $ROOTDIR
+cd $ROOTDIR
+
+# Remove dev artefacts
+rm -R -f .git .gitignore $DEV_BUILD_ARTEFACTS
+
+# Generate oasis artefacts
+oasis setup
+
+# Substitute a few things
+. $LOC/pkg-varsubsts
+
+# Test oasis setup 
+ocaml setup.ml -configure
+ocaml setup.ml -build
+
+# Generate static API doc 
+. $LOC/pkg-doc -no-links -I src doc/api.docdir
+cp _build/doc/api.docdir/*.html doc/
+
+# Invoke hook
+if [ -f $LOC/pkg-distrib-hook ]; then
+    . $LOC/pkg-distrib-hook
+fi
+
+# Clean and wrap up the project
+ocaml setup.ml -distclean
+
+cd ..
+$TAR -cvjf $DIRNAME.tbz $DIRNAME
+rm -R $DIRNAME
+
+

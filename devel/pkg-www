@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# Usage: pkg-www 
+# Publishes the project on the www with webglue
+
+set -e
+LOC=`dirname $0`
+
+. $LOC/pkg-info
+
+PAGEROOT=$SITEGENROOT/maps/software/$NAME
+
+TAR=${TAR:="tar"}
+CP=${CP:="cp"}
+RM=${RM:="rm"}
+WEBGLUE=${WEBGLUE:="webglue"}
+
+DIRNAME=$NAME-$VERSION
+ARCHIVE=/tmp/$DIRNAME.tbz
+
+# Add the release tarball 
+$CP $ARCHIVE $PAGEROOT/releases/
+
+# Update the doc
+$RM -R $PAGEROOT/doc
+$TAR -C $PAGEROOT --strip-components=1 -xvjf $ARCHIVE $DIRNAME/doc
+
+# Update the webpage
+$CD $SITEGENROOT
+$ECHO "$VERSION" | $WEBGLUE set --replace $NAME s-last-version
+$ECHO "$DEPS" | $WEBGLUE set --replace $NAME s-deps
+$WEBGLUE get timestamp utc | $WEBGLUE set --replace $NAME s-updated
+
+if [ -f $LOC/pkg-www-hook ]; then
+    . $LOC/pkg-www-hook
+fi

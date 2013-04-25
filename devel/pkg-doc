@@ -1,0 +1,50 @@
+#!/bin/sh
+
+# Usage: pkg-doc [-b BROWSER] OCAMLBUILDOPTS... DOC.docdir
+#
+# -b BROWSER If present tries to open the maximal prefix in the given browser,
+#            see the [-b] option of the `browser-reload` script. 
+
+# If BROWSER is present tries to open the maximal prefix in the given
+# browser, see the `browser-reload` script. Use `browser` to use your
+# $BROWSER environment variable. N.B. tries to reload the maximal
+# prefix, s
+
+set -e
+LOC=`dirname $0`
+
+OCAMLBUILD=${OCAMLBUILD:="ocamlbuild -classic-display -use-ocamlfind"}
+OCAMLDOCFLAGS=${OCAMLDOCFLAGS:="-docflags -colorize-code,-charset,utf-8"}
+BDIR=${BDIR:="_build"}
+
+RELOAD_BROWSER=""
+DOCDIRFILE=""
+
+# Command line parsing
+if [ $# -eq 0 ]; then 
+    echo "`basename $0`: missing required path to docdir file."
+    exit 1
+else
+    while [ $# -gt 0 ]; do
+        case $1 in 
+            -b) shift; RELOAD_BROWSER=$1; shift;;
+            *.docdir) 
+                if [ "$DOCDIRFILE" != "" ]; then 
+                    echo "`basename $0`: don't know what to do with \`$1'"
+                    exit 1
+                fi
+                DOCDIRFILE=$1
+                shift
+                ;;
+            *) OCAMLDOCFLAGS="$OCAMLDOCFLAGS $1"; shift ;;
+        esac
+    done
+fi
+
+$OCAMLBUILD -no-links $OCAMLDOCFLAGS $DOCDIRFILE/index.html
+cp doc/style.css $BDIR/$DOCDIRFILE/style.css
+
+# Reload browser
+if [ "$RELOAD_BROWSER" != "" ]; then 
+     $LOC/reload-browser -b $RELOAD_BROWSER file://$PWD/$BDIR/$DOCDIRFILE/
+fi

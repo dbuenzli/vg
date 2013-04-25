@@ -1,0 +1,82 @@
+#!/bin/sh
+
+## Usage: pkg-opam 
+## After a pkg-distrib, publishes an opam package on the www with webglue
+
+OPAMROOT=$SITEGENROOT/maps/software/opam
+
+set -e
+LOC=`dirname $0`
+
+ECHO=${ECHO="echo"}
+SED=${SED="sed"}
+CAT=${CAT="cat"}
+MKDIR=${MKDIR="mkdir"}
+CD=${CD="cd"}
+OPAMMKREPO=${OPAMMKREPO="opam-mk-repo"}
+
+. $LOC/pkg-info
+
+if [ -f $LOC/pkg-opam-hook ]; then
+    . $LOC/pkg-opam-hook
+fi
+
+OPAMDESCRIPTION=$RAWDESCRIPTION
+OPAMDEPS=`$ECHO "$DEPS" | $SED "s/\(\b\w\+\b\)/\"\0\"/g"` 
+OPAMOCAMLVERSION=`$ECHO "$OCAMLVERSION" | \
+                  $SED "s/\([[:digit:]\.]\+\)/\"\0\"/"`
+
+ARCHIVE=$NAME-$VERSION.tbz
+OPAMPACK=$NAME.$VERSION
+
+$MKDIR -p $OPAMROOT/packages/$OPAMPACK/files
+$CD $OPAMROOT/packages/$OPAMPACK
+
+## TODO this should be improved. Hooks, doc install etc.
+## Thomas mentioned good descr for http://opam.ocamlpro.com/pkg/why3.0.81.html
+
+# descr file
+$CAT > descr <<EOF
+$SYNOPSIS
+
+$OPAMDESCRIPTION
+EOF
+
+# opam file
+$CAT > opam <<EOF
+opam-version: "1"
+maintainer: "$MAINTAINER"
+homepage: "$HOMEPAGE"
+authors: ["$AUTHORS"]
+doc: "$HOMEPAGE/doc/$MODNAME"
+license: "BSD3"
+build: [
+  ["ocaml" "setup.ml" "-configure" "--prefix" "%{prefix}%" ]
+  ["ocaml" "setup.ml" "-build"]
+  ["ocaml" "setup.ml" "-install"]
+]
+remove: [
+  ["ocamlfind" "remove" "$NAME"]
+]
+depends: ["ocamlfind" $OPAMDEPS]
+ocaml-version: [$OPAMOCAMLVERSION]
+EOF
+
+# url file
+$CAT > url <<EOF
+archive: "$HOMEPAGE/releases/$ARCHIVE"
+checksum: ""
+EOF
+
+#  cat > files/$NAME.install <<EOF
+#opam-version: "1"
+#EOF
+# doc:[ "README" "CHANGES" "doc/index.html"]
+
+$CD $OPAMROOT
+$OPAMMKREPO --generate-checksums $OPAMPACK
+$RM -rf archives # avoid that cache
+$OPAMMKREPO --index
+
+
+
