@@ -1,14 +1,9 @@
 #!/bin/sh
 
-# Usage: pkg-doc [-b BROWSER] OCAMLBUILDOPTS... DOC.docdir
+# Usage: pkg-doc [-b [BROWSER]] OCAMLBUILDOPTS... DOC.docdir
 #
-# -b BROWSER If present tries to open the minimal prefix in the given browser,
-#            see the [-b] option of the `browser-reload` script. 
-
-# If BROWSER is present tries to open the maximal prefix in the given
-# browser, see the `browser-reload` script. Use `browser` to use your
-# $BROWSER environment variable. N.B. tries to reload the maximal
-# prefix, s
+# -b [BROWSER] If present opens the result in BROWSER. If the option argument 
+#              is absent uses $BROWSER, see the `browser-reload` script.
 
 set -e
 LOC=`dirname $0`
@@ -17,7 +12,8 @@ OCAMLBUILD=${OCAMLBUILD:="ocamlbuild -classic-display -use-ocamlfind"}
 OCAMLDOCFLAGS=${OCAMLDOCFLAGS:="-docflags -colorize-code,-charset,utf-8"}
 BDIR=${BDIR:="_build"}
 
-RELOAD_BROWSER=""
+RELOAD_BROWSER=false
+THE_BROWSER=""
 DOCDIRFILE=""
 
 # Command line parsing
@@ -27,7 +23,14 @@ if [ $# -eq 0 ]; then
 else
     while [ $# -gt 0 ]; do
         case $1 in 
-            -b) shift; RELOAD_BROWSER=$1; shift;;
+            -b) shift; 
+                RELOAD_BROWSER=true;
+                case $1 in 
+                    *.docdir) ;; 
+                    -*) ;; 
+                    *) THE_BROWSER="-b $1"; shift ;;
+                esac
+                ;;
             *.docdir) 
                 if [ "$DOCDIRFILE" != "" ]; then 
                     echo "`basename $0`: don't know what to do with \`$1'"
@@ -46,5 +49,5 @@ cp doc/style.css $BDIR/$DOCDIRFILE/style.css
 
 # Reload browser
 if [ "$RELOAD_BROWSER" != "" ]; then 
-     $LOC/reload-browser -b $RELOAD_BROWSER file://$PWD/$BDIR/$DOCDIRFILE/
+     $LOC/reload-browser $THE_BROWSER file://$PWD/$BDIR/$DOCDIRFILE/
 fi

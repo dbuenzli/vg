@@ -2,25 +2,31 @@
 
 # Usage: reload-browser [-b BROWSER] URI 
 #
-# -b BROWSER Specifies the browser, should be one of `browser`, `firefox`, 
-#            `chrome`, `safari`. If `browser` is used (default), $BROWSER
-#            is consulted, if empty `chrome` is used.
+# -b BROWSER Specifies the browser, should be one of `firefox`, `chrome`, 
+#            `safari`. If [-b] is not specified the value of $BROWSER
+#            is used or `chrome` if the variable is empty.
 #
 # The reload strategy should be: update the right most tab of the 
 # front most window that already has the URI as prefix. If there 
 # is none and the current tab of the front most window has no URL
 # use that tab, otherwise create a new tab.
 
-APP=browser
+APP=browser_var
 
 case "$1" in 
     -b) shift; APP=$1; shift
 esac
 
-if [ "$APP" = "browser" ]; then
+if [ "$APP" = "browser_var" ]; then
     APP=$BROWSER;
     if [ "$APP" = "" ]; then APP=chrome; fi
 fi
+
+case "$APP" in 
+    firefox|chrome|safari) ;;
+    *)  echo "`basename $0:` unknown browser: \`$APP'"; exit 1; 
+esac
+
 
 URI=$1
 OS=${OS:=`uname`}

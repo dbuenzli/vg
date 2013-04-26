@@ -1,11 +1,11 @@
 #!/bin/sh
 
-# Usage: jsoo-build [-b BROWSER] [JSOO_OPT]... JSFILE... MLFILE
+# Usage: jsoo-build [-b [BROWSER]] [JSOO_OPT]... JSFILE... MLFILE
 #
 # If the files MLFILE.{html,css} exist they are copied to the build dir.
 #
-# -b BROWSER If present tries to open the result in the given browser,
-#            see the [-b] option of the `browser-reload` script. 
+# -b [BROWSER] If present opens the result in BROWSER. If the option argument 
+#              is absent uses $BROWSER, see the `browser-reload` script.
 
 set -e
 LOC=`dirname $0`
@@ -14,7 +14,8 @@ OCAMLBUILD=${OCAMLBUILD:="ocamlbuild -classic-display -use-ocamlfind"}
 JSOO=${JSOO:="js_of_ocaml"}
 BDIR=${BDIR:="_build"}
 
-RELOAD_BROWSER=""
+RELOAD_BROWSER=false
+THE_BROWSER=""
 JSFILES=""
 JSOOOPTS=""
 MLFILE=""
@@ -26,7 +27,15 @@ if [ $# -eq 0 ]; then
 else
     while [ $# -gt 0 ]; do
         case $1 in 
-            -b) shift; RELOAD_BROWSER=$1; shift;;
+            -b) shift; 
+                RELOAD_BROWSER=true;
+                case $1 in 
+                    *.js) ;; 
+                    *.ml) ;;
+                    -*) ;; 
+                    *) THE_BROWSER="-b $1"; shift ;;
+                esac
+                ;;
             *.js) JSFILES="$JSFILES $1"; shift;;
             *.ml) 
                 if [ "$MLFILE" != "" ]; then 
@@ -45,13 +54,13 @@ BASE="`dirname "$MLFILE"`/`basename "$MLFILE" .ml`"
 
 # Compile javascript
 $OCAMLBUILD -no-links $BASE.byte
-$JSOO $BDIR/$BASE.byte
+$JSOO $JSFILES $BDIR/$BASE.byte
 
 # Copy .html and .css if they exist
 if [ -f $BASE.html ]; then cp $BASE.html $BDIR/$BASE.html; fi
 if [ -f $BASE.css ]; then cp $BASE.css $BDIR/$BASE.css; fi
 
 # Reload browser
-if [ "$RELOAD_BROWSER" != "" ]; then 
-     $LOC/reload-browser -b $RELOAD_BROWSER file://$PWD/$BDIR/$BASE.html
+if [ "$RELOAD_BROWSER" == "true" ]; then 
+     $LOC/reload-browser $THE_BROWSER file://$PWD/$BDIR/$BASE.html
 fi
