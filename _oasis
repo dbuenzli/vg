@@ -26,7 +26,7 @@ Plugins: META (0.3)
 BuildTools:ocamlbuild
 
 Flag jsoo
-  Description: build js_of_ocaml support
+  Description: Build js_of_ocaml support
   Default: true
 
 Library vg

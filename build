@@ -18,7 +18,7 @@ action ()
       publish-opam) devel/pkg-opam ;;
       clean)        $OCAMLBUILD -clean ;;
       jsoo)         shift; devel/jsoo-build $* ;;
-      *)            shift; $OCAMLBUILD $* ;;
+      *)            $OCAMLBUILD $* ;;
     esac
 } 
 
