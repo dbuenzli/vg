@@ -40,10 +40,11 @@ let prefixed s p =
     true
   with Exit -> false
     
-let find ?(ids = []) ?(prefixes = []) ?(tags = []) () = 
+let find ?(ids = []) ?(prefixes = []) ?tags () = 
   let matches i = 
-    List.mem i.id ids || List.exists (prefixed i.id) prefixes || 
-    List.exists (fun t -> List.mem t i.tags) tags
+    (List.mem i.id ids || List.exists (prefixed i.id) prefixes) ||
+    (match tags with None -> false | Some ts -> 
+     List.for_all (fun t -> List.mem t i.tags) ts)
   in
   let select _ i acc = if matches i then i :: acc else acc in
   let compare i i' = compare i.id i'.id in 

@@ -34,7 +34,7 @@ val find : ?ids:string list -> ?prefixes:string list -> ?tags:string list ->
     {ul 
     {- The image id is in [ids].}
     {- The image id is prefixed by an element of [prefixes].}
-    {- The image has a tag in [tags].}} *)
+    {- The image has all the tags in [tags].}} *)
 
 val indexes : unit -> string list * string list
 (** [indexes ()] is the lexicographically sorted lists of ids and

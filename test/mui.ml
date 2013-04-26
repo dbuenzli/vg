@@ -18,7 +18,6 @@ module Log = struct
     Format.kfprintf flush Format.str_formatter fmt
 end
 
-
 module D = struct    
   
   (* Constants *)
@@ -134,46 +133,88 @@ module Ui = struct
     set v; Ev.cb c Ev.change cb;
     ui, set
 
+  let make_focusable e = 
+    (e ## setAttribute(Js.string "tabindex", Js.string "0")); e
+
+
+  type 'a select_conf = [ `Select of 'a option | `List of 'a list ]
   let c_select = Js.string "mu-select"
   let c_selected = Js.string "mu-selected"
-  let select ?id pp sel l = 
-    let ul = el ?id Dom_html.createUl [c_select] in 
+  let select ?id pp s l = 
+    let ul = make_focusable (el ?id Dom_html.createUl [c_select]) in 
     let ui = { n = (ul :> Dom.node Js.t); on_change = nop } in
-    let selected = ref (el Dom_html.createLi []) (* dumb *) in
-    let li v = 
-      let sp = el Dom_html.createSpan [] <*> txt (str pp v) in
-      let li = el Dom_html.createLi [] <*> sp in 
-      let li_cb _ _ = 
-        !selected ## classList ## remove (c_selected); 
-        selected := li;
-        !selected ## classList ## add (c_selected);
-        ui.on_change v; false 
-      in
-      if v = sel then (selected := li; li ## classList ## add (c_selected));
-      Ev.cb li Ev.click li_cb;
+    let selected = ref None in
+    let els = ref [||] in
+    let els_v = ref [||] in
+    let deselect () = match !selected with 
+    | None -> () | Some i -> 
+        Log.msg "%d" i;
+        !els.(i) ## classList ## remove (c_selected)
+    in
+    let select () = match !selected with 
+    | None -> () | Some i -> !els.(i) ## classList ## add (c_selected)
+    in
+    let set_selected s = match s with 
+    | None -> deselect (); ui.on_change None
+    | Some i -> 
+        let max = Array.length !els - 1 in
+        let i = if i < 0 then 0 else (if i > max then max else i) in
+        deselect (); selected := Some i; select (); 
+        ui.on_change (Some !els_v.(i))
+    in
+    let li i v = 
+      let span = el Dom_html.createSpan [] <*> txt (str pp v) in
+      let li = el Dom_html.createLi [] <*> span in 
+      let on_click _ _ = set_selected (Some i); false in
+      Ev.cb li Ev.click on_click;
+      Dom.appendChild ui.n li;
       li
     in 
-    let set l = 
-      rem_childs ui.n; List.iter (fun v -> Dom.appendChild ui.n (li v)) l
+    let conf = function 
+    | `Select s -> begin match s with 
+      | None -> set_selected None
+      | Some s -> 
+          Array.iteri (fun i v -> if v = s then set_selected (Some i)) !els_v
+      end
+    | `List l ->
+        rem_childs ui.n;
+        selected := None;
+        els_v := Array.of_list l;
+        els := Array.mapi li !els_v
     in
-    set l; 
-    ui, set
+    let on_keydown _ e = match (e ## keyCode) with 
+    | 38 (* Up *) -> begin match !selected with 
+      | None -> set_selected (Some 0); false
+      | Some i -> set_selected (Some (i - 1)); false
+      end
+    | 40 (* Down *) -> begin match !selected with 
+      | None -> set_selected (Some 0); false
+      | Some i -> set_selected (Some (i + 1)); false
+      end      
+    | _ -> (); true
+    in
+    Ev.cb ul Ev.keydown on_keydown;
+    conf (`List l); conf (`Select s);
+    ui, conf
 
   let c_mselect = Js.string "mu-mselect" 
   let mselect ?id pp sels l = 
-    let ul = el ?id Dom_html.createUl [c_select] in 
+    let ul = el ?id Dom_html.createUl [c_select; c_mselect] in 
     let ui = { n = (ul :> Dom.node Js.t); on_change = nop } in
     let selected = ref [] in
     let li v = 
       let sp = el Dom_html.createSpan [] <*> txt (str pp v) in
       let li = el Dom_html.createLi [] <*> sp in 
-      let li_cb _ _ = 
-        let _ = li ## classList ## toggle (c_selected) in
+      let on_click _ _ = 
+        let add = Js.to_bool (li ## classList ## toggle (c_selected)) in
+        selected := 
+          if add then v :: !selected else
+          List.filter (fun v' -> v <> v') !selected;
         ui.on_change !selected; false
       in
       if List.mem v sels then 
         (selected := v :: !selected; li ## classList ## add (c_selected));
-      Ev.cb li Ev.click li_cb;
+      Ev.cb li Ev.click on_click;
       li
     in 
     let set l = 

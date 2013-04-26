@@ -41,7 +41,7 @@
 
     /* Mui generic */
 
-    /* Labels */
+    /* Labels & text */
     .mu-label { padding: 0.145em 0.291em; }    
     .mu-label.mu-label-text 
     { font-weight: 400; /* because of h1 */; 
@@ -51,35 +51,59 @@
 
     .mu-text { padding: 0.145em 0.291 }
 
+    /* Checkboxes */
     .mu-bool { padding: 0.145em 0.291em; }
     .mu-bool:hover { background: gray; color: black }
 
+    /* Select list */
+
+/* Keep scrollbar visible */
+
     .mu-selected > span { background: gray; color: black }
 
-    .mu-select span { padding: 0.145em 0.291em; display: inline-block}
+    .mu-select span 
+    { padding: 0.145em 0.291em; display: inline-block; }
+    .mu-select li { cursor : default }
     .mu-select li span:hover { background: gray; color: black }
     .mu-select { list-style-type: none; } 
-
-    .mu-mselect span { padding: 0.145em 0.291em; display: inline-block}
-    .mu-mselect li span:hover { background: gray; color: black; }
-    .mu-mselect { list-style-type: none; margin-top: 0em; } 
 
     /* rhtmlc specific */
 
     body > div > div { display: inline-block;  vertical-align: top; }
+
+    /* Page header */
+    
+    #header { display: block }
+    #header h1 { display: inline }
+    #vg-version { display: inline; margin-left:1ex; font-size:0.8em; }
+
+    /* UI */
     
     #ui { width: 15em; margin-top:0em; display:inline-block; }
     #ui > div { margin-top: 1.5em }
     
-    #ids ul { overflow-y:scroll; height: 21em }
-    #tags ul { overflow-y:scroll; height: 15em }
-    #rset { display: inline-block; }
-    #rset label { display : inline-block }
-    #rset label:hover { background: gray; color: black }
-    #rset span + label { margin-top: 1em }
 
-    #image { margin-left: 2em; margin-top: 1.5em }
+
+    /* Image ids */
+    #ids h1 { display: inline }
+    #ids p { display: inline; margin-left:0.5ex; font-size:0.8em; }
+    #ids ul { overflow-y:scroll; height: 21em }
+
+    /* Tags */
+
+    #tags h1 { display: inline }
+    #tags p { display: inline; margin-left:0.5ex; font-size:0.8em; }
+    #tags ul { overflow-y:scroll; height: 15em }
+
+    /* Render settings */
+
+    #rsetts label { display : inline-block }
+    #rsetts label:hover { background: gray; color: black }
+    
+    /* Image */
+    
     #i-author { font-style: italic; font-weight: 300; }
+    #image { margin-left: 2em; margin-top: 1.5em }
     #surface { background-color: white;
                border-color: gray;
                border-style: solid;

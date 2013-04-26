@@ -2,7 +2,7 @@
 
 # Usage: pkg-doc [-b BROWSER] OCAMLBUILDOPTS... DOC.docdir
 #
-# -b BROWSER If present tries to open the maximal prefix in the given browser,
+# -b BROWSER If present tries to open the minimal prefix in the given browser,
 #            see the [-b] option of the `browser-reload` script. 
 
 # If BROWSER is present tries to open the maximal prefix in the given

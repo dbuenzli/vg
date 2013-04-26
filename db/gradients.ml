@@ -13,7 +13,7 @@ let author = "Daniel C. Bünzli <daniel.buenzl i@erratique.ch>"
 ;;
 
 Db.image "gradient-scaling" ~author
-  ~title:"Gradients and scaled ones side-by-side."
+  ~title:"Gradients and scaled ones side-by-side"
   ~tags:["gradient"; "gradient-axial"; "gradient-radial"]
   ~size:(Size2.v 24. 24.)
   ~view:(Box2.v (P2.v ~-.0.1 ~-.0.1) (Size2.v 1.2 1.2))
@@ -31,7 +31,7 @@ Db.image "gradient-scaling" ~author
   end;
 
 Db.image "gradient-rgb-squares" ~author
-  ~title:"Shaded red, green and blue squares."
+  ~title:"Shaded red, green and blue squares"
   ~tags:["gradient"; "gradient-axial"]
   ~size:(Size2.v 10. 10.)
   ~view:(Box2.v P2.o (Size2.v 4. 4.))

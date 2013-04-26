@@ -74,7 +74,11 @@ module Ui : sig
   val label_mut : ?id:string -> ?ctrl:bool -> string -> (string, string) conf
   val text : ?id:string -> string -> (string, string) conf
   val bool : ?id:string -> bool -> (bool, bool) conf
-  val select : ?id:string -> 'a printer -> 'a -> 'a list -> ('a, 'a list) conf
+
+  type 'a select_conf = [ `Select of 'a option | `List of 'a list ]
+  val select : ?id:string -> 'a printer -> 'a option -> 'a list -> 
+    ('a option, 'a select_conf) conf
+
   val mselect : ?id:string -> 'a printer -> 'a list -> 'a list -> 
     ('a list, 'a list) conf
   

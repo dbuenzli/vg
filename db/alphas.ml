@@ -13,7 +13,7 @@ let author = "Daniel C. Bünzli <daniel.buenzl i@erratique.ch>"
 ;;
 
 Db.image "alpha-squares" ~author
-  ~title:"Blue, yellow and green squares overlapping."
+  ~title:"Blue, yellow and green squares overlapping"
   ~tags:["alpha"; "blend"]
   ~size:(Size2.v 12. 12.)
   ~view:(Box2.v (P2.v ~-.0.1 ~-.0.1) (Size2.v 1.2 1.2))

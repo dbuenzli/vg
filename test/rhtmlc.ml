@@ -12,13 +12,11 @@ open Mui
 
 include Db_htmlc
 
+let str = Format.sprintf
 let pp = Format.fprintf 
 let pp_dur ppf t = pp ppf "%.4fs" t
 let pp_str = Format.pp_print_string 
 
-type t = { sf : string; bf : bool; slf : string list;  prefix : string }
-let default = { sf = ""; bf = true; slf = []; prefix = ""} 
-            
 (* Persistent ui state. *)
 
 module S = struct
@@ -32,15 +30,15 @@ module S = struct
   let state : t Store.key = Store.key () 
   
   let default = 
-    { id = "default";
+    { id = "arrowhead-8"; (* TODO change that *)
       white_bg = true; 
-      budget = true;
+      budget = false;
       tags = [];
       prefix = "default" }      
 
-  let set s = Store.add state s
+  let set s = Store.add state s; s
   let get () = match Store.find state with 
-  | None -> set default; default
+  | None -> set default
   | Some s -> s
 
   let ids st = 
@@ -53,45 +51,60 @@ let ui () =
   let s = S.get () in
   let budget, set_budget = Ui.bool s.S.budget in 
   let white, set_white = Ui.bool s.S.white_bg in
-  let ids, set_ids = Ui.select pp_str s.S.id db_ids in
+  let ids, conf_ids = Ui.select pp_str (Some s.S.id) db_ids in
+  let id_count, set_id_count = Ui.text ~id:"id-count" "" in
   let tags, set_tags = Ui.mselect pp_str s.S.tags db_tags in 
+  let tag_count, set_tag_count = Ui.text ~id:"tag-count" "" in
   let title, set_title = Ui.text ~id:"i-title" "" in
   let author, set_author = Ui.text ~id:"i-author" "" in
   let cmd = function
   | `Use_budget b -> 
-      Log.msg "Use budget";
-      S.set { (S.get ()) with S.budget = b }
+      let _ = S.set { (S.get ()) with S.budget = b } in
+      Log.msg "Use budget: %b" b;
   | `Use_white_bg b -> 
-      Log.msg "W:%b" b;
-      S.set { (S.get ()) with S.white_bg = b }
+      let _ = S.set { (S.get ()) with S.white_bg = b } in
+      Log.msg "Use white: %b" b;
   | `Select_id id -> 
-      Log.msg "Id: %s" id; 
-      let s = S.set { (S.get ()) with S.id = id } in
+      let _ = S.set { (S.get ()) with S.id = id } in
       let i = match Db.find ~ids:[id] () with
       | [id] -> id | l -> 
-          List.map (fun i -> Log.msg "%s" i.Db.id) l;
+          List.iter (fun i -> Log.msg "%s" i.Db.id) l;
           assert false 
       in
       set_title i.Db.title; 
       set_author i.Db.author;
+      Log.msg "Select id: %s" id;
   | `Use_tags ts ->
-      Log.msg "Tags";
-      S.set { (S.get ()) with S.tags = ts }
+      let s = S.set { (S.get ()) with S.tags = ts } in
+      let ids = List.map (fun i -> i.Db.id) (Db.find ~tags:ts ()) in
+      let sel = if List.mem s.S.id ids then Some s.S.id else None in
+      let tag_count = if ts = [] then "" else str "(%d)" (List.length ts) in
+      let id_count = str "(%d)" (List.length ids) in
+      set_tag_count tag_count;
+      set_id_count id_count;
+      conf_ids (`List ids); conf_ids (`Select sel)
   in
   (* Untying the recursive knot... *)
   Ui.on_change budget (fun b -> cmd (`Use_budget b)); 
   Ui.on_change white (fun b -> cmd (`Use_white_bg b));
-  Ui.on_change ids (fun id -> cmd (`Select_id id)); 
+  Ui.on_change ids (fun id -> match id with 
+  | Some i -> cmd (`Select_id i)
+  | None -> ()); 
   Ui.on_change tags (fun ts -> cmd (`Use_tags ts)); 
   (* Init UI *)
   ignore (cmd (`Select_id s.S.id));
+  ignore (cmd (`Use_tags s.S.tags));
   (* Layout *)
   Ui.group () *> 
-    Ui.label "Vg Image database" *>
+    (Ui.group () ~id:"header" *>
+       Ui.label "Vg Image database" *>
+       (fst (Ui.text ~id:"vg-version" "v0.0.0"))) *> (* TODO use %%VERSION%% *)
     (Ui.group ~id:"ui" () *> 
-       (Ui.group ~id:"ids" () *> Ui.label "Images" *> ids) *>
-       (Ui.group ~id:"tags" () *> Ui.label "Tags" *> tags) *>
-       (Ui.group ~id:"rset" () *> 
+       (Ui.group ~id:"ids" () *> 
+          (Ui.group () *> Ui.label "Images" *> id_count) *> ids) *>
+       (Ui.group ~id:"tags" () *> 
+          (Ui.group () *> Ui.label "Tags" *> tag_count) *> tags) *>
+       (Ui.group ~id:"rsetts" () *> 
           Ui.label "Render settings" *> 
           (Ui.label ~ctrl:true "Budget" *> budget) *>
           (Ui.label ~ctrl:true "White background" *> white))) *>

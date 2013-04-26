@@ -179,7 +179,7 @@ let main ?(no_pack = false) rname ftype renderer =
     "-p", Arg.String add_prefix,
     "<prefix> Selects any image whose id matches <prefix>, repeatable";
     "-t", Arg.String add_tag,
-    "<tag> Selects any image tagged by <tag>, repeatable";
+    "<tag> Selects only images tagged by <tag>, repeatable";
     "-ids", Arg.Unit (set_cmd `List_ids),
     " Output the selected image ids on stdout";
     "-tags", Arg.Unit (set_cmd `List_tags), 

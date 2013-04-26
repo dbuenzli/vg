@@ -23,9 +23,9 @@ Db.image "area-square" ~author
   end;
 
 Db.image "area-square-outline" ~author
-  ~title:"Square outline in black."
+  ~title:"Square outline in black"
   ~tags:["area"; "area-outline"]
-  ~note:"Line width is 0.1 as we are on the surface edge."
+  ~note:"Line width is 0.1 as we are on the surface edge"
   ~size:(Size2.v 20. 20.)
   ~view:(Box2.v P2.o (P2.v 1. 1.))
   begin fun () -> 
@@ -35,7 +35,7 @@ Db.image "area-square-outline" ~author
   end;
 
 Db.image "area-square-outline-dashed" ~author 
-  ~title:"Dashed square outline in black."
+  ~title:"Dashed square outline in black"
   ~tags:["area"; "area-outline"; "dashes";]
   ~note:"Line width is 0.1 as we are on the surface edge."  
   ~size:(Size2.v 20. 20.)
@@ -50,7 +50,7 @@ Db.image "area-square-outline-dashed" ~author
 (*
 
 test "path-cap-styles"
-~info: "Lines with different cap styles."
+~info: "Lines with different cap styles"
 ~view: (box2_ P2.o (size2_ 18. 18.))
 & lazy begin
   let white = I.mono Color.white in
@@ -65,7 +65,7 @@ test "path-cap-styles"
 end;;
 
 test "path-cap-styles"
-~info: "Lines with different cap styles."
+~info: "Lines with different cap styles"
 ~view: (_box2 P2.o (_size2 18. 18.))
 & lazy begin
   let line = P.empty >> P.start (_p2 3. 0.) >> P.line (_p2 15. 0.) in 
@@ -78,7 +78,7 @@ test "path-cap-styles"
 end;;
 
 test "path-cap-styles"
-~info: "Lines with different cap styles."
+~info: "Lines with different cap styles"
 ~view: (gbox2 P2.o (gsize2 18. 18.))
 & lazy begin
   let line = P.empty >> P.start (gp2 3. 0.) >> P.line (gp2 15. 0.) in 
@@ -91,7 +91,7 @@ test "path-cap-styles"
 end;;
 
 test "path-cap-styles"
-~info: "Lines with different cap styles."
+~info: "Lines with different cap styles"
 ~view: (Box2.v P2.o (Size2.v 18. 18.))
 & lazy begin
   let line = P.empty >> P.start (P2.v 3. 0.) >> P.line (P2.v 15. 0.) in 
@@ -110,7 +110,7 @@ end;;
 
 let () = test
     ~name: "path-join-styles"
-    ~description: "Lines with different line join styles."
+    ~description: "Lines with different line join styles"
     ~size: (size 0.06 0.12)
     ~view: (rect Pt.o (size 18. 36.))
     & lazy begin 
@@ -132,7 +132,7 @@ let () = test
 
 let () = test
     ~name: "path-dashes"
-    ~description: "Lines with different dash patterns."
+    ~description: "Lines with different dash patterns"
     ~size: (size 0.12 0.12)
     ~view: (rect Pt.o (size 26. 26.))
     & lazy begin 

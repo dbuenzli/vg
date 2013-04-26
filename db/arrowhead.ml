@@ -27,7 +27,7 @@ let arrowhead_path i len =
 
 for i = 0 to 8 do 
   Db.image (Printf.sprintf "arrowhead-%d" i) ~author
-    ~title:(Printf.sprintf "Sierpiński Arrowhead curve level %d." i)
+    ~title:(Printf.sprintf "Sierpiński Arrowhead curve level %d" i)
     ~tags:["arrowhead"; "fractal"; "curve"]
     ~size:(Size2.v 12. 12.)
     ~view:(Box2.v (P2.v ~-.0.1 ~-.0.1) (Size2.v 1.1 1.1))
