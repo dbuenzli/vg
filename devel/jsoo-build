@@ -1,11 +1,13 @@
 #!/bin/sh
 
-# Usage: jsoo-build [-b [BROWSER]] [JSOO_OPT]... JSFILE... MLFILE
+# Usage: jsoo-build [-b [BROWSER]] [-u URI] [JSOO_OPT]... JSFILE... MLFILE
 #
 # If the files MLFILE.{html,css} exist they are copied to the build dir.
 #
 # -b [BROWSER] If present opens the result in BROWSER. If the option argument 
 #              is absent uses $BROWSER, see the `browser-reload` script.
+# -u [URI]     If present the uri to reload. If absent the MLFILE with its
+#              suffix .ml substituted by .html is reloaded.
 
 set -e
 LOC=`dirname $0`
@@ -15,6 +17,7 @@ JSOO=${JSOO:="js_of_ocaml"}
 BDIR=${BDIR:="_build"}
 
 RELOAD_BROWSER=false
+RELOAD_URI=""
 THE_BROWSER=""
 JSFILES=""
 JSOOOPTS=""
@@ -36,6 +39,7 @@ else
                     *) THE_BROWSER="-b $1"; shift ;;
                 esac
                 ;;
+            -u)   shift; RELOAD_URI=$1; shift ;;
             *.js) JSFILES="$JSFILES $1"; shift;;
             *.ml) 
                 if [ "$MLFILE" != "" ]; then 
@@ -62,5 +66,8 @@ if [ -f $BASE.css ]; then cp $BASE.css $BDIR/$BASE.css; fi
 
 # Reload browser
 if [ "$RELOAD_BROWSER" == "true" ]; then 
-     $LOC/reload-browser $THE_BROWSER file://$PWD/$BDIR/$BASE.html
+    if [ "$RELOAD_URI" == "" ]; then 
+        RELOAD_URI="file://$PWD/$BDIR/$BASE.html"
+    fi
+    $LOC/reload-browser $THE_BROWSER $RELOAD_URI
 fi
