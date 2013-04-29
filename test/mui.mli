@@ -81,7 +81,12 @@ module Ui : sig
 
   val mselect : ?id:string -> 'a printer -> 'a list -> 'a list -> 
     ('a list, 'a list) conf
-  
+
+  val canvas : ?id:string -> unit -> unit t * Dom_html.canvasElement Js.t
+
+
+  val classify : 'a t -> string -> bool -> unit
+  val visible : ?relayout:bool -> 'a t -> bool -> unit
 end
 
 val ( *> ) : 'a Ui.t -> 'b Ui.t -> 'a Ui.t
@@ -152,6 +157,9 @@ module Time : sig
   val duration : ('a -> 'b) -> 'a -> float * 'b
   (** [duration f v] is [(t, f v)] with [t] the time taken by the call in 
       seconds. *)
+
+  val delay : (unit -> unit) -> float -> unit
+  (** [delay f s] executes [f] in [s] seconds. *)
 end
 
 (** Logging functions. *)

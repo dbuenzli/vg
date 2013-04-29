@@ -12,9 +12,9 @@ form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td
 
 table { border-collapse: collapse; border-spacing: 0; }
 
-/* Basic page layout using the user's preferred font sizes */
+/* Basic page layout */
 
-body { font: normal 1em/1.375em helvetica, arial, sans-serif; text-align:left;
+body { font: normal 10pt/1.375em helvetica, arial, sans-serif; text-align:left;
        margin: 1.375em 10%; min-width: 40ex; max-width: 72ex;
        color: black; background: transparent /* url(line-height-22.gif) */; }
 

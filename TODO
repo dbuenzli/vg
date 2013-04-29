@@ -1,4 +1,8 @@
 
+* rhtmlc
+** #id
+** buttons for pdf svg and png
+
 * Renderer API
 ** Rectangle instead of Size ? 
 ** What about physical size ? 

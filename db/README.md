@@ -1,5 +1,4 @@
-The Vg image database
-=====================
+# Vg image database
 
 The Vg image database is a collection of test images. The database
 contains:

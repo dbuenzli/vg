@@ -13,8 +13,6 @@ open Mui
 include Db_htmlc
 
 let str = Format.sprintf
-let pp = Format.fprintf 
-let pp_dur ppf t = pp ppf "%.4fs" t
 let pp_str = Format.pp_print_string 
 
 (* Persistent ui state. *)
@@ -46,9 +44,29 @@ module S = struct
     List.map id (Db.find ~prefixes:[st.prefix] ~tags:st.tags ())
 end
 
+(* Render *)
+
+let render_image c i stats = 
+  let r = Vgr_htmlc.renderer ~meta:(Db.render_meta i) c in 
+  let start = Time.now () in
+  let rec finish steps v = match Vgr.render r v with 
+  | `Partial -> finish steps v (* should not happen *)
+  | `Ok -> stats (Time.now () -. start) steps 
+  in
+  let rec loop steps v = match Vgr.render r v with 
+  | `Ok -> finish steps `End 
+  | `Partial -> Time.delay (fun () -> ignore (loop (steps + 1) `Await)) 0.
+  in
+  loop 0 (`Image (Db.renderable i))
+
+(* User interface *)
+
+(* to do canvas.toDataURL() 
+         window*)
+
 let ui () = 
-  let db_ids, db_tags = Db.indexes () in
   let s = S.get () in
+  let db_ids, db_tags = Db.indexes () in
   let budget, set_budget = Ui.bool s.S.budget in 
   let white, set_white = Ui.bool s.S.white_bg in
   let ids, conf_ids = Ui.select pp_str (Some s.S.id) db_ids in
@@ -57,23 +75,30 @@ let ui () =
   let tag_count, set_tag_count = Ui.text ~id:"tag-count" "" in
   let title, set_title = Ui.text ~id:"i-title" "" in
   let author, set_author = Ui.text ~id:"i-author" "" in
+  let note, set_note = Ui.text ~id:"i-note" "" in
+  let image, canvas = Ui.canvas ~id:"i-canvas" () in
+  let rinfo, set_rinfo = Ui.text ~id:"i-rinfo" "bla" in
   let cmd = function
   | `Use_budget b -> 
       let _ = S.set { (S.get ()) with S.budget = b } in
       Log.msg "Use budget: %b" b;
   | `Use_white_bg b -> 
-      let _ = S.set { (S.get ()) with S.white_bg = b } in
-      Log.msg "Use white: %b" b;
+      let s = S.set { (S.get ()) with S.white_bg = b } in
+      Ui.classify image "white" s.S.white_bg
   | `Select_id id -> 
-      let _ = S.set { (S.get ()) with S.id = id } in
-      let i = match Db.find ~ids:[id] () with
-      | [id] -> id | l -> 
-          List.iter (fun i -> Log.msg "%s" i.Db.id) l;
-          assert false 
+      let s = S.set { (S.get ()) with S.id = id } in
+      let i = match Db.find ~ids:[s.S.id] () with [i] -> i | l ->assert false in
+      let set_stats dur steps =
+        let steps = if steps = 0 then "" else str "and %d steps" steps in 
+        set_rinfo (str "Rendered in %.4fs%s" dur steps) 
       in
       set_title i.Db.title; 
       set_author i.Db.author;
-      Log.msg "Select id: %s" id;
+      begin match i.Db.note with 
+      | None ->  Ui.visible ~relayout:true note false
+      | Some n -> set_note n; Ui.visible note true
+      end;
+      render_image canvas i set_stats 
   | `Use_tags ts ->
       let s = S.set { (S.get ()) with S.tags = ts } in
       let ids = List.map (fun i -> i.Db.id) (Db.find ~tags:ts ()) in
@@ -84,36 +109,40 @@ let ui () =
       set_id_count id_count;
       conf_ids (`List ids); conf_ids (`Select sel)
   in
-  (* Untying the recursive knot... *)
-  Ui.on_change budget (fun b -> cmd (`Use_budget b)); 
-  Ui.on_change white (fun b -> cmd (`Use_white_bg b));
-  Ui.on_change ids (fun id -> match id with 
-  | Some i -> cmd (`Select_id i)
-  | None -> ()); 
-  Ui.on_change tags (fun ts -> cmd (`Use_tags ts)); 
-  (* Init UI *)
-  ignore (cmd (`Select_id s.S.id));
-  ignore (cmd (`Use_tags s.S.tags));
-  (* Layout *)
-  Ui.group () *> 
-    (Ui.group () ~id:"header" *>
-       Ui.label "Vg Image database" *>
-       (fst (Ui.text ~id:"vg-version" "v0.0.0"))) *> (* TODO use %%VERSION%% *)
-    (Ui.group ~id:"ui" () *> 
-       (Ui.group ~id:"ids" () *> 
-          (Ui.group () *> Ui.label "Images" *> id_count) *> ids) *>
-       (Ui.group ~id:"tags" () *> 
-          (Ui.group () *> Ui.label "Tags" *> tag_count) *> tags) *>
-       (Ui.group ~id:"rsetts" () *> 
-          Ui.label "Render settings" *> 
-          (Ui.label ~ctrl:true "Budget" *> budget) *>
-          (Ui.label ~ctrl:true "White background" *> white))) *>
-    (Ui.group ~id:"image" () *>
-       (Ui.group ~id:"info" () *> title *> author))
+  let link () = (* Untying the recursive knot... *)
+    Ui.on_change budget (fun b -> cmd (`Use_budget b)); 
+    Ui.on_change white (fun b -> cmd (`Use_white_bg b));
+    Ui.on_change ids (fun id -> match id with 
+    | Some i -> cmd (`Select_id i)
+    | None -> ()); 
+    Ui.on_change tags (fun ts -> cmd (`Use_tags ts)); 
+  in
+  let init () = 
+    ignore (cmd (`Select_id s.S.id));
+    ignore (cmd (`Use_tags s.S.tags));
+    ignore (cmd (`Use_white_bg s.S.white_bg));
+  in
+  let layout () = 
+    Ui.group () *> 
+      (Ui.group () ~id:"header" *>
+         Ui.label "Vg Image database" *>
+         (fst (Ui.text ~id:"vg-version" "v0.0.0"))) *> (* TODO %%VERSION%% *)
+      (Ui.group ~id:"ui" () *> 
+         (Ui.group ~id:"ids" () *> 
+            (Ui.group () *> Ui.label "Images" *> id_count) *> ids) *>
+         (Ui.group ~id:"tags" () *> 
+            (Ui.group () *> Ui.label "Tags" *> tag_count) *> tags) *>
+         (Ui.group ~id:"rsetts" () *> 
+            Ui.label "Render settings" *> 
+            (Ui.label ~ctrl:true "White background" *> white) *>
+            (Ui.label ~ctrl:true "Budget" *> budget))) *>
+      (Ui.group ~id:"image" () *>
+         (Ui.group ~id:"info" () *> title *> author *> note *> image *> rinfo))
+  in
+  link (); init (); layout ()
 
 let main () = Ui.show (ui ())
-  
-let () = Ui.main main 
+let () = Ui.main main
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

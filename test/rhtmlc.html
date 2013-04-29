@@ -8,6 +8,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script type="text/javascript" src="rhtmlc.js"></script>
   <style type="text/css">
     /* Reset a few things */
@@ -18,14 +19,17 @@
     hgroup,menu,nav,section,summary,time,mark,audio,video,input,select
     {margin:0;padding:0;border:0;outline:0;font-size:100%;
      vertical-align:baseline;color:inherit;}
+
     article,aside,details,figcaption,figure,footer,header,hgroup,menu,nav,
     section{display:block;}
 
+    input{font-family:inherit;}
+
     /* basic layout */
 
-    @import url(http://fonts.googleapis.com/css?family=Open+Sans:300italic,400&subset=latin,latin-ext);
+    @import url(http://fonts.googleapis.com/css?family=Open+Sans:300italic,400,300&subset=latin,latin-ext);
 
-    input{font-family:inherit;}
+
     body { background-color: black;
            color: gray; 
            -webkit-text-size-adjust: none;
@@ -41,6 +45,9 @@
 
     /* Mui generic */
 
+    .mu-invisible-relayout { display: none } 
+    .mu-invisible { visibility: hidden } 
+
     /* Labels & text */
     .mu-label { padding: 0.145em 0.291em; }    
     .mu-label.mu-label-text 
@@ -49,22 +56,22 @@
     .mu-label-text + input { margin-left: 1ex }
     input + .mu-label-text { margin-left: 1ex }
 
-    .mu-text { padding: 0.145em 0.291 }
+    .mu-text { padding: 0.145em 0.291em }
 
     /* Checkboxes */
     .mu-bool { padding: 0.145em 0.291em; }
-    .mu-bool:hover { background: gray; color: black }
+    .mu-bool:hover 
+    { background: gray; color: black }
 
     /* Select list */
-
-/* Keep scrollbar visible */
 
     .mu-selected > span { background: gray; color: black }
 
     .mu-select span 
     { padding: 0.145em 0.291em; display: inline-block; }
     .mu-select li { cursor : default }
-    .mu-select li span:hover { background: gray; color: black }
+    .mu-select li span:hover 
+    { background: gray; color: black; }
     .mu-select { list-style-type: none; } 
 
     /* rhtmlc specific */
@@ -72,42 +79,44 @@
     body > div > div { display: inline-block;  vertical-align: top; }
 
     /* Page header */
-    
     #header { display: block }
     #header h1 { display: inline }
-    #vg-version { display: inline; margin-left:1ex; font-size:0.8em; }
+    #vg-version { display: inline; font-size:0.8em; }
 
     /* UI */
-    
     #ui { width: 15em; margin-top:0em; display:inline-block; }
     #ui > div { margin-top: 1.5em }
     
-
-
     /* Image ids */
     #ids h1 { display: inline }
-    #ids p { display: inline; margin-left:0.5ex; font-size:0.8em; }
+    #ids p { display: inline; font-size:0.8em; }
     #ids ul { overflow-y:scroll; height: 21em }
 
     /* Tags */
-
     #tags h1 { display: inline }
-    #tags p { display: inline; margin-left:0.5ex; font-size:0.8em; }
+    #tags p { display: inline; font-size:0.8em; }
     #tags ul { overflow-y:scroll; height: 15em }
 
     /* Render settings */
-
     #rsetts label { display : inline-block }
     #rsetts label:hover { background: gray; color: black }
     
     /* Image */
-    
+    #image { margin-left: 2em; margin-top: 1.52em }    
     #i-author { font-style: italic; font-weight: 300; }
-    #image { margin-left: 2em; margin-top: 1.5em }
-    #surface { background-color: white;
-               border-color: gray;
-               border-style: solid;
-               border-width: 1px; }    
+    #i-note { line-height:0; 
+              font-size: 0.8em; margin-top: 1.9em; font-weight: 300; }
+    #i-rinfo { line-height:0; 
+               font-size: 0.8em; margin-top: 1.9em; font-weight: 300; }
+
+    #i-canvas { margin: 0.145em 0.291em;
+                margin-top: 1.52em;
+                border-color: rgb(50,50,50);
+                border-style: solid;
+                border-width: 1px; }
+
+    #i-canvas.white { background: white; }    
+ }    
   </style>
   <title>Vg image database</title>
 </head>

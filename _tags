@@ -1,6 +1,7 @@
 <**/*.{ml,mli}> : annot, package(gg)
 <dist> : not_hygienic
 <src> : include
+<src/vgr_htmlc.{mli,ml}> : package(js_of_ocaml)
 <test> : include
 <db> : include
 

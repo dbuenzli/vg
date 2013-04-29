@@ -72,7 +72,7 @@ module Ui = struct
 
   type 'a printer = Format.formatter -> 'a -> unit
   type 'a t = 
-    { n : Dom.node Js.t; 
+    { n : Dom_html.element Js.t; 
       mutable on_change : 'a -> unit }
 
   type ('a, 'b) conf = 'a t * ('b -> unit)
@@ -88,7 +88,7 @@ module Ui = struct
   let c_group = Js.string "mu-group"
   let group ?id () = 
     let d = el ?id Dom_html.createDiv [c_group] in
-    { n = (d :> Dom.node Js.t); on_change = nop }
+    { n = d; on_change = nop }
     
   let c_label_text = Js.string "mu-label-text"
   let c_label = Js.string "mu-label" 
@@ -96,14 +96,14 @@ module Ui = struct
     if ctrl then 
       let s = el Dom_html.createSpan [c_label_text] <*> txt str in
       let l = el ?id Dom_html.createLabel [c_label] <*> s in
-      let ui = { n = (l :> Dom.node Js.t); on_change = nop } in
+      let ui = { n = (l :> Dom_html.element Js.t); on_change = nop } in
       let set _ = failwith "TODO" in 
       let cb _ _ = Log.msg "TODO"; false in 
       Ev.cb s Ev.change cb;
       ui, set
     else
       let l = el ?id Dom_html.createH1 [c_label; c_label_text] <*> txt str in
-      let ui = { n = (l :> Dom.node Js.t); on_change = nop } in 
+      let ui = { n = l; on_change = nop } in 
       let set _ = failwith "TODO" in 
       let cb _ _ = Log.msg "TODO"; false in 
       Ev.cb l Ev.change cb;
@@ -114,7 +114,7 @@ module Ui = struct
   let c_text = Js.string "mu-text"
   let text ?id str = 
     let p = el ?id Dom_html.createP [c_text] <*> txt str in
-    let ui = { n = (p :> Dom.node Js.t); on_change = nop } in
+    let ui = { n = p; on_change = nop } in
     let set str = match Js.Opt.to_option (p ## firstChild) with 
     | Some t -> ignore (p ## replaceChild (((txt str) :> Dom.node Js.t), t))
     | None -> assert false
@@ -127,7 +127,7 @@ module Ui = struct
   let bool ?id v = 
     let cbox d = Dom_html.createInput ~_type:(Js.string "checkbox") d in
     let c = el ?id cbox [c_bool] in
-    let ui = { n = (c :> Dom.node Js.t); on_change = nop } in 
+    let ui = { n = (c :> Dom_html.element Js.t); on_change = nop } in 
     let set b = c ## checked <- Js.bool b in 
     let cb _ _ = ui.on_change (Js.to_bool (c ## checked)); false in
     set v; Ev.cb c Ev.change cb;
@@ -142,14 +142,12 @@ module Ui = struct
   let c_selected = Js.string "mu-selected"
   let select ?id pp s l = 
     let ul = make_focusable (el ?id Dom_html.createUl [c_select]) in 
-    let ui = { n = (ul :> Dom.node Js.t); on_change = nop } in
+    let ui = { n = ul; on_change = nop } in
     let selected = ref None in
     let els = ref [||] in
     let els_v = ref [||] in
     let deselect () = match !selected with 
-    | None -> () | Some i -> 
-        Log.msg "%d" i;
-        !els.(i) ## classList ## remove (c_selected)
+    | None -> () | Some i -> !els.(i) ## classList ## remove (c_selected)
     in
     let select () = match !selected with 
     | None -> () | Some i -> !els.(i) ## classList ## add (c_selected)
@@ -200,7 +198,7 @@ module Ui = struct
   let c_mselect = Js.string "mu-mselect" 
   let mselect ?id pp sels l = 
     let ul = el ?id Dom_html.createUl [c_select; c_mselect] in 
-    let ui = { n = (ul :> Dom.node Js.t); on_change = nop } in
+    let ui = { n = ul; on_change = nop } in
     let selected = ref [] in
     let li v = 
       let sp = el Dom_html.createSpan [] <*> txt (str pp v) in
@@ -222,7 +220,29 @@ module Ui = struct
     in
     set l; 
     ui, set
-      
+   
+  let c_canvas = Js.string "mu-canvas" 
+  let canvas ?id () = 
+    let c = el ?id Dom_html.createCanvas [c_canvas] in 
+    let ui = { n = (c :> Dom_html.element Js.t); on_change = nop } in 
+    ui, c
+
+  let classify_js ui c is_c = 
+    if is_c then ui.n ## classList ## add (c) else 
+    ui.n ## classList ## remove (c)
+
+  let classify ui c is_c = classify_js ui (Js.string c) is_c 
+  let c_invisible_relayout = Js.string "mu-invisible-relayout"
+  let c_invisible = Js.string "mu-invisible" 
+  let visible ?(relayout = false) ui visible = 
+    if visible then begin
+      classify_js ui c_invisible_relayout false;
+      classify_js ui c_invisible false; 
+    end else begin 
+      if relayout then classify_js ui c_invisible_relayout true else
+      classify_js ui c_invisible true 
+    end
+    
   let ( *> ) p c = Dom.appendChild p.n c.n; p
   let show ui = ignore (D.document ## body <*> ui.n)
   let main m = 
@@ -293,6 +313,9 @@ module Time = struct
     let r = f v in 
     now () -. start, r
 
+  let delay f s = 
+    let ms = s *. 1000. in 
+    ignore (D.window ## setTimeout (Js.wrap_callback f, ms))
 end
 
 (*---------------------------------------------------------------------------
