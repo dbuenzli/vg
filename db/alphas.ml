@@ -21,9 +21,9 @@ Db.image "alpha-squares" ~author
     let rb = P.empty >> P.rect (Box2.v (P2.v 0.0 0.3) (Size2.v 0.5 0.7)) in
     let ry = P.empty >> P.rect (Box2.v (P2.v 0.25 0.) (Size2.v 0.4 0.6)) in
     let rg = P.empty >> P.rect (Box2.v (P2.v 0.4 0.4) (Size2.v 0.5 0.4)) in
-    let blue = I.mono (Color.v 0. 0. 1. 1.) >> I.cut rb in 
-    let yellow = I.mono (Color.v 1. 1. 0.5 0.5) >> I.cut ry in
-    let green = I.mono (Color.v 0.5 1. 0.5 1.0) >> I.cut rg in 
+    let blue = I.const (Color.v 0. 0. 1. 1.) >> I.cut rb in 
+    let yellow = I.const (Color.v 1. 1. 0.5 0.5) >> I.cut ry in
+    let green = I.const (Color.v 0.5 1. 0.5 1.0) >> I.cut rg in 
     blue >> I.blend yellow >> I.blend green
   end
 

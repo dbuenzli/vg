@@ -33,7 +33,7 @@ for i = 0 to 8 do
     ~view:(Box2.v (P2.v ~-.0.1 ~-.0.1) (Size2.v 1.1 1.1))
     begin fun () ->
       let area = `O { P.o with P.width = 0.1 } in
-      I.mono Color.black >> I.cut ~area (arrowhead_path i 1.0) 
+      I.const Color.black >> I.cut ~area (arrowhead_path i 1.0) 
     end
 done
 

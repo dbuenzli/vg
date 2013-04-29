@@ -708,7 +708,7 @@ module I = struct
   type blender = [ `Atop | `In | `Out | `Over | `Plus | `Copy | `Xor ]  
   type tr = Move of v2 | Rot of float | Scale of v2 | Matrix of m3
   type primitive = 
-    | Mono of color
+    | Const of color
     | Axial of Color.stops * p2 * p2
     | Radial of Color.stops * p2 * p2 * float
     | Raster of box2 * raster
@@ -722,8 +722,8 @@ module I = struct
 
   (* Primitive images. *)
 
-  let mono c = Primitive (Mono c)
-  let void = mono Color.void
+  let const c = Primitive (Const c)
+  let void = const Color.void
   let axial stops pt pt' = Primitive (Axial (stops, pt, pt'))
   let raster b r = Primitive (Raster (b, r))
   let radial stops ?f c r = 
@@ -767,7 +767,7 @@ module I = struct
   | _, _ -> false
 
   let eq_primitive eq i i' = match i, i' with 
-  | Mono c, Mono c' -> 
+  | Const c, Const c' -> 
       V4.equal_f eq c c'
   | Axial (stops, p1, p2), Axial (stops', p1', p2') -> 
       V2.equal_f eq p1 p1' && V2.equal_f eq p2 p2' && eq_stops eq stops stops'
@@ -819,7 +819,7 @@ module I = struct
   | ss, ss' -> Pervasives.compare ss ss'
                  
   let compare_primitive cmp i i' = match i, i' with 
-  | Mono c, Mono c' -> 
+  | Const c, Const c' -> 
       V4.compare_f cmp c c' 
   | Axial (stops, p1, p2), Axial (stops', p1', p2') -> 
       let c = compare_stops cmp stops stops' in 
@@ -891,8 +891,8 @@ module I = struct
   | Matrix m -> pr ppf "%a" (M3.pp_f pp_f) m
 
   let pp_primitive pp_f ppf = function
-  | Mono c -> 
-      pr ppf "@[<1>(I-mono@ %a)@]" (V4.pp_f pp_f) c
+  | Const c -> 
+      pr ppf "@[<1>(I-const@ %a)@]" (V4.pp_f pp_f) c
   | Axial (stops, p, p') -> 
       pr ppf "@[<1>(I-axial@ %a@ %a@ %a)@]" 
         (pp_stops pp_f) stops (V2.pp_f pp_f) p (V2.pp_f pp_f) p'
@@ -994,7 +994,7 @@ module Vgr = struct
       | Move of v2 | Rot of float | Scale of v2 | Matrix of m3
       
     type primitive = I.primitive = 
-      | Mono of color
+      | Const of color
       | Axial of Color.stops * p2 * p2
       | Radial of Color.stops * p2 * p2 * float
       | Raster of box2 * raster
@@ -1044,7 +1044,7 @@ module Vgr = struct
     | `Image _ as i -> rfun state i (ok (r_loop state rfun)) r
     | `Await -> ok (r_loop state rfun) r
 
-    let create_renderer ?(meta = Vgm.empty) ?(once = false) dst state rfun = 
+    let create_renderer ?(once = false) meta dst state rfun = 
       let o, o_pos, o_max = match dst with 
       | `Manual | `Immediate -> "", 1, 0          (* implies [o_rem e = 0]. *)
       | `Buffer _ 

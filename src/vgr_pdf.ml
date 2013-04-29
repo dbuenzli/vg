@@ -20,11 +20,11 @@ type state =
     mutable pid : pid; 
     paths : (P.t, pid) Hashtbl.t; }                  (* maps paths to pids. *)
 
-let renderer ?meta dst = 
+let renderer ?(meta = Vgm.empty) dst = 
   let state = { buf = Buffer.create 1024; bytes = 0; id = 0; index = []; 
                 page_objs = []; pid = 0; paths = Hashtbl.create 255; }
   in
-  Vgr.Private.create_renderer ?meta dst state render
+  Vgr.Private.create_renderer meta dst state render
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

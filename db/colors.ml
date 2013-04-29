@@ -19,7 +19,7 @@ Db.image "color-rgb-squares" ~author
   ~view:(Box2.v P2.o (Size2.v 40. 40.))
   begin fun () -> 
     let r = P.empty >> P.rect (Box2.v P2.o (Size2.v 20. 20.)) in
-    let square ~at c = I.mono c >> I.cut r >> I.move at in 
+    let square ~at c = I.const c >> I.cut r >> I.move at in 
     square ~at:P2.o Color.red >> 
     I.blend (square ~at:(P2.v 20. 0.0) Color.green) >>
     I.blend (square ~at:(P2.v 20. 20.) Color.blue)

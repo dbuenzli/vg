@@ -373,12 +373,12 @@ module I : sig
   type t = image
   (** The type for images. *)
 
-  val mono : color -> image
-  (** [mono c] is a monochrome image of color [c].
-      {ul {- \[[mono c]\]{_[pt]} [= c] for any [pt].}} *)
+  val const : color -> image
+  (** [const c] is an image of color [c].
+      {ul {- \[[const c]\]{_[pt]} [= c] for any [pt].}} *)
 
   val void : image
-  (** [void] is [mono ]{!Gg.Color.void}, the invisible black image. *)
+  (** [void] is [const ]{!Gg.Color.void}, the invisible black image. *)
 
   val axial : Color.stops -> p2 -> p2 -> image
   (** [axial stops pt pt'] is an image with an axial color gradient 
@@ -711,7 +711,7 @@ module Vgr : sig
     
     (** The type for image primitives. *)    
     type primitive = 
-      | Mono of color
+      | Const of color
       | Axial of Color.stops * p2 * p2
       | Radial of Color.stops * p2 * p2 * float
       | Raster of box2 * raster
@@ -744,9 +744,9 @@ module Vgr : sig
    type 'a render_fun = 'a -> [`End | `Image of size2 * box2 * image ] -> k -> k
    (** The type for rendering functions. TODO *)
 
-   val create_renderer : ?meta:meta -> ?once:bool -> [< dst] -> 
+   val create_renderer : ?once:bool -> meta -> [< dst] -> 
      'a -> 'a render_fun -> t
-   (** [create_renderer meta multi dst state rfun] is a renderer
+   (** [create_renderer once meta dst state rfun] is a renderer
        [r] such that: 
        {ul
        {- [render r (`Image i)] invokes [rfun state (`Image i)]}
@@ -799,10 +799,10 @@ open Vg;;]}
     functions mapping points of the plane to colors.  Images are
     immutable values of type {!image}.
 
-    The simplest image is a monochrome image: an image that associates
+    The simplest image is a constant image: an image that associates
     the same color to every point in the plane.  This expression
     defines an infinite red image:
-{[let red = I.mono Color.red]}
+{[let red = I.const Color.red]}
     The module {!I} contains all the combinators to define and compose
     infinite images, we'll explore some of them later.
 
@@ -849,10 +849,10 @@ let () = usquare_to_pdf red]}
 
     {2 Scissors and glue}
 
-    Monochrome images can be boring. To make things more interesting
+    Constant images can be boring. To make things more interesting
     [Vg] gives you scissors. Suppose you have a path (more on paths
     later) defining a circle, the following code cuts out that circle
-    in the monochrome image [red] and returns it as an infinite image.
+    in the constant image [red] and returns it as an infinite image.
 {[let circle = P.empty >> P.circle (P2.v 0.5 0.5) 0.4 
 let red_circle = I.cut `Aeo red circle]}
     Look at the {{:TODObasics-red-circle.png}result} rendered by
@@ -878,7 +878,7 @@ let red_circle = I.cut `Aeo red circle]}
     outline area of width [0.01].
 {[let circle_outline =
   let ol = { I.ol with I.width = 0.01 } in
-  I.cut (`Ol ol) (I.mono Color.black) circle]}
+  I.cut (`Ol ol) (I.const Color.black) circle]}
     {{:TODObasics-circle-outline.png} Result}. Here the image
     [circle_outline] is an infinite image that associates the color
     {!Gg.Color.black} in the outline area and the invisible color
@@ -934,8 +934,8 @@ let red_circle = I.cut `Aeo red circle]}
 {[let i = 
   let circle r = P.empty & P.circle (V2.t 0.5 0.5) r in
   let o = `Ol { I.ol with width = 5. } in
-  let black = I.mono Color.black in 
-  let red = I.mono Color.red in 
+  let black = I.const Color.black in 
+  let red = I.const Color.red in 
   I.cut o black (circle 0.15) +++
   I.cut o black circle
   I.blend (I.cut o black (circle 0.3)) &

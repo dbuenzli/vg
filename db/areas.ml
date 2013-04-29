@@ -19,7 +19,7 @@ Db.image "area-square" ~author
   ~view:(Box2.v P2.o (Size2.v 1. 1.))
   begin fun () ->
     let sq = P.empty >> P.rect (Box2.v P2.o (P2.v 1. 1.)) in
-    I.mono Color.black >> I.cut sq
+    I.const Color.black >> I.cut sq
   end;
 
 Db.image "area-square-outline" ~author
@@ -31,7 +31,7 @@ Db.image "area-square-outline" ~author
   begin fun () -> 
     let sq = P.empty >> P.rect (Box2.v P2.o (Size2.v 1. 1.)) in
     let area = `O { P.o with P.width = 0.2 } in
-    I.mono Color.black >> I.cut ~area sq 
+    I.const Color.black >> I.cut ~area sq 
   end;
 
 Db.image "area-square-outline-dashed" ~author 
@@ -43,7 +43,7 @@ Db.image "area-square-outline-dashed" ~author
   begin fun () -> 
     let sq = P.empty >> P.rect (Box2.v P2.o (P2.v 1. 1.)) in
     let area = `O { P.o with P.width = 0.2; dashes = Some (0., [0.1]); } in
-    I.mono Color.black >> I.cut ~area sq 
+    I.const Color.black >> I.cut ~area sq 
   end;
 
 
