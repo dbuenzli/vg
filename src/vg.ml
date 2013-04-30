@@ -984,36 +984,37 @@ module Vgr = struct
 
     (* Path representation *)
 
-    type segment = P.segment
-    type path = P.t 
-    external path : P.t -> path = "%identity"
+    module Data = struct
+      type segment = P.segment
+      type path = P.t 
 
-    (* Image representation *)
-    
-    type tr = I.tr = 
-      | Move of v2 | Rot of float | Scale of v2 | Matrix of m3
       
-    type primitive = I.primitive = 
-      | Const of color
-      | Axial of Color.stops * p2 * p2
-      | Radial of Color.stops * p2 * p2 * float
-      | Raster of box2 * raster
-
-    type image = I.t = 
-      | Primitive of primitive
-      | Cut of P.area * P.t * image
-      | Blend of I.blender * float option * image * image
-      | Tr of tr * image
-      | Meta of meta * image
-
+      (* Image representation *)
+    
+      type tr = I.tr = Move of v2 | Rot of float | Scale of v2 | Matrix of m3
+      
+      type primitive = I.primitive = 
+        | Const of color
+        | Axial of Color.stops * p2 * p2
+        | Radial of Color.stops * p2 * p2 * float
+        | Raster of box2 * raster
+              
+      type image = I.t = 
+        | Primitive of primitive
+        | Cut of P.area * P.t * image
+        | Blend of I.blender * float option * image * image
+        | Tr of tr * image
+        | Meta of meta * image
+    end
+    external path : P.t -> path = "%identity"
     external image : I.t -> image = "%identity"
-
+      
     (* Renderer *)
 
     type renderer = t
     
     type k = renderer -> [ `Ok | `Partial ]
-    type 'a render_fun = 'a -> [`End | `Image of size2 * box2 * image ] 
+    type 'a render_fun = 'a -> [`End | `Image of size2 * box2 * Data.image ] 
       -> k -> k
 
     let renderer r = r

@@ -683,53 +683,55 @@ module Vgr : sig
           encountered during rendering. *)
     end
 
-    (** {1 Path representation} *)
+    (** {1 Internal data} *)
 
-    type segment = 
-      [ `Sub of p2
-      | `Line of p2
-      | `Qcurve of p2 * p2 
-      | `Ccurve of p2 * p2 * p2 
-      | `Earc of bool * bool * size2 * float * p2
-      | `Close ]
-    (** The type for path segments. *)
+    (** Vg internal data types. *)
+    module Data : sig
+
+      (** {1 Path representation} *)
+
+      type segment = 
+        [ `Sub of p2
+        | `Line of p2
+        | `Qcurve of p2 * p2 
+        | `Ccurve of p2 * p2 * p2 
+        | `Earc of bool * bool * size2 * float * p2
+        | `Close ]
+      (** The type for path segments. *)
       
-    type path = segment list
-    (** The type for paths. The segment list is reversed. A few invariants
-        apply. TODO See Vg's source. *)
+      type path = segment list
+      (** The type for paths. The segment list is reversed. A few invariants
+          apply. TODO See Vg's source. *)
 
-(* 
-    val path : P.t -> path 
-    (** [path p] is [p]'s internal representation. *)
-*)
+      (** {1 Image representation} *)
 
-    (** {1 Image representation} *)
-
-    (** The type for transforms. We don't uniformely express as a
-        matrix since renderers may have shorter syntaxes for some
-        transforms. *)
-    type tr = Move of v2 | Rot of float | Scale of v2 | Matrix of m3
+      (** The type for transforms. We don't uniformely express as a
+          matrix since renderers may have shorter syntaxes for some
+          transforms. *)
+      type tr = Move of v2 | Rot of float | Scale of v2 | Matrix of m3
     
-    (** The type for image primitives. *)    
-    type primitive = 
-      | Const of color
-      | Axial of Color.stops * p2 * p2
-      | Radial of Color.stops * p2 * p2 * float
-      | Raster of box2 * raster
-    
+      (** The type for image primitives. *)    
+      type primitive = 
+        | Const of color
+        | Axial of Color.stops * p2 * p2
+        | Radial of Color.stops * p2 * p2 * float
+        | Raster of box2 * raster
+              
             
-    (** The type for images. *)
-    type image = 
-      | Primitive of primitive
-      | Cut of P.area * path * image
-      | Blend of I.blender * float option * image * image
-      | Tr of tr * image
-      | Meta of meta * image
+      (** The type for images. *)
+      type image = 
+        | Primitive of primitive
+        | Cut of P.area * path * image
+        | Blend of I.blender * float option * image * image
+        | Tr of tr * image
+        | Meta of meta * image
+    end
+    
+   val path : P.t -> Data.path 
+   (** [path p] is [p]'s internal representation. *)
 
-(*
-    val image : I.t -> image
-    (** [image i] is [i]'s internal representation. *)
-*)
+   val image : I.t -> Data.image
+   (** [image i] is [i]'s internal representation. *)
 
    (** {1 Renderers } *)
    
