@@ -986,7 +986,7 @@ module Vgr = struct
 
     type segment = P.segment
     type path = P.t 
-(*     external path : P.t -> path = "%id" *)
+    external path : P.t -> path = "%identity"
 
     (* Image representation *)
     
@@ -1006,7 +1006,7 @@ module Vgr = struct
       | Tr of tr * image
       | Meta of meta * image
 
-(*     external image : I.t -> image = "%id" *)
+    external image : I.t -> image = "%identity"
 
     (* Renderer *)
 

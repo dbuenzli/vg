@@ -949,6 +949,8 @@ let red_circle = I.cut `Aeo red circle]}
     {- [to_string] functions are not thread-safe. Thread-safety
        can be achieved with [print] functions.}
     {- Angles follow [Gg]'s {{!Gg.mathconv}conventions}.}
+    {- Matrices given to {P.tr} and {I.tr} are supposed to 
+       be affine and as such ignore the last row of the matrix.} 
     {- Do not rely on the output of printer functions, they
        are subject to change.}
     {- Rendering results are undefined if path
