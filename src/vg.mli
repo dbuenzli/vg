@@ -744,7 +744,8 @@ module Vgr : sig
    type k = renderer -> [ `Ok | `Partial ] 
    (** The type for renderer continuations. *)
 
-   type 'a render_fun = 'a -> [`End | `Image of size2 * box2 * image ] -> k -> k
+   type 'a render_fun = 'a -> [`End | `Image of size2 * box2 * Data.image ] -> 
+     k -> k
    (** The type for rendering functions. TODO *)
 
    val create_renderer : ?once:bool -> meta -> [< dst] -> 
