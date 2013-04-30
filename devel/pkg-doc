@@ -48,6 +48,6 @@ $OCAMLBUILD -no-links $OCAMLDOCFLAGS $DOCDIRFILE/index.html
 cp doc/style.css $BDIR/$DOCDIRFILE/style.css
 
 # Reload browser
-if [ "$RELOAD_BROWSER" != "" ]; then 
+if [ "$RELOAD_BROWSER" == "true" ]; then 
      $LOC/reload-browser $THE_BROWSER file://$PWD/$BDIR/$DOCDIRFILE/
 fi
