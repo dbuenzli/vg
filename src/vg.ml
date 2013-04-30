@@ -77,7 +77,7 @@ module Vgm = struct
     try match proj (M.find id m) with Some v -> v | None -> raise Not_found 
     with Not_found -> invalid_arg err_meta_unbound
                         
-  let res = key ()
+  let resolution = key ()
   let quality = key ()
   let author = key () 
   let creator = key () 

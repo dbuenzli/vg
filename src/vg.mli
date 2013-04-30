@@ -80,9 +80,10 @@ module Vgm : sig
     
   (** {2:renderingmeta Rendering metadata} *)
     
-  val res : v2 key
-  (** [res] specifies the rendering resolution in samples per meters. *)
-      
+  val resolution : v2 key
+  (** [resolution] specifies a rendering resolution in samples per
+      meters for raster renderers. *) 
+
   val quality : [`Best | `Speed] key
   (** [quality] specifies the rendering quality. *)
       
@@ -1098,7 +1099,6 @@ let red_circle = I.cut `Aeo red circle]}
     according to the [o.dashes] parameter.
     
     {4:semcaps Path caps} 
-
     
     For path outlines, specifies the
     {{:http://www.w3.org/TR/SVG11/images/painting/linecap.png}shape}
