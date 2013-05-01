@@ -75,6 +75,9 @@ module Ui : sig
   val text : ?id:string -> string -> (string, string) conf
   val bool : ?id:string -> bool -> (bool, bool) conf
 
+  type link_conf = [ `Text of string | `Href of string ]
+  val link : ?id:string -> href:string -> string -> (unit, link_conf) conf
+
   type 'a select_conf = [ `Select of 'a option | `List of 'a list ]
   val select : ?id:string -> 'a printer -> 'a option -> 'a list -> 
     ('a option, 'a select_conf) conf
@@ -83,7 +86,7 @@ module Ui : sig
     ('a list, 'a list) conf
 
   val canvas : ?id:string -> unit -> unit t * Dom_html.canvasElement Js.t
-
+  val canvas_data : Dom_html.canvasElement Js.t -> string
 
   val classify : 'a t -> string -> bool -> unit
   val visible : ?relayout:bool -> 'a t -> bool -> unit

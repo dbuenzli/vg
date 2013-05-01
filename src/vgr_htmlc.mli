@@ -22,24 +22,27 @@
 (** {1 Renderer} *)
 
 
-val renderer : ?meta:Vg.meta -> unit -> Vg.renderer
-(** [renderer meta c] is an HTML canvas renderer rendering to [dst]. *)
+val renderer : ?meta:Vg.meta -> Dom_html.canvasElement Js.t -> Vg.renderer
+(** [renderer meta c] is an HTML canvas renderer rendering to [c]. *)
 
 (** {1 Render metadata}  
 
     The following standard keys are supported:
     
     {ul 
-    {- {!Vg.Vgr.Meta.res}, specifies the rendering resolution. TODO}}
+    {- {!Vg.Vgm.resolution}, specifies the rendering resolution.
+       If unspecified 11811 dpm (300 dpi) is used in both dimensions.}}
 *)
 
-type warning = [ `Dashes | `Aeo ]
+type warning = [ `Unsupported_outline_cut | `Dashes | `Aeo ]
 (** The type for rendering warnings. 
     {ul
+    {- [`Unsupported_outline_cut], only the {!I.const}, {!I.axial} and
+       {!I.radial} primitive images can be cut with an [`O] area.}
     {- [`Dashes], dashed outlines are being used (TODO this seems supported
        now).}
-    {- [`Aeo], a path area is defined by the [`Aeo] rule.}}
-*)
+    {- [`Aeo], a path area is defined by the [`Aeo] rule. [`Anz] will
+       be used instead.}} *)
 
 val pp_warning : Format.formatter -> warning -> unit
 (** [pp_warning ppf w] prints a textual representation of [w] on [ppf]. *)

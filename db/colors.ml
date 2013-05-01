@@ -15,7 +15,7 @@ let author = "Daniel C. Bünzli <daniel.buenzl i@erratique.ch>"
 Db.image "color-rgb-squares" ~author
   ~title:"Red green and blue squares"
   ~tags:["color"]
-  ~size:(Size2.v 10. 10.) 
+  ~size:(Size2.v 50. 50.) 
   ~view:(Box2.v P2.o (Size2.v 40. 40.))
   begin fun () -> 
     let r = P.empty >> P.rect (Box2.v P2.o (Size2.v 20. 20.)) in

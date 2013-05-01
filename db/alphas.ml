@@ -15,16 +15,16 @@ let author = "Daniel C. Bünzli <daniel.buenzl i@erratique.ch>"
 Db.image "alpha-squares" ~author
   ~title:"Blue, yellow and green squares overlapping"
   ~tags:["alpha"; "blend"]
-  ~size:(Size2.v 12. 12.)
+  ~size:(Size2.v 60. 60.)
   ~view:(Box2.v (P2.v ~-.0.1 ~-.0.1) (Size2.v 1.2 1.2))
   begin fun () -> 
-    let rb = P.empty >> P.rect (Box2.v (P2.v 0.0 0.3) (Size2.v 0.5 0.7)) in
-    let ry = P.empty >> P.rect (Box2.v (P2.v 0.25 0.) (Size2.v 0.4 0.6)) in
-    let rg = P.empty >> P.rect (Box2.v (P2.v 0.4 0.4) (Size2.v 0.5 0.4)) in
-    let blue = I.const (Color.v 0. 0. 1. 1.) >> I.cut rb in 
-    let yellow = I.const (Color.v 1. 1. 0.5 0.5) >> I.cut ry in
-    let green = I.const (Color.v 0.5 1. 0.5 1.0) >> I.cut rg in 
-    blue >> I.blend yellow >> I.blend green
+    let rr = P.empty >> P.rect (Box2.v (P2.v 0.1 0.3) (Size2.v 0.4 0.6)) in
+    let rg = P.empty >> P.rect (Box2.v (P2.v 0.25 0.) (Size2.v 0.4 0.6)) in
+    let rb = P.empty >> P.rect (Box2.v (P2.v 0.4 0.4) (Size2.v 0.6 0.4)) in
+    let r = I.const (Color.v 1. 0. 0. 0.5) >> I.cut rr in 
+    let g = I.const (Color.v 0. 1. 0. 0.5) >> I.cut rg in
+    let b = I.const (Color.v 0. 0. 1. 0.5) >> I.cut rb in 
+    r >> I.blend g >> I.blend b
   end
 
 (*---------------------------------------------------------------------------

@@ -12,28 +12,39 @@ open Vg
 let author = "Daniel C. Bünzli <daniel.buenzl i@erratique.ch>"
 ;;
 
+Db.image "gradient-axial" ~author 
+  ~title:"Black to red, red to white, axial gradient"
+  ~tags:["gradient"; "gradient-axial";]
+  ~size:(Size2.v 60. 20.)
+  ~view:(Box2.v P2.o (Size2.v 2. 1.))
+  begin fun () -> 
+    let r = P.empty >> P.rect (Box2.v P2.o (Size2.v 2. 1.)) in 
+    let stops = [0.0, Color.black; 0.5, Color.red; 1.0, Color.white] in 
+    I.cut r (I.axial stops P2.o (P2.v 2. 0.))
+  end;
+
 Db.image "gradient-scaling" ~author
   ~title:"Gradients and scaled ones side-by-side"
   ~tags:["gradient"; "gradient-axial"; "gradient-radial"]
-  ~size:(Size2.v 24. 24.)
+  ~size:(Size2.v 60. 60.)
   ~view:(Box2.v (P2.v ~-.0.1 ~-.0.1) (Size2.v 1.2 1.2))
   begin fun () -> 
-    let r = P.empty >> P.rect (Box2.v (P2.v 0. 0.) (Size2.v 0.4 0.4)) in
+    let r = P.empty >> P.rect (Box2.v (P2.v 0. 0.) (Size2.v 0.45 0.45)) in
     let stops = [ 0.0, Color.red; 0.5, Color.green; 1.0, Color.blue ] in
     let axial = I.axial stops P2.o V2.ox in
     let radial = I.radial stops ~f:(P2.v 0.25 0.25) (P2.v 0.5 0.5) 0.5 in
     let scaled i = i >> I.scale (Size2.v 0.5 1.0) in
     let square ~at i = i >> I.cut r >> I.move at in
-    square ~at:(P2.v 0.0 0.5) axial >> 
-    I.blend (square ~at:(P2.v 0.5 0.5) (scaled axial)) >> 
+    square ~at:(P2.v 0.0 0.55) axial >> 
+    I.blend (square ~at:(P2.v 0.55 0.55) (scaled axial)) >> 
     I.blend (square ~at:(P2.v 0.0 0.0) radial) >> 
-    I.blend (square ~at:(P2.v 0.5 0.5) (scaled radial))
+    I.blend (square ~at:(P2.v 0.55 0.55) (scaled radial))
   end;
 
 Db.image "gradient-rgb-squares" ~author
   ~title:"Shaded red, green and blue squares"
   ~tags:["gradient"; "gradient-axial"]
-  ~size:(Size2.v 10. 10.)
+  ~size:(Size2.v 50. 50.)
   ~view:(Box2.v P2.o (Size2.v 4. 4.))
   begin fun () -> 
     let w = 2. in

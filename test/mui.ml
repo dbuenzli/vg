@@ -136,7 +136,20 @@ module Ui = struct
   let make_focusable e = 
     (e ## setAttribute(Js.string "tabindex", Js.string "0")); e
 
-
+  let c_link = Js.string "mu-link"
+  type link_conf = [ `Text of string | `Href of string ]
+  let link ?id ~href text = 
+    let a = el ?id Dom_html.createA [c_link; c_text] <*> txt text in 
+    let ui = { n = (a :> Dom_html.element Js.t); on_change = nop } in 
+    let conf = function 
+    | `Href h -> a ## href <- Js.string h 
+    | `Text text -> rem_childs a; ignore (a <*> txt text)
+    in
+    let cb _ _ = ui.on_change (); true in
+    a ## href <- Js.string href;
+    Ev.cb a Ev.click cb;
+    ui, conf
+        
   type 'a select_conf = [ `Select of 'a option | `List of 'a list ]
   let c_select = Js.string "mu-select"
   let c_selected = Js.string "mu-selected"
@@ -222,10 +235,12 @@ module Ui = struct
     ui, set
    
   let c_canvas = Js.string "mu-canvas" 
-  let canvas ?id () = 
+  let canvas ?id () =  (* TODO don't use createCanvas because of exn. *)
     let c = el ?id Dom_html.createCanvas [c_canvas] in 
     let ui = { n = (c :> Dom_html.element Js.t); on_change = nop } in 
     ui, c
+
+  let canvas_data c = Js.to_string (c ## toDataURL ())
 
   let classify_js ui c is_c = 
     if is_c then ui.n ## classList ## add (c) else 

@@ -10,30 +10,34 @@ open Vg
 (** Sierpiński Arrowhead curve images 
     http://mathworld.wolfram.com/SierpinskiArrowheadCurve.html *)
 
+let str = Format.sprintf 
 let author = "Daniel C. Bünzli <daniel.buenzl i@erratique.ch>"
 
 let arrowhead_path i len = 
   let angle = Float.pi /. 3. in
-  let rec loop i len turn p = 
+  let rec loop i len sign turn p = 
     if i = 0 then p >> P.line ~rel:true V2.(len * polar_unit turn) else
-    let angle = if i mod 2 = 0 then -.angle else angle in
     p >>
-    loop (i - 1) (len /. 2.) (turn +. angle) >>
-    loop (i - 1) (len /. 2.) turn >> 
-    loop (i - 1) (len /. 2.) (turn -. angle) 
+    loop (i - 1) (len /. 2.) (-. sign) (turn +. sign *. angle) >>
+    loop (i - 1) (len /. 2.) sign turn >> 
+    loop (i - 1) (len /. 2.) (-. sign) (turn -. sign *. angle)
   in
-  P.empty >> loop i len 0.
+  P.empty >> loop i len 1. 0.
 ;;
 
 for i = 0 to 8 do 
-  Db.image (Printf.sprintf "arrowhead-%d" i) ~author
-    ~title:(Printf.sprintf "Sierpiński Arrowhead curve level %d" i)
+  let id = str "arrowhead-%d" i in
+  let title = str "Sierpiński Arrowhead curve level %d" i in
+  let s = (if i = 0 then "" else "s") in
+  let note = str "Curve made of %g segment%s." (3. ** (float i)) s in
+  Db.image id ~author ~title
     ~tags:["arrowhead"; "fractal"; "curve"]
-    ~size:(Size2.v 12. 12.)
-    ~view:(Box2.v (P2.v ~-.0.1 ~-.0.1) (Size2.v 1.1 1.1))
+    ~size:(Size2.v 60. 60.)
+    ~view:(Box2.v (P2.v ~-.0.1 ~-.0.1) (Size2.v 1.2 1.2))
+    ~note
     begin fun () ->
-      let area = `O { P.o with P.width = 0.1 } in
-      I.const Color.black >> I.cut ~area (arrowhead_path i 1.0) 
+      let area = `O { P.o with P.width = 0.005 } in
+      I.const (Color.gray 0.2) >> I.cut ~area (arrowhead_path i 1.0) 
     end
 done
 

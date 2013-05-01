@@ -28,7 +28,7 @@ module S = struct
   let state : t Store.key = Store.key () 
   
   let default = 
-    { id = "arrowhead-8"; (* TODO change that *)
+    { id = "arrowhead-5";
       white_bg = true; 
       budget = false;
       tags = [];
@@ -61,9 +61,6 @@ let render_image c i stats =
 
 (* User interface *)
 
-(* to do canvas.toDataURL() 
-         window*)
-
 let ui () = 
   let s = S.get () in
   let db_ids, db_tags = Db.indexes () in
@@ -77,7 +74,8 @@ let ui () =
   let author, set_author = Ui.text ~id:"i-author" "" in
   let note, set_note = Ui.text ~id:"i-note" "" in
   let image, canvas = Ui.canvas ~id:"i-canvas" () in
-  let rinfo, set_rinfo = Ui.text ~id:"i-rinfo" "bla" in
+  let rinfo, set_rinfo = Ui.text ~id:"i-rinfo" "" in
+  let png, conf_png = Ui.link ~id:"png-btn" ~href:"#" "PNG" in
   let cmd = function
   | `Use_budget b -> 
       let _ = S.set { (S.get ()) with S.budget = b } in
@@ -90,7 +88,8 @@ let ui () =
       let i = match Db.find ~ids:[s.S.id] () with [i] -> i | l ->assert false in
       let set_stats dur steps =
         let steps = if steps = 0 then "" else str "and %d steps" steps in 
-        set_rinfo (str "Rendered in %.4fs%s" dur steps) 
+        let dur = Float.int_of_round (dur *. 1000.) in
+        set_rinfo (str "Rendered in %dms%s" dur steps)
       in
       set_title i.Db.title; 
       set_author i.Db.author;
@@ -108,6 +107,9 @@ let ui () =
       set_tag_count tag_count;
       set_id_count id_count;
       conf_ids (`List ids); conf_ids (`Select sel)
+  | `Make_png -> 
+      let durl = Ui.canvas_data canvas in 
+      conf_png (`Href durl)
   in
   let link () = (* Untying the recursive knot... *)
     Ui.on_change budget (fun b -> cmd (`Use_budget b)); 
@@ -116,11 +118,11 @@ let ui () =
     | Some i -> cmd (`Select_id i)
     | None -> ()); 
     Ui.on_change tags (fun ts -> cmd (`Use_tags ts)); 
+    Ui.on_change png (fun () -> cmd (`Make_png))
   in
-  let init () = 
-    ignore (cmd (`Select_id s.S.id));
-    ignore (cmd (`Use_tags s.S.tags));
+  let init () =
     ignore (cmd (`Use_white_bg s.S.white_bg));
+    ignore (cmd (`Use_tags s.S.tags));
   in
   let layout () = 
     Ui.group () *> 
@@ -133,11 +135,13 @@ let ui () =
          (Ui.group ~id:"tags" () *> 
             (Ui.group () *> Ui.label "Tags" *> tag_count) *> tags) *>
          (Ui.group ~id:"rsetts" () *> 
-            Ui.label "Render settings" *> 
+            Ui.label "Settings" *> 
             (Ui.label ~ctrl:true "White background" *> white) *>
-            (Ui.label ~ctrl:true "Budget" *> budget))) *>
+            (Ui.label ~ctrl:true "Timeout test" *> budget))) *>
       (Ui.group ~id:"image" () *>
-         (Ui.group ~id:"info" () *> title *> author *> note *> image *> rinfo))
+         (Ui.group ~id:"info" () *> 
+            title *> author *> note *> image *> rinfo *> 
+            (Ui.group ~id:"i-btns" () *> png)))
   in
   link (); init (); layout ()
 

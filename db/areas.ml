@@ -13,122 +13,79 @@ let author = "Daniel C. Bünzli <daniel.buenzl i@erratique.ch>"
 ;;
 
 Db.image "area-square" ~author
-  ~title:"Square area in black"
+  ~title:"Square area in red"
   ~tags:["area"; "area-nz"]
-  ~size:(Size2.v 20. 20.)
+  ~size:(Size2.v 50. 50.)
   ~view:(Box2.v P2.o (Size2.v 1. 1.))
   begin fun () ->
     let sq = P.empty >> P.rect (Box2.v P2.o (P2.v 1. 1.)) in
-    I.const Color.black >> I.cut sq
+    I.const Color.red >> I.cut sq
   end;
 
 Db.image "area-square-outline" ~author
-  ~title:"Square outline in black"
+  ~title:"Square outline in red"
   ~tags:["area"; "area-outline"]
   ~note:"Line width is 0.1 as we are on the surface edge"
-  ~size:(Size2.v 20. 20.)
+  ~size:(Size2.v 50. 50.)
   ~view:(Box2.v P2.o (P2.v 1. 1.))
   begin fun () -> 
     let sq = P.empty >> P.rect (Box2.v P2.o (Size2.v 1. 1.)) in
     let area = `O { P.o with P.width = 0.2 } in
-    I.const Color.black >> I.cut ~area sq 
+    I.const Color.red >> I.cut ~area sq 
   end;
 
 Db.image "area-square-outline-dashed" ~author 
-  ~title:"Dashed square outline in black"
+  ~title:"Dashed square outline in red"
   ~tags:["area"; "area-outline"; "dashes";]
   ~note:"Line width is 0.1 as we are on the surface edge."  
-  ~size:(Size2.v 20. 20.)
+  ~size:(Size2.v 50. 50.)
   ~view:(Box2.v P2.o (Size2.v 1. 1.))
   begin fun () -> 
     let sq = P.empty >> P.rect (Box2.v P2.o (P2.v 1. 1.)) in
     let area = `O { P.o with P.width = 0.2; dashes = Some (0., [0.1]); } in
-    I.const Color.black >> I.cut ~area sq 
+    I.const Color.red >> I.cut ~area sq 
   end;
 
-
-(*
-
-test "path-cap-styles"
-~info: "Lines with different cap styles"
-~view: (box2_ P2.o (size2_ 18. 18.))
-& lazy begin
-  let white = I.mono Color.white in
-  let line = P.empty >> P.start (p2_ 3. 0.) >> P.line (p2_ 15. 0.) in 
-  let line y cap = 
-    let outline = I.cut (`Ol {I.ol with I.width = 2.; cap = cap }) black line 
+Db.image "path-cap-styles" ~author
+  ~title:"Lines with different cap styles"
+  ~tags:["area"; "area-outline"; "cap-style";]
+  ~size:(Size2.v 60. 60.)
+  ~view:(Box2.v P2.o (Size2.v 14. 14.))
+  ~note:"From top to bottom, `Butt, `Round, `Square."
+  begin fun () ->
+    let gray = I.const (Color.gray 0.2) in 
+    let white = I.const Color.white in 
+    let line = P.empty >> P.sub (P2.v 3. 0.) >> P.line (P2.v 11. 0.) in 
+    let line y cap = 
+      let outline = I.cut ~area:(`O { P.o with P.width = 2.; cap }) line gray in
+      let data = I.cut ~area:(`O { P.o with P.width = 0.1 }) line white in 
+      outline >> I.blend data >> I.move (P2.v 0. y)
     in
-    let data = I.cut (`Ol {I.ol with I.width = 0.1}) white line in 
-    I.move (p2_ 0. y) (I.blend data outline)
-  in
-  (line 14. `Butt) >> I.blend (line 9. `Round) >> I.blend (line 12. `Square)
-end;;
+    (line 11. `Butt) >> I.blend (line 7. `Round) >> I.blend (line 3. `Square)
+  end;
 
-test "path-cap-styles"
-~info: "Lines with different cap styles"
-~view: (_box2 P2.o (_size2 18. 18.))
-& lazy begin
-  let line = P.empty >> P.start (_p2 3. 0.) >> P.line (_p2 15. 0.) in 
-  let line y cap = 
-    let outline = I.cut (`Ol {I.ol with I.width = 2.; cap = cap }) black line in
-    let data = I.cut (`Ol {I.ol with I.width = 0.1}) white line in 
-    I.move (_p2 0. y) (I.blend data outline)
-  in
-  (line 14. `Butt) >> I.blend (line 9. `Round) >> I.blend (line 12. `Square)
-end;;
-
-test "path-cap-styles"
-~info: "Lines with different cap styles"
-~view: (gbox2 P2.o (gsize2 18. 18.))
-& lazy begin
-  let line = P.empty >> P.start (gp2 3. 0.) >> P.line (gp2 15. 0.) in 
-  let line y cap = 
-    let outline = I.cut (`Ol {I.ol with I.width = 2.; cap = cap }) black line in
-    let data = I.cut (`Ol {I.ol with I.width = 0.1}) white line in 
-    I.move (gp2 0. y) (I.blend data outline)
-  in
-  (line 14. `Butt) >> I.blend (line 9. `Round) >> I.blend (line 12. `Square)
-end;;
-
-test "path-cap-styles"
-~info: "Lines with different cap styles"
-~view: (Box2.v P2.o (Size2.v 18. 18.))
-& lazy begin
-  let line = P.empty >> P.start (P2.v 3. 0.) >> P.line (P2.v 15. 0.) in 
-  let line y cap = 
-    let outline = I.cut (`Ol {I.ol with I.width = 2.; cap = cap }) black line in
-    let data = I.cut (`Ol {I.ol with I.width = 0.1}) white line in 
-    I.move (V2.v 0. y) (I.blend data outline)
-  in
-  (line 14. `Butt) >> I.blend (line 9. `Round) >> I.blend (line 12. `Square)
-end;;
-
-
-
+Db.image "page-join-styles" ~author
+  ~title:"Lines with different join styles" 
+  ~tags:["area"; "area-outline"; "join-style";]
+  ~size:(Size2.v 60. 120.)
+  ~view:(Box2.v P2.o (Size2.v 18. 36.))
+  ~note:"From top to bottom `Miter, `Round, `Bevel."
+  begin fun () ->
+    let gray = I.const (Color.gray 0.2) in 
+    let white = I.const Color.white in
+    let path = P.empty >> P.sub (P2.v 3. 0.) >> P.line (P2.v 9. 8.) >> 
+               P.line (P2.v 15. 0.)
+    in
+    let path y join = 
+      let outline = I.cut ~area:(`O{ P.o with P.width = 2.; join }) path gray in
+      let data = I.cut ~area:(`O { P.o with P.width = 0.1 }) path white in 
+      outline >> I.blend data >> I.move (P2.v 0. y)
+    in
+    (path 2. `Bevel) >> I.blend (path 13. `Round) >> I.blend (path 25. `Miter)
+  end;
 
 (*
-
-let () = test
-    ~name: "path-join-styles"
-    ~description: "Lines with different line join styles"
-    ~size: (size 0.06 0.12)
-    ~view: (rect Pt.o (size 18. 36.))
-    & lazy begin 
-      let black = I.cloth (I.mono C.black) in
-      let white = I.cloth (I.mono C.white) in
-      let path = 
-	P.empty >> 
-	P.start (pt 3. 0.) >> 
-	P.line (pt 9. 8.) >>
-	P.line (pt 15. 0.)
-      in
-      let path join y = 
-	let stroke = black & I.cutter_l [`Width 2.; `Join join] & I.ocut path in
-	let data = white & I.cutter (`Width 0.1) & I.ocut path in
-	I.transl (pt 0. y) & stroke ++ data
-      in
-      path `Bevel 2. ++ path `Round 13. ++ path `Miter 25.
-    end
+(*
 
 let () = test
     ~name: "path-dashes"
@@ -151,33 +108,6 @@ let () = test
       line (0., [2.; 1.; 3.; 2.]) 5. ++
       line (1., [1.; 5.]) 3. ++
       line (0., [5.; 1.]) 1.
-    end
-
-let () = test 
-    ~name: "path-arrowhead"
-    ~description: "Sierpinsky arrowhead curve, level 7"
-    ~size: cm15
-    ~view: sq
-    & lazy begin 
-      let arrowhead_path i = 
-	let size_factor = 1. /. (1. +. 2. *. cos pi_div_3) in
-	let rec aux i flip angle size p = 
-	  if i = 0 then 
-	    p >> P.line ~rel:true (v2 (size *. cos angle) (size *. sin angle))
-	  else
-	    let delta = if flip then -. pi_div_3 else pi_div_3 in 
-	    let nflip = not flip in 
-	    let size' = size *. size_factor in 
-	  let i' = i - 1 in
-	  p >>
-	  aux i' nflip (angle +. delta) size' >>
-	  aux i' flip angle size' >>
-	  aux i' nflip (angle -. delta) size'
-	in
-	aux i false 0. 1. P.empty 
-      in
-      I.cutter_l [ `Width 0.005; `Cap `Butt; `Join `Round ] & 
-      I.ocut (arrowhead_path 7)
     end
 
 
