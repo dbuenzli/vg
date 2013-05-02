@@ -15,6 +15,9 @@ include Db_htmlc
 let str = Format.sprintf
 let pp_str = Format.pp_print_string 
 
+let src_link = 
+  format_of_string "https://github.com/dbuenzli/vg/blob/master/db/%s#L%d"
+
 (* Persistent ui state. *)
 
 module S = struct
@@ -75,6 +78,7 @@ let ui () =
   let note, set_note = Ui.text ~id:"i-note" "" in
   let image, canvas = Ui.canvas ~id:"i-canvas" () in
   let rinfo, set_rinfo = Ui.text ~id:"i-rinfo" "" in
+  let src, conf_src = Ui.link ~id:"png-btn" ~href:"#" "SRC" in
   let png, conf_png = Ui.link ~id:"png-btn" ~href:"#" "PNG" in
   let cmd = function
   | `Use_budget b -> 
@@ -93,6 +97,12 @@ let ui () =
       in
       set_title i.Db.title; 
       set_author i.Db.author;
+      begin match Db.find_loc id Db_locs.values with
+      | None -> Ui.visible ~relayout:true src false
+      | Some (fn, loc) -> 
+          conf_src (`Href (str src_link fn loc));
+          Ui.visible src true
+      end; 
       begin match i.Db.note with 
       | None ->  Ui.visible ~relayout:true note false
       | Some n -> set_note n; Ui.visible note true
@@ -140,8 +150,9 @@ let ui () =
             (Ui.label ~ctrl:true "Timeout test" *> budget))) *>
       (Ui.group ~id:"image" () *>
          (Ui.group ~id:"info" () *> 
-            title *> author *> note *> image *> rinfo *> 
-            (Ui.group ~id:"i-btns" () *> png)))
+            title *> author *> note *> image *> 
+            (Ui.group ~id:"i-btns" () *> src *> png) *>
+            rinfo))
   in
   link (); init (); layout ()
 

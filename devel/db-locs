@@ -1,0 +1,15 @@
+#!/bin/sh
+
+set -e
+
+BDIR=_build
+
+# Dirty, dirty, dirty, we would really like __FILE__ and __LINE__ in OCaml 
+
+LOCS="`grep -r -n "Db.image" db/*.ml | \
+       sed \"s/db\/\([^:]*\):\([^:]*\): *[^ ]* *\([^ ]*\) *.*/\1:\2:\3/\" | \
+       sed \"s/\([^.]*\).ml:\([^.]*\):id/\1.ml:\2:\\"\1\\"/\" | \
+       sed \"s/\([^:]*\):\([^:]*\):\([^:]*\)/\3,(\\"\1\\",\2);/\"`"
+
+printf "let values = [\n%s\n]" "$LOCS" > db/db_locs.ml
+

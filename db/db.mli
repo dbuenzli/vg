@@ -46,6 +46,8 @@ val render_meta : image -> Vg.meta
 
 val renderable : image -> Vg.Vgr.renderable
 
+val find_loc : string -> (string * (string * int)) list -> (string * int) option
+
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
    All rights reserved.

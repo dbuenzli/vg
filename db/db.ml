@@ -70,6 +70,16 @@ let render_meta i = (* TODO i.meta should override *)
 
 let renderable i = i.size, i.view, i.image ()
 
+let find_loc id locs = 
+  let rec loop found = function 
+  | [] -> found
+  | (id', loc) :: locs ->  
+      if id = id' then Some loc else
+      if prefixed id id' then loop (Some loc) locs else 
+      loop found locs
+  in
+  loop None locs
+
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
    All rights reserved.

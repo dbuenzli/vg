@@ -11,7 +11,7 @@ action ()
     case $1 in
       default)      $OCAMLBUILD vg.cmx vgr_pdf.cmx vgr_svg.cmx vgr_htmlc.cmx ;;
       tests)        $OCAMLBUILD rpdf.native rsvg.native; action rhtmlc ;;
-      rhtmlc)       shift; devel/jsoo-build $* test/rhtmlc.ml ;;
+      rhtmlc)       shift; devel/db-locs && devel/jsoo-build $* test/rhtmlc.ml;;
       doc)          shift; devel/pkg-doc $* doc/dev-api.docdir ;;
       distrib)      devel/pkg-distrib ;;
       publish)      devel/pkg-www ;;
