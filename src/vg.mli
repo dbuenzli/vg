@@ -536,6 +536,31 @@ type renderer
 *) 
 module Vgr : sig
 
+  (** {1:warnings Render warnings} 
+
+      Renderers do their best to support [Vg]'s rendering model and
+      semantics. However they may sometimes lack capabilities provided
+      by [Vg]'s api. 
+
+      These renderer take an optional [?warn] argument when they are
+      created. When the renderer encounters an unsupported capability
+      it (usually) ignores it and calls [warn] with the offending
+      subimage and a value of type {!warning} that indicates the
+      unsupported feature.
+
+      Consult the documentation of renderers to see which capabilities
+      they support. *)
+
+  type warning = 
+    [ `Unsupported_cut of P.area
+    | `Unsupported_glyph_cut of P.area
+    | `Other of string ]
+  (** The type for rendering warnings. *)
+
+  val pp_warning : Format.formatter -> warning -> unit
+  (** [pp_warning ppf w] prints a textual representation of [w] on
+      [ppf]. *)
+
   (** {1:renderable Renderable} 
 
       A renderable specifies the physical size of a render surface and
@@ -547,20 +572,6 @@ module Vgr : sig
   (** The type for renderables. The physical size of the rendering
       surface in millimeters, the view rectangle and the image to
       render. *)
-
-  (** {1:warnings Render warnings} 
-
-      TODO redo.
-
-      Renderers do their best to support [Vg]'s rendering model and
-      semantics. However they may sometimes lack capabilities provided
-      by [Vg]'s api. If a renderer encounters a capabilities it
-      doesn't support, it must ignore the unsupported rendering
-      instruction and add a warning to a list returned by the
-      {!render} function.
-
-      Consult the documentation of renderers to see which capabilities are
-      supported. *)
 
   (** {1:render Rendering} *)
 
@@ -585,7 +596,8 @@ module Vgr : sig
         {ul
         {- [`Partial] iff [r] has a [`Manual] destination and needs more 
         output storage. The client must use {!Manual.dst} to provide a new
-        buffer can then call {!render} with [`Await] until [`Ok] is returned.}
+        buffer can then call {!render} with [`Await] until [`Ok] is returned.
+        This can also be returned by renderer that support timeouts.}
         {- [`Ok] when the encoder is ready to encode a new [`Image]
         (if the renderer supports it) or [`End].}}
         For [`Manual] destinations, encoding [`End] always returns [`Partial]
@@ -641,48 +653,27 @@ module Vgr : sig
       {ul
       {- If you render to "Bla", define you renderer in a module
          called [Vgr_bla] (lowercase).}
-      {- The renderer creation function must be named [Vgr_bla.renderer], 
-         have an optional argument [?meta:Vgr.Meta.t] and 
-         return a [Vgr.t] value.}
+      {- The renderer creation function must be named
+         [Vgr_bla.renderer], have an optional argument
+         [?meta:Vg.meta], an optional [?warn:warning -> I.t -> unit]
+         function if it doesn't support [Vg]'s full rendering model
+         and return a [Vgr.t] value.}
       {- Images must be rendered via the {!render} function. If you 
          are writing a batch renderer provide support for each of the 
          {!dst} types and especially the non-blocking interface.}
       {- If your renderer supports render metadata or needs user-defined
-         parameters use the {!Meta.t} type to define it. Whenever possible
-         reuse the the existing {{!Meta.stdkeys}standard} keys.}
+         parameters use the {!Vg.meta} type to define it. Whenever possible
+         reuse the the existing {{!Vgm.stdkeys}standard} keys.}
       {- Follow [Vg]'s 
          {{!coordinates}coordinate system conventions} to 
          specify the relationship between a surface and the view 
          rectangle to render.}
       {- If the renderer doesn't support [Vg]'s full rendering model or
          diverges from its semantics it must ignore unsupported features
-         and warn the client by implementing the 
-         {!Incomplete_renderer} interface.}}
+         and warn the client via the {!warn} function.}}
 *)
   module Private : sig
     
-    (** {1 Incomplete renderer} 
-        
-        Interface to implement if your renderer doesn't fully support
-        [Vg]'s rendering model. *)
-
-    (** The type for incomplete renderers. *)
-    module type Incomplete_renderer = sig
-
-      (** {1 Rendering warnings} *)
-
-      type warning
-      (** The type for rendering warnings. Must be a polymorphic
-          variant with one case for each missing feature. *)
-
-      val pp_warning : Format.formatter -> warning -> unit
-      (** [pp_warning ppf w] prints a textual representation of [w] on [ppf]. *)
-
-      val warn : (warning -> unit) key
-      (** [warn] is a function called whenever missing features are 
-          encountered during rendering. *)
-    end
-
     (** {1 Internal data} *)
 
     (** Vg internal data types. *)
@@ -716,8 +707,7 @@ module Vgr : sig
         | Axial of Color.stops * p2 * p2
         | Radial of Color.stops * p2 * p2 * float
         | Raster of box2 * raster
-              
-            
+                      
       (** The type for images. *)
       type image = 
         | Primitive of primitive
@@ -748,16 +738,18 @@ module Vgr : sig
      k -> k
    (** The type for rendering functions. TODO *)
 
-   val create_renderer : ?once:bool -> meta -> [< dst] -> 
-     'a -> 'a render_fun -> t
-   (** [create_renderer once meta dst state rfun] is a renderer
-       [r] such that: 
+   val create_renderer : ?once:bool -> ?warn:(warning -> I.t -> unit) -> 
+     meta -> [< dst] -> (meta -> renderer -> 'a) -> 'a render_fun -> t
+   (** [create_renderer once meta dst alloc_state rfun] is a renderer
+       [r] such that, let [state] be [alloc meta r] (called once).
        {ul
        {- [render r (`Image i)] invokes [rfun state (`Image i)]}
        {- [render r `End] invokes [rfun state `End]}}
        If [once] is [true] (defaults to [false]) calling {!render}
-       with more than one [`Image] will raise an [Invalid_argument] exception.
-   *)
+       with more than one [`Image] will raise an [Invalid_argument] exception.*)
+
+    val warn : renderer -> warning -> Data.image -> unit
+    (** [warn r w i] reports a warning [w] for image [i]. *)
        
     val partial : k -> renderer -> [> `Partial]
     (** [partial k r] suspends the renderer [r] and returns [`Partial]. 
@@ -779,7 +771,6 @@ module Vgr : sig
     val writebuf : Buffer.t -> int -> int -> k -> renderer -> [`Ok | `Partial ]
     (** [writebuf buf j l k r] write [l] bytes from [buf] starting at [j]
         and [k]ontinues. *)
-      
   end
 end
 

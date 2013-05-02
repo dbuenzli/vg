@@ -5,50 +5,36 @@
   ---------------------------------------------------------------------------*)
 
 (** Vg HTML canvas renderer.
-
-    Renders on an HTML canvas element via 
-    the {{:http://www.w3.org/TR/2dcontext/}HTML canvas} element.
     
-    {b Unsupported capabilities.} Outlines cuts with dashes are
-    unsupported, they are rendered as if [None] was specified for
-    dashes and the [`Dashes] warning is reported.  The [`Aeo] cut
-    rule is unsupported, it falls back on the [`Anz] rules and the
-    c[`Aeo] warning is reported.
-
-    {b Bug reports.} TODO.
+    {b References.} 
+    {ul {- Rik Cabanier et al. {e {{:http://www.w3.org/TR/2dcontext/}HTML 
+     Canvas 2D Context}}, 2012-12-17.}}
 
     {e Release %%VERSION%% - %%AUTHORS%% } *)
 
-(** {1 Renderer} *)
-
-
-val renderer : ?meta:Vg.meta -> Dom_html.canvasElement Js.t -> Vg.renderer
-(** [renderer meta c] is an HTML canvas renderer rendering to [c]. *)
-
 (** {1 Render metadata}  
 
-    The following standard keys are supported:
-    
+    The following standard keys are supported:    
     {ul 
     {- {!Vg.Vgm.resolution}, specifies the rendering resolution.
-       If unspecified 11811 dpm (300 dpi) is used in both dimensions.}}
+       If unspecified 11811 pixels per meters (300 ppi) is used in both 
+       dimensions.}} *)
+
+(** {1 Render warnings} 
+    
+    The following render warnings are reported:
+    {ul
+    {- [`Unsupported_cut `Aeo], even-odd area cuts are not unsupported by
+       the standard.}
+    {- [`Unsupported_cut (`O o)], outline cuts can be performed only on 
+       {!I.const}, {!I.axial} and {!I.radial} primitive images.}}
 *)
 
-type warning = [ `Unsupported_outline_cut | `Dashes | `Aeo ]
-(** The type for rendering warnings. 
-    {ul
-    {- [`Unsupported_outline_cut], only the {!I.const}, {!I.axial} and
-       {!I.radial} primitive images can be cut with an [`O] area.}
-    {- [`Dashes], dashed outlines are being used (TODO this seems supported
-       now).}
-    {- [`Aeo], a path area is defined by the [`Aeo] rule. [`Anz] will
-       be used instead.}} *)
+(** {1 Renderer} *)
 
-val pp_warning : Format.formatter -> warning -> unit
-(** [pp_warning ppf w] prints a textual representation of [w] on [ppf]. *)
-
-val warn : (warning -> unit) Vg.key
-(** [warn] is called when unsupported capababilites are encountered. *)
+val renderer : ?warn:(Vg.Vgr.warning -> Vg.I.t -> unit) -> 
+  ?meta:Vg.meta -> Dom_html.canvasElement Js.t -> Vg.renderer
+(** [renderer meta c] is an HTML canvas renderer rendering to [c]. *)
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

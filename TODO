@@ -2,6 +2,8 @@
 * rhtmlc
 ** #id
 ** buttons for pdf svg and png
+** Resolution menu. 
+** Mui use my canvas creation fun. 
 
 * Renderer API
 ** Rectangle instead of Size ? 
@@ -11,6 +13,7 @@
 
 * Api
 ** Make everything t.r.
+
 
 * Image
 ** TODO I.mono I.const 

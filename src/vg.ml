@@ -28,7 +28,7 @@ let unsafe_byte s j = Char.code (String.unsafe_get s j)
 
 (* A few useful definitions. *)
 
-let pr = Format.fprintf 
+let pp = Format.fprintf 
 let pp_float ppf f = Format.fprintf ppf "%g" f
 let to_string_of_formatter pp v =                        (* NOT thread safe. *)
   Format.fprintf Format.str_formatter "%a" pp v; 
@@ -109,19 +109,19 @@ module P = struct
 
   let pp_outline_f pp_f ppf o =
     let pp_cap ppf = function 
-    | `Butt -> pr ppf "Butt" | `Round -> pr ppf "Round" 
-    | `Square -> pr ppf "Square"
+    | `Butt -> pp ppf "Butt" | `Round -> pp ppf "Round" 
+    | `Square -> pp ppf "Square"
     in
     let pp_join ppf = function 
-    | `Bevel -> pr ppf "Bevel" | `Miter -> pr ppf "Miter" 
-    | `Round -> pr ppf "Round"
+    | `Bevel -> pp ppf "Bevel" | `Miter -> pp ppf "Miter" 
+    | `Round -> pp ppf "Round"
     in
     let pp_dashes ppf = function 
     | None -> () | Some (f, ds) -> 
-        let pp_dashes ppf ds = List.iter (fun d -> pr ppf "@ %a" pp_f d) ds in
-        pr ppf "dashes:(%a,%a)" pp_f f pp_dashes ds
+        let pp_dashes ppf ds = List.iter (fun d -> pp ppf "@ %a" pp_f d) ds in
+        pp ppf "dashes:(%a,%a)" pp_f f pp_dashes ds
     in
-    pr ppf "(outline@ width:%a@ cap:%a@ join:%a@ miter-angle:%a%a)"
+    pp ppf "(outline@ width:%a@ cap:%a@ join:%a@ miter-angle:%a%a)"
       pp_f o.width pp_cap o.cap pp_join o.join pp_f o.miter_angle 
       pp_dashes o.dashes
 
@@ -165,9 +165,9 @@ module P = struct
   | a, a' -> Pervasives.compare a a'
 
   let pp_area_f pp_f ppf = function 
-  | `Anz -> pr ppf "@[<1>anz@]"
-  | `Aeo -> pr ppf "@[<1>aeo@]"
-  | `O o -> pr ppf "%a" (pp_outline_f pp_f) o
+  | `Anz -> pp ppf "@[<1>anz@]"
+  | `Aeo -> pp ppf "@[<1>aeo@]"
+  | `O o -> pp ppf "%a" (pp_outline_f pp_f) o
 
   let pp_area ppf a = pp_area_f pp_float ppf a 
 
@@ -678,22 +678,22 @@ module P = struct
 
   let pp_seg pp_f pp_v2 ppf = function
   | `Sub pt -> 
-      pr ppf "@ @[<h>S%a@]" pp_v2 pt 
+      pp ppf "@ @[<h>S%a@]" pp_v2 pt 
   | `Line pt -> 
-      pr ppf "@ @[<h>L%a@]" pp_v2 pt
+      pp ppf "@ @[<h>L%a@]" pp_v2 pt
   | `Qcurve (c, pt) -> 
-      pr ppf "@ @[<3>Qc(%a@ %a)@]" pp_v2 c pp_v2 pt
+      pp ppf "@ @[<3>Qc(%a@ %a)@]" pp_v2 c pp_v2 pt
   | `Ccurve (c, c', pt) -> 
-      pr ppf "@ @[<3>Cc(%a@ %a@ %a@)]" pp_v2 c pp_v2 c' pp_v2 pt
+      pp ppf "@ @[<3>Cc(%a@ %a@ %a@)]" pp_v2 c pp_v2 c' pp_v2 pt
   | `Earc (l, ccw, r, a, pt) -> 
-      pr ppf "@ @[<3>Ea(%B@ %B@ %a@ %a@ %a)@]" l ccw pp_v2 r pp_f a pp_v2 pt
+      pp ppf "@ @[<3>Ea(%B@ %B@ %a@ %a@ %a)@]" l ccw pp_v2 r pp_f a pp_v2 pt
   | `Close ->
-      pr ppf "@ C"
+      pp ppf "@ C"
         
   let pp_path pp_f ppf p = 
     let pp_v2 = V2.pp_f pp_f in
     let pp_segs ppf ss = List.iter (pp_seg pp_f pp_v2 ppf) ss in 
-    pr ppf "@[<1>(P%a)@]" pp_segs (List.rev p)
+    pp ppf "@[<1>(P%a)@]" pp_segs (List.rev p)
 
   let pp_f pp_f ppf p = pp_path pp_f ppf p    
   let pp ppf p = pp_path pp_float ppf p
@@ -873,48 +873,48 @@ module I = struct
   (* Printesr *)
 
   let pp_stops pp_f ppf ss =
-    let pp_stop ppf (s, c) = pr ppf "@ %a@ %a" pp_f s (V4.pp_f pp_f) c in 
-    pr ppf "@[<1>(stops %a)@]" (fun ppf ss -> List.iter (pp_stop ppf) ss) ss
+    let pp_stop ppf (s, c) = pp ppf "@ %a@ %a" pp_f s (V4.pp_f pp_f) c in 
+    pp ppf "@[<1>(stops %a)@]" (fun ppf ss -> List.iter (pp_stop ppf) ss) ss
 
   let pp_blender ppf = function
-  | `Atop -> pr ppf "Atop" | `Copy -> pr ppf "Copy" | `In -> pr ppf "In" 
-  | `Out -> pr ppf "Out" | `Over -> pr ppf "Over" | `Plus -> pr ppf "Plus"
-  | `Xor -> pr ppf "Xor"
+  | `Atop -> pp ppf "Atop" | `Copy -> pp ppf "Copy" | `In -> pp ppf "In" 
+  | `Out -> pp ppf "Out" | `Over -> pp ppf "Over" | `Plus -> pp ppf "Plus"
+  | `Xor -> pp ppf "Xor"
 
   let pp_alpha pp_f ppf = function
-  | None -> () | Some a -> pr ppf "alpha(%a)" pp_f a
+  | None -> () | Some a -> pp ppf "alpha(%a)" pp_f a
 
   let pp_tr pp_f ppf = function 
-  | Move v -> pr ppf "move%a" (V2.pp_f pp_f) v
-  | Rot a -> pr ppf "rot(%a)" pp_f a
-  | Scale s -> pr ppf "scale%a" (V2.pp_f pp_f) s
-  | Matrix m -> pr ppf "%a" (M3.pp_f pp_f) m
+  | Move v -> pp ppf "move%a" (V2.pp_f pp_f) v
+  | Rot a -> pp ppf "rot(%a)" pp_f a
+  | Scale s -> pp ppf "scale%a" (V2.pp_f pp_f) s
+  | Matrix m -> pp ppf "%a" (M3.pp_f pp_f) m
 
   let pp_primitive pp_f ppf = function
   | Const c -> 
-      pr ppf "@[<1>(I-const@ %a)@]" (V4.pp_f pp_f) c
+      pp ppf "@[<1>(I-const@ %a)@]" (V4.pp_f pp_f) c
   | Axial (stops, p, p') -> 
-      pr ppf "@[<1>(I-axial@ %a@ %a@ %a)@]" 
+      pp ppf "@[<1>(I-axial@ %a@ %a@ %a)@]" 
         (pp_stops pp_f) stops (V2.pp_f pp_f) p (V2.pp_f pp_f) p'
   | Radial (stops, p, p', r) ->
-      pr ppf "@[<1>(I-radial@ %a@ %a@ %a@ %a)@]"
+      pp ppf "@[<1>(I-radial@ %a@ %a@ %a@ %a)@]"
         (pp_stops pp_f) stops (V2.pp_f pp_f) p (V2.pp_f pp_f) p' pp_f r
   | Raster (r, ri) -> 
-      pr ppf "@[<1>(I-raster %a@ %a)@]" (Box2.pp_f pp_f) r Raster.pp ri
+      pp ppf "@[<1>(I-raster %a@ %a)@]" (Box2.pp_f pp_f) r Raster.pp ri
       
   let rec pp_image pp_f ppf = function                      (* TODO not t.r. *)
   | Primitive i ->
-      pr ppf "%a" (pp_primitive pp_f) i
+      pp ppf "%a" (pp_primitive pp_f) i
   | Cut (a, p, i) -> 
-      pr ppf "@[<1>(I-cut@ %a@ %a@ %a)@]" 
+      pp ppf "@[<1>(I-cut@ %a@ %a@ %a)@]" 
         (P.pp_area_f pp_f) a (P.pp_f pp_f) p (pp_image pp_f) i
   | Blend (b, a, i, i') -> 
-      pr ppf "@[<1>(I-blend@ %a @ %a@ %a@ %a)@]" 
+      pp ppf "@[<1>(I-blend@ %a @ %a@ %a@ %a)@]" 
         pp_blender b (pp_alpha pp_f) a (pp_image pp_f) i (pp_image pp_f) i'
   | Tr (tr, i) ->
-      pr ppf "@[<1>(I-tr@ %a@ %a)@]" (pp_tr pp_f) tr (pp_image pp_f) i
+      pp ppf "@[<1>(I-tr@ %a@ %a)@]" (pp_tr pp_f) tr (pp_image pp_f) i
   | Meta (tr, i) -> 
-      pr ppf "@[<1>(I-meta@ TODO %a)@]" (pp_image pp_f) i
+      pp ppf "@[<1>(I-meta@ TODO %a)@]" (pp_image pp_f) i
         
   let pp_f pp_f ppf i = pp_image pp_f ppf i
   let pp ppf i = pp_image pp_float ppf i
@@ -924,6 +924,24 @@ end
 type image = I.t
 
 module Vgr = struct
+
+  (* Warnings *)
+
+  type warning =  
+    [ `Unsupported_cut of P.area
+    | `Unsupported_glyph_cut of P.area
+    | `Other of string ]
+                
+  let pp_area ppf = function
+  | `Aeo -> pp ppf "even-odd"
+  | `Anz -> pp ppf "non-zero"
+  | `O _ -> pp ppf "outline"
+  
+  let pp_warning ppf = function 
+  | `Unsupported_cut a -> pp ppf "Unsupported cut: %a" pp_area a
+  | `Unsupported_glyph_cut a -> pp ppf "Unsupported glyph cut: %a" pp_area a
+  | `Aeo -> pp ppf "The even-odd area rule is unsupported." 
+  | `Other o -> pp ppf "%s" o
 
   (* Renderable *)
 
@@ -940,6 +958,7 @@ module Vgr = struct
       mutable o : string;            (* current output chunk (stored dsts). *)
       mutable o_pos : int;                (* next output position to write. *)
       mutable o_max : int;             (* maximal output position to write. *)
+      warn : warning -> I.t -> unit;   (* warning function (user provided). *)
       meta : meta;                      (* render metadata (user provided). *)
       mutable k :                                   (* render continuation. *)
         [`Await | `End | `Image of size2 * box2 * image ] -> t -> 
@@ -964,24 +983,6 @@ module Vgr = struct
 
   module Private = struct
     
-    (* Incomplete renderer *)
-
-    module type Incomplete_renderer = sig
-
-      (** {1 Rendering warnings} *)
-
-      type warning
-      (** The type for rendering warnings. Must be a polymorphic
-          variant with one case for each missing feature. *)
-
-      val pp_warning : Format.formatter -> warning -> unit
-      (** [pp_warning ppf w] prints a textual representation of [w] on [ppf]. *)
-
-      val warn : (warning -> unit) key
-      (** [warn] is a function called whenever missing features are 
-          encountered during rendering. *)
-    end
-
     (* Path representation *)
 
     module Data = struct
@@ -1018,7 +1019,7 @@ module Vgr = struct
       -> k -> k
 
     let renderer r = r
-
+    let warn r w i = r.warn w i
     let ok k r = r.k <- k; `Ok
     let partial k r = 
       let exp_await v r =
@@ -1045,14 +1046,19 @@ module Vgr = struct
     | `Image _ as i -> rfun state i (ok (r_loop state rfun)) r
     | `Await -> ok (r_loop state rfun) r
 
-    let create_renderer ?(once = false) meta dst state rfun = 
+    let wnop _ _ = ()
+    let create_renderer ?(once = false) ?(warn = wnop) meta dst alloc_state 
+        rfun = 
       let o, o_pos, o_max = match dst with 
       | `Manual | `Immediate -> "", 1, 0          (* implies [o_rem e = 0]. *)
       | `Buffer _ 
       | `Channel _ -> String.create io_buffer_size, 0, io_buffer_size - 1
       in
-      { dst = (dst :> dst); o; o_pos; o_max; meta; 
-        k = if once then r_once state rfun else r_loop state rfun }
+      let k _ _ = assert false in
+      let r = { dst = (dst :> dst); o; o_pos; o_max; warn; meta; k = k } in
+      let state = alloc_state meta r in 
+      r.k <- if once then r_once state rfun else r_loop state rfun; 
+      r
 
     let o_rem = Manual.dst_rem
       

@@ -11,13 +11,6 @@ open Vgr.Private.Data
 let str = Format.sprintf 
 let pp = Format.fprintf 
 
-type warning = [ `Unsupported_outline_cut | `Dashes | `Aeo ]
-let warn = Vgm.key ()
-let pp_warning ppf = function 
-| `Unsupported_outline_cut -> pp ppf "Unsupported outline cut."
-| `Aeo -> pp ppf "The even-odd area rule is unsupported." 
-| _ -> failwith "TODO"
-
 type cmd = Pop | I of Vgr.Private.Data.image
 type js_primitive = 
   | Color of Js.js_string Js.t 
@@ -26,18 +19,17 @@ type js_primitive =
 let dumb_prim = Color (Js.string "")
 
 type state = 
-  { c : Dom_html.canvasElement Js.t;     (* The canvas element rendered to. *)
+  { r : Vgr.Private.renderer;
+    c : Dom_html.canvasElement Js.t;     (* The canvas element rendered to. *)
     ctx : Dom_html.canvasRenderingContext2D Js.t;    (* The canvas context. *)
     resolution : Gg.v2;                        (* Resolution of the canvas. *)
-    warn : warning -> unit;                            (* Warning callback. *)
     timeout : float;   
     mutable cost : int;                        (* cost counter for timeout. *)
     mutable view : Gg.box2; 
     mutable todo : cmd list;                        (* commands to perform. *)
     (* Cached primitives. *)
     prims : (Vgr.Private.Data.primitive, js_primitive) Hashtbl.t; 
-    (* Rendering state. *)
-    mutable s_width : float;                         
+    mutable s_width : float;                            (* Rendering state. *)
     mutable s_cap : P.cap; 
     mutable s_join : P.join; 
     mutable s_miter_angle : float; 
@@ -49,7 +41,7 @@ type state =
     mutable s_blender : I.blender; }
 
 let max_cost = max_int
-let incr_cost s i = s.cost <- s.cost + i 
+let warn s w i = Vgr.Private.warn s.r w i
 
 let r_transform s = function 
 | Move v -> s.ctx ## translate (V2.x v, V2.y v)
@@ -57,28 +49,28 @@ let r_transform s = function
 | Scale sv -> s.ctx ## scale (V2.x sv, V2.y sv)
 | Matrix m -> M3.(s.ctx ## transform (e00 m, e10 m, e01 m, e11 m, e02 m, e12 m))
 
-(* N.B. In the future, when browsers actually support them, we could in r_path:
-   1) Construct and cache path objects. 
-   2) Use ctx ## ellipse *)
+(* N.B. In the future, if browsers begin supporting them we could in r_path,
+   1) construct and cache path objects 2) use ctx ## ellipse. *)
 
 let r_path s p =
   let rec loop ctx = function
   | [] -> ()
-  | s :: ss -> 
-      match s with
-      | `Sub pt -> P2.(ctx ## moveTo (x pt, y pt)); loop ctx ss
-      | `Line pt -> P2.(ctx ## lineTo (x pt, y pt)); loop ctx ss
+  | seg :: segs -> 
+      match seg with
+      | `Sub pt -> P2.(ctx ## moveTo (x pt, y pt)); loop ctx segs
+      | `Line pt -> P2.(ctx ## lineTo (x pt, y pt)); loop ctx segs
       | `Qcurve (c, pt) -> 
           P2.(ctx ## quadraticCurveTo (x c, y c, x pt, y pt)); 
-          loop ctx ss
+          loop ctx segs
       | `Ccurve (c, c', pt) ->
           P2.(ctx ## bezierCurveTo (x c, y c, x c', y c', x pt, y pt));
-          loop ctx ss
+          loop ctx segs
       | `Earc (l, ccw, r, a, pt) ->
+          warn s (`Other "TODO Unimplemented, earc") (Vgr.Private.image I.void);
+          loop ctx segs
           (* Todo if r.x = r.y fallback on arc, otherwise 
              approx with bezier. *)
-          failwith "TODO"
-      | `Close -> ctx ## closePath (); loop ctx ss
+      | `Close -> ctx ## closePath (); loop ctx segs
   in
   s.ctx ## beginPath ();
   loop s.ctx (List.rev p)
@@ -139,11 +131,12 @@ let rec r_cut s a = match s.todo with
     match i with 
     | Primitive (Raster _) -> 
         begin match a with 
-        | `O o -> s.warn `Unsupported_outline_cut
+        | `O _ -> warn s (`Unsupported_cut a) i; s.todo <- todo;
         | `Aeo | `Anz -> 
-            if a = `Aeo then s.warn `Aeo else
+            if a = `Aeo then warn s (`Unsupported_cut a) i else
             s.ctx ## save (); 
-            s.ctx ## clip (); 
+            s.ctx ## clip ();
+            warn s (`Other "Unimplemented") i;
             (* TODO s.ctx drawDraw_full raster *)
             s.ctx ## restore ();
             s.todo <- todo;
@@ -160,7 +153,7 @@ let rec r_cut s a = match s.todo with
             s.ctx ## stroke ();
             s.todo <- todo
         | `Aeo | `Anz ->
-            if a = `Aeo then s.warn `Aeo; 
+            if a = `Aeo then warn s (`Unsupported_cut a) i; 
             if s.s_fill != p then begin match p with 
             | Color c -> s.ctx ## fillStyle <- c; s.s_fill <- p
             | Grad g -> s.ctx ## fillStyle_gradient <- g; s.s_fill <- p
@@ -176,8 +169,7 @@ let rec r_cut s a = match s.todo with
         r_cut s a;
     | i -> 
         begin match a with
-        | `O _ -> s.warn `Unsupported_outline_cut 
-        | `Aeo -> s.warn `Aeo 
+        | `O _ | `Aeo -> warn s (`Unsupported_cut a) i;
         | `Anz -> () 
         end;
         s.ctx ## save ();
@@ -195,6 +187,7 @@ and r_image s k r =
       | Primitive p -> 
           (* Uncut primitive, just cut to view. *)
           (* s.todo <- (I (Cut (`Anz, P.empty >> P.rect s.view, i))) :: todo; *)
+          warn s (`Other "TODO, uncut primitive not implemented") i;
           s.todo <- todo;
           r_image s k r
       | Cut (a, p, i) -> 
@@ -235,28 +228,28 @@ let render s v k r = match v with
     s.todo <- [(I i)];
     r_image s k r
 
-let renderer ?(meta = Vgm.empty) c = 
-  let warn = match Vgm.find meta warn with Some w -> w | None -> fun _ -> () in
-  let resolution = match Vgm.find meta Vgm.resolution with 
+let alloc_state c m r = 
+  let resolution = match Vgm.find m Vgm.resolution with 
   | Some r -> r | None -> V2.v 11811. 11811. (* 300 dpi *)
   in
   let ctx = c ## getContext (Dom_html._2d_) in
-  let state = 
-    { c; ctx; resolution; warn; timeout = 0.005; cost = 0; 
-      view = Box2.empty; todo = [];
-      prims = Hashtbl.create 231;
-      s_width = P.(o.width); 
-      s_cap = P.(o.cap); 
-      s_join = P.(o.join); 
-      s_miter_angle = P.(o.miter_angle);
-      s_dashes = P.(o.dashes);
-      s_stroke = dumb_prim; 
-      s_fill = dumb_prim;
-      s_alpha = 1.0;
-      s_outline = { P.o with P.width = P.o.P.width } (* copy to force set *);
-      s_blender = `Over } 
-  in
-  Vgr.Private.create_renderer meta `Immediate state render
+  { r; c; ctx; resolution; 
+    timeout = 0.005; cost = 0; 
+    view = Box2.empty; todo = [];
+    prims = Hashtbl.create 231;
+    s_width = P.(o.width); 
+    s_cap = P.(o.cap); 
+    s_join = P.(o.join); 
+    s_miter_angle = P.(o.miter_angle);
+    s_dashes = P.(o.dashes);
+    s_stroke = dumb_prim; 
+    s_fill = dumb_prim;
+    s_alpha = 1.0;
+    s_outline = { P.o with P.width = P.o.P.width } (* copy to force set *);
+    s_blender = `Over } 
+
+let renderer ?warn ?(meta = Vgm.empty) c = 
+  Vgr.Private.create_renderer ?warn meta `Immediate (alloc_state c) render
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
