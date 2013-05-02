@@ -5,6 +5,9 @@
 ** Resolution menu. 
 ** Mui use my canvas creation fun. 
 
+* mui 
+** Scroll to view sel. on keyboard.
+
 * Renderer API
 ** Rectangle instead of Size ? 
 ** What about physical size ? 

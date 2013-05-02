@@ -66,7 +66,7 @@ let r_path s p =
           P2.(ctx ## bezierCurveTo (x c, y c, x c', y c', x pt, y pt));
           loop ctx segs
       | `Earc (l, ccw, r, a, pt) ->
-          warn s (`Other "TODO Unimplemented, earc") (Vgr.Private.image I.void);
+          warn s (`Other "TODO earc unimplemented") (Vgr.Private.image I.void);
           loop ctx segs
           (* Todo if r.x = r.y fallback on arc, otherwise 
              approx with bezier. *)
@@ -123,7 +123,8 @@ let r_outline s o =
   then 
     (s.ctx ## miterLimit <- o.P.miter_angle; 
      s.s_miter_angle <- o.P.miter_angle);
-  if s.s_dashes <> o.P.dashes then (* TODO *)()
+  if s.s_dashes <> o.P.dashes then 
+  (warn s (`Other "TODO dashes unimplemented") (Vgr.Private.image I.void))
     
 let rec r_cut s a = match s.todo with 
 | [] | Pop :: _ -> assert false 
@@ -136,7 +137,7 @@ let rec r_cut s a = match s.todo with
             if a = `Aeo then warn s (`Unsupported_cut a) i else
             s.ctx ## save (); 
             s.ctx ## clip ();
-            warn s (`Other "Unimplemented") i;
+            warn s (`Other "TODO raster unimplemented") i;
             (* TODO s.ctx drawDraw_full raster *)
             s.ctx ## restore ();
             s.todo <- todo;

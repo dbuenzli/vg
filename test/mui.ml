@@ -32,7 +32,6 @@ module D = struct
     (match id with None -> () | Some id -> e ## id <- Js.string id); 
     e
 
-
   let txt s = document ## createTextNode (Js.string s) 
   let canvas ?id () = 
     let e : Dom_html.canvasElement Js.t = Js.Unsafe.coerce (el ?id "canvas") in 

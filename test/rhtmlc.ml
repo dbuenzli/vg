@@ -14,6 +14,9 @@ include Db_htmlc
 
 let str = Format.sprintf
 let pp_str = Format.pp_print_string 
+let to_str_of_pp pp v =
+  Format.fprintf Format.str_formatter "%a" pp v; 
+  Format.flush_str_formatter ()
 
 let src_link = 
   format_of_string "https://github.com/dbuenzli/vg/blob/master/db/%s#L%d"
@@ -49,8 +52,8 @@ end
 
 (* Render *)
 
-let render_image c i stats = 
-  let r = Vgr_htmlc.renderer ~meta:(Db.render_meta i) c in 
+let render_image warn c i stats = 
+  let r = Vgr_htmlc.renderer ~warn ~meta:(Db.render_meta i) c in 
   let start = Time.now () in
   let rec finish steps v = match Vgr.render r v with 
   | `Partial -> finish steps v (* should not happen *)
@@ -77,9 +80,15 @@ let ui () =
   let author, set_author = Ui.text ~id:"i-author" "" in
   let note, set_note = Ui.text ~id:"i-note" "" in
   let image, canvas = Ui.canvas ~id:"i-canvas" () in
-  let rinfo, set_rinfo = Ui.text ~id:"i-rinfo" "" in
   let src, conf_src = Ui.link ~id:"png-btn" ~href:"#" "SRC" in
   let png, conf_png = Ui.link ~id:"png-btn" ~href:"#" "PNG" in
+  let rinfo, set_rinfo = Ui.text ~id:"i-rinfo" "" in
+  let log, conf_log = Ui.select Vgr.pp_warning None ~id:"i-rlog" [] in 
+  let warn, clear_log = 
+    let warns = ref [] in
+    (fun w _ -> warns := w :: !warns; conf_log (`List !warns)), 
+    (fun () -> warns := []; conf_log (`List []))
+  in
   let cmd = function
   | `Use_budget b -> 
       let _ = S.set { (S.get ()) with S.budget = b } in
@@ -95,6 +104,7 @@ let ui () =
         let dur = Float.int_of_round (dur *. 1000.) in
         set_rinfo (str "Rendered in %dms%s" dur steps)
       in
+      clear_log ();
       set_title i.Db.title; 
       set_author i.Db.author;
       begin match Db.find_loc id Db_locs.values with
@@ -107,7 +117,7 @@ let ui () =
       | None ->  Ui.visible ~relayout:true note false
       | Some n -> set_note n; Ui.visible note true
       end;
-      render_image canvas i set_stats 
+      render_image warn canvas i set_stats 
   | `Use_tags ts ->
       let s = S.set { (S.get ()) with S.tags = ts } in
       let ids = List.map (fun i -> i.Db.id) (Db.find ~tags:ts ()) in
@@ -152,7 +162,7 @@ let ui () =
          (Ui.group ~id:"info" () *> 
             title *> author *> note *> image *> 
             (Ui.group ~id:"i-btns" () *> src *> png) *>
-            rinfo))
+            rinfo *> log))
   in
   link (); init (); layout ()
 
