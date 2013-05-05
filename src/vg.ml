@@ -178,7 +178,7 @@ module P = struct
     | `Line of p2
     | `Qcurve of p2 * p2 
     | `Ccurve of p2 * p2 * p2 
-    | `Earc of bool * bool * size2 * float * p2
+    | `Earc of bool * bool * float * size2 * p2
     | `Close ]
 	
   type t = segment list
@@ -234,7 +234,7 @@ module P = struct
 
   let earc ?(rel = false) ?(large = false) ?(cw = false) ?(angle = 0.) r pt p = 
     let pt = if rel then abs p pt else pt in
-    push (`Earc (large, cw, r, angle, pt)) p
+    push (`Earc (large, cw, angle, r, pt)) p
       
   let close p = push `Close p
         
@@ -293,7 +293,7 @@ module P = struct
   (* See Vgr.Private.P.earc_params in mli file for the doc. The center is 
      found by first transforming the points on the ellipse to points on 
      a unit circle (i.e. we rotate by -a and scale by 1/rx 1/ry). *)
-  let earc_params p0 ~large ~cw r a p1 = 
+  let earc_params p0 ~large ~cw a r p1 = 
     let rx = V2.x r in let ry = V2.y r in
     let x0 = V2.x p0 in let y0 = V2.y p0 in
     let x1 = V2.x p1 in let y1 = V2.y p1 in
@@ -374,9 +374,9 @@ module P = struct
       | `Line pt :: l -> update pt; seg_ctrl l
       | `Qcurve (c, pt) :: l -> update c; update pt; seg_ctrl l
       | `Ccurve (c, c', pt) :: l -> update c; update c'; update pt; seg_ctrl l
-      | `Earc (large, cw, radii, angle, pt) :: l ->
+      | `Earc (large, cw, angle, radii, pt) :: l ->
 	  let last = last_pt l in
-          begin match earc_params last large cw radii angle pt with
+          begin match earc_params last large cw angle radii pt with
           | None -> update pt; seg_ctrl l
           | Some (c, m, a1, a2) ->
               (* TODO wrong in general. *)
@@ -430,9 +430,9 @@ module P = struct
 		solve cc b a upd
 	    in
 	    update_z V2.x; update_z V2.y; update pt; seg l
-	| `Earc (large, cw, radii, angle, pt) :: l ->
+	| `Earc (large, cw, angle, radii, pt) :: l ->
 	    let last = last_pt l in
-	    begin match earc_params last large cw radii angle pt with
+	    begin match earc_params last large cw angle radii pt with
 	    | None -> update pt; seg l
 	    | Some (c, m, a1, a2) ->
 		(* TODO wrong in general. *)
@@ -452,7 +452,7 @@ module P = struct
     | `Line pt -> `Line (P2.tr m pt) 
     | `Qcurve (c, pt) -> `Qcurve (P2.tr m c, P2.tr m pt) 
     | `Ccurve (c, c', pt) -> `Ccurve (P2.tr m c, P2.tr m c', P2.tr m pt)
-    | `Earc (l, cw, r, a, pt) -> (* TODO recheck that *)
+    | `Earc (l, cw, a, r, pt) -> (* TODO recheck that *)
 	let sina = sin a in
         let cosa = cos a in
         let rx = V2.x r in
@@ -464,7 +464,7 @@ module P = struct
 	let a' = atan2 (V2.y ax') (V2.x ax') in 
 	let rx' = V2.norm ax' in
 	let ry' = V2.norm ay' in
-        `Earc (l, cw, (V2.v rx' ry'), a', (P2.tr m pt))
+        `Earc (l, cw, a', (V2.v rx' ry'), (P2.tr m pt))
     | `Close -> `Close 
     in
     List.rev (List.rev_map (tr_seg m) p)
@@ -526,8 +526,8 @@ module P = struct
     in
     loop tol line acc p0 p1 p2 p3
   
-  let linear_earc tol line acc p0 large cw r a p1 =
-    match earc_params p0 large cw r a p1 with
+  let linear_earc tol line acc p0 large cw a r p1 =
+    match earc_params p0 large cw a r p1 with
     | None -> line acc p1
     | Some (c, m, t0, t1) -> 
 	let tol2 = tol *. tol in
@@ -557,7 +557,7 @@ module P = struct
     | `Line pt -> line acc pt, pt
     | `Qcurve (c, pt) ->  linear_qcurve tol line acc last c pt, pt
     | `Ccurve (c, c', pt) -> linear_ccurve tol line acc last c c' pt, pt
-    | `Earc (l, cw, r, a, pt) -> linear_earc tol line acc last l cw r a pt, pt
+    | `Earc (l, cw, a, r, pt) -> linear_earc tol line acc last l cw a r pt, pt
     | `Close -> f acc `Close, (* ignored, `Sub or end follows *) last 
     in
     fst (fold linear (acc, P2.o) p)
@@ -589,7 +589,7 @@ module P = struct
   let one_div_3 = 1. /. 3. 
   let two_div_3 = 2. /. 3. 
   let cubic_earc tol cubic acc p0 large cw r a p1 = (* TODO tailrec *)
-    match earc_params p0 large cw r a p1 with
+    match earc_params p0 large cw a r p1 with
     | None -> (* line with a cubic *)
 	let c = V2.add (V2.smul two_div_3 p0) (V2.smul one_div_3 p1) in
         let c' = V2.add (V2.smul one_div_3 p0) (V2.smul two_div_3 p1) in
@@ -630,8 +630,8 @@ module P = struct
         V2.equal_f eq c0 c0' && V2.equal_f eq pt pt'
     | `Ccurve (c0, c1, pt), `Ccurve (c0', c1', pt') -> 
         V2.equal_f eq c0 c0' && V2.equal_f eq c1 c1' && V2.equal_f eq pt pt'
-    | `Earc (l, ccw, r, a, pt), `Earc (l', ccw', r', a', pt') ->
-        l = l' && ccw = ccw' && V2.equal_f eq r r' && eq a a' && 
+    | `Earc (l, ccw, a, r, pt), `Earc (l', ccw', a', r', pt') ->
+        l = l' && ccw = ccw' && eq a a' && V2.equal_f eq r r' &&  
         V2.equal_f eq pt pt'
     | `Close, `Close -> true
     | _, _ -> false 
@@ -654,14 +654,14 @@ module P = struct
         if c <> 0 then c else 
         let c = V2.compare_f cmp c1 c1' in 
         if c <> 0 then c else V2.compare_f cmp pt pt'
-    | `Earc (l, ccw, r, a, pt), `Earc (l', ccw', r', a', pt') ->
+    | `Earc (l, ccw, a, r, pt), `Earc (l', ccw', a', r', pt') ->
         let c = Pervasives.compare l l' in 
         if c <> 0 then c else
         let c = Pervasives.compare ccw ccw' in 
         if c <> 0 then c else 
-        let c = V2.compare_f cmp r r' in 
-        if c <> 0 then c else 
         let c = cmp a a' in 
+        if c <> 0 then c else 
+        let c = V2.compare_f cmp r r' in 
         if c <> 0 then c else V2.compare_f cmp pt pt'
     | s, s' -> Pervasives.compare s s'
     in
@@ -682,8 +682,8 @@ module P = struct
       pp ppf "@ @[<3>Qc(%a@ %a)@]" pp_v2 c pp_v2 pt
   | `Ccurve (c, c', pt) -> 
       pp ppf "@ @[<3>Cc(%a@ %a@ %a@)]" pp_v2 c pp_v2 c' pp_v2 pt
-  | `Earc (l, ccw, r, a, pt) -> 
-      pp ppf "@ @[<3>Ea(%B@ %B@ %a@ %a@ %a)@]" l ccw pp_v2 r pp_f a pp_v2 pt
+  | `Earc (l, ccw, a, r, pt) -> 
+      pp ppf "@ @[<3>Ea(%B@ %B@ %a@ %a@ %a)@]" l ccw pp_f a pp_v2 r pp_v2 pt
   | `Close ->
       pp ppf "@ C"
         

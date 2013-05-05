@@ -285,8 +285,8 @@ module P : sig
     (** Quadratic curve to point, a control point and the point *)
     | `Ccurve of p2 * p2 * p2   
     (** Cubic curve to point, two control points and the point *)
-    | `Earc of bool * bool * size2 * float * p2
-    (** Elliptic arc to point, [large], [cw], [raddii], [angle] and the point *)
+    | `Earc of bool * bool * float * size2 * p2
+    (** Elliptic arc to point, [large], [cw], [angle], [raddii] and the point *)
     | `Close 
     (** Line to point of the last [`Sub], ends the subpath. *)
     ]
@@ -689,7 +689,7 @@ module Vgr : sig
         | `Line of p2
         | `Qcurve of p2 * p2 
         | `Ccurve of p2 * p2 * p2 
-        | `Earc of bool * bool * size2 * float * p2
+        | `Earc of bool * bool * float * size2 * p2
         | `Close ]
       (** The type for path segments. *)
       
@@ -728,9 +728,9 @@ module Vgr : sig
 
    (** Helpers for implementing paths. *)
    module P : sig
-     val earc_params : p2 -> large:bool -> cw:bool -> v2 -> float -> p2 -> 
+     val earc_params : p2 -> large:bool -> cw:bool -> float -> v2 -> p2 -> 
        (p2 * m2 * float * float) option 
-     (** [earc_params p large cw r a p'] is [Some (c, m, a, a')] 
+     (** [earc_params p large cw angle r p'] is [Some (c, m, a, a')] 
          with [c] the center of the ellipse, [m] a transform matrix 
          mapping the unit circle to the ellipse, [a] and [a'] the 
          angle on the unit circle corresponding to the first and last
