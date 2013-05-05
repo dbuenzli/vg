@@ -206,15 +206,15 @@ module P : sig
   (** [ccurve c c' pt p] is [p] with a cubic bézier curve from [p]'s 
       last point to [pt] with control points [c] and [c']. *)
 
-  val earc : ?rel:bool -> ?large:bool -> ?ccw:bool -> size2 -> float -> p2 -> 
-    path -> path
-  (** [earc r angle pt p] is [p] with an elliptical arc from [p]'s
+  val earc : ?rel:bool -> ?large:bool -> ?cw:bool -> ?angle:float -> size2 -> 
+    p2 -> path -> path
+  (** [earc large cw angle r pt p] is [p] with an elliptical arc from [p]'s
       last point to [pt].  The ellipse is defined by the horizontal
       and vertical radii [r] which are rotated by [angle] with respect
       to the current coordinate system. In the general case this
       defines four possible arcs, thus [large] indicates if more than
-      pi radians of the arc is to be traversed and [ccw] if the arc is
-      to be traversed in the counter clockwise direction (both default
+      pi radians of the arc is to be traversed and [cw] if the arc is
+      to be traversed in the clockwise direction (both default
       to [false]). See
       {{:http://www.w3.org/TR/2000/CR-SVG-20001102/images/paths/arcs02.png}this
       figure}. If parameters do not define a valid ellipse (coincident
@@ -234,9 +234,9 @@ module P : sig
   (** [circle c r p] is [p] with a circle subpath of center [c] 
       and radius [r]. *)
 
-  val ellipse : ?rel:bool -> p2 -> size2 -> path -> path
-  (** [ellipse c r p] is [p] with an axis-aligned ellipse subpath of
-      center [c] and radii [r].*)
+  val ellipse : ?rel:bool -> ?angle:float -> p2 -> size2 -> path -> path
+  (** [ellipse c r p] is [p] with an axis-aligned (unless [angle] is specified) 
+      ellipse subpath of center [c] and radii [r].*)
 
   val rect : ?rel:bool -> box2 -> path -> path
   (** [rect r p] is [p] with an axis-aligned rectangle subpath 
@@ -557,6 +557,9 @@ module Vgr : sig
     | `Other of string ]
   (** The type for rendering warnings. *)
 
+  type warn = warning -> I.t option -> unit 
+  (** The type for warning callbacks. *)
+
   val pp_warning : Format.formatter -> warning -> unit
   (** [pp_warning ppf w] prints a textual representation of [w] on
       [ppf]. *)
@@ -655,7 +658,7 @@ module Vgr : sig
          called [Vgr_bla] (lowercase).}
       {- The renderer creation function must be named
          [Vgr_bla.renderer], have an optional argument
-         [?meta:Vg.meta], an optional [?warn:warning -> I.t -> unit]
+         [?meta:Vg.meta], an optional [?warn:warn]
          function if it doesn't support [Vg]'s full rendering model
          and return a [Vgr.t] value.}
       {- Images must be rendered via the {!render} function. If you 
@@ -723,6 +726,18 @@ module Vgr : sig
    val image : I.t -> Data.image
    (** [image i] is [i]'s internal representation. *)
 
+   (** Helpers for implementing paths. *)
+   module P : sig
+     val earc_params : p2 -> large:bool -> cw:bool -> v2 -> float -> p2 -> 
+       (p2 * m2 * float * float) option 
+     (** [earc_params p large cw r a p'] is [Some (c, m, a, a')] 
+         with [c] the center of the ellipse, [m] a transform matrix 
+         mapping the unit circle to the ellipse, [a] and [a'] the 
+         angle on the unit circle corresponding to the first and last
+         point of the arc. [None] is returned if the parameters do not
+         define a valid arc. *)
+   end
+
    (** {1 Renderers } *)
    
    type renderer
@@ -738,7 +753,7 @@ module Vgr : sig
      k -> k
    (** The type for rendering functions. TODO *)
 
-   val create_renderer : ?once:bool -> ?warn:(warning -> I.t -> unit) -> 
+   val create_renderer : ?once:bool -> ?warn:warn -> 
      meta -> [< dst] -> (meta -> renderer -> 'a) -> 'a render_fun -> t
    (** [create_renderer once meta dst alloc_state rfun] is a renderer
        [r] such that, let [state] be [alloc meta r] (called once).
@@ -748,7 +763,7 @@ module Vgr : sig
        If [once] is [true] (defaults to [false]) calling {!render}
        with more than one [`Image] will raise an [Invalid_argument] exception.*)
 
-    val warn : renderer -> warning -> Data.image -> unit
+    val warn : renderer -> warning -> Data.image option -> unit
     (** [warn r w i] reports a warning [w] for image [i]. *)
        
     val partial : k -> renderer -> [> `Partial]

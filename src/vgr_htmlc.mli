@@ -32,8 +32,8 @@
 
 (** {1 Renderer} *)
 
-val renderer : ?warn:(Vg.Vgr.warning -> Vg.I.t -> unit) -> 
-  ?meta:Vg.meta -> Dom_html.canvasElement Js.t -> Vg.renderer
+val renderer : ?warn:Vg.Vgr.warn -> ?meta:Vg.meta -> 
+  Dom_html.canvasElement Js.t -> Vg.renderer
 (** [renderer meta c] is an HTML canvas renderer rendering to [c]. *)
 
 (*---------------------------------------------------------------------------

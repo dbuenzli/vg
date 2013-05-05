@@ -6,7 +6,7 @@
 
 (* Renderer independent images *)
 
-include Areas
+include Paths
 include Colors
 include Alphas
 include Gradients

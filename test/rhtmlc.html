@@ -11,6 +11,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script type="text/javascript" defer="defer" src="rhtmlc.js"></script>
   <style type="text/css">
+    @import url("http://fonts.googleapis.com/css?family=Open+Sans:300italic,400,300&subset=latin,latin-ext");
+
     /* Reset a few things */
     html,body,div,span,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,abbr,
     address,cite,code,del,dfn,em,img,ins,kbd,q,samp,small,strong,sub,sup,var,
@@ -26,9 +28,6 @@
     input{font-family:inherit;}
 
     /* basic layout */
-
-    @import url(http://fonts.googleapis.com/css?family=Open+Sans:300italic,400,300&subset=latin,latin-ext);
-
 
     body { background-color: black;
            color: gray; 
@@ -55,8 +54,24 @@
       text-transform: uppercase }
     .mu-label-text + input { margin-left: 1ex }
     input + .mu-label-text { margin-left: 1ex }
+    .mu-label-text + select { margin-left:1ex }
 
     .mu-text { padding: 0.145em 0.291em }
+
+    /* Menu */
+    .mu-menu {  
+    font-weight:300; 
+    font-family: "Open Sans";
+    background:#444;
+    -moz-border-radius: 0px;
+    -webkit-border-radius: 0px;
+    border-radius: 0px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    padding-left: 1ex;
+    padding-right: 1ex;
+    }
 
     /* Checkboxes */
     .mu-bool { padding: 0.145em 0.291em; }
@@ -110,22 +125,26 @@
     #i-note { line-height:1.71875em; 
               font-size: 0.8em; margin-top: 1.71875em;
               font-weight:300; 
-              vertical-align:center;
+              max-width: 70ex;
+              vertical-align:middle;
     }
     #i-rinfo { line-height:1.71875em;
                font-size: 0.8em; margin-top: 1.71875em; font-weight: 300; }
-
     #i-rlog { line-height:1.71875em; font-size: 0.8em; font-weight: 300; }
+    #i-rlog .mu-select li span:hover { background: black; color: gray;}
+    #i-rlog li span:hover { background: black; color: gray; }
+    #i-rlog li.mu-selected span { background: black; color: gray; }
 
-    #i-canvas { margin: 0.145em 0.291em;
-                background: rgba(0,0,0,0);
-                margin-top: 1.375em;
-                border-color: rgb(50,50,50);
-                border-style: solid;
-                border-width: 1px; }
+    #i-frame { margin: 0em 0.291em;
+               background: rgba(0,0,0,0);
+               display: inline-block;
+               margin-top: 1.375em;
+               border-color: rgb(50,50,50);
+               border-style: solid;
+               border-width: 1px; }
+    #i-canvas { display:block }
     #i-btns { margin-top: 1.375em; font-size: 0.8em; }
-    #i-canvas.white { background: white; text-style: }    
- }    
+    #i-frame.white { background: white; }
   </style>
   <title>Vg image database</title>
 </head>

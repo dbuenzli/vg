@@ -32,8 +32,8 @@ for i = 0 to 8 do
   let note = str "Curve made of %g segment%s." (3. ** (float i)) s in
   Db.image id ~author ~title
     ~tags:["arrowhead"; "fractal"; "curve"]
-    ~size:(Size2.v 60. 60.)
-    ~view:(Box2.v (P2.v ~-.0.1 ~-.0.1) (Size2.v 1.2 1.2))
+    ~size:(Size2.v 60. 52.5)
+    ~view:(Box2.v (P2.v ~-.0.1 ~-.0.1) (Size2.v 1.2 1.05))
     ~note
     begin fun () ->
       let area = `O { P.o with P.width = 0.005 } in

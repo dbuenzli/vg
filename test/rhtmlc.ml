@@ -13,6 +13,7 @@ open Mui
 include Db_htmlc
 
 let str = Format.sprintf
+let pp = Format.fprintf
 let pp_str = Format.pp_print_string 
 let to_str_of_pp pp v =
   Format.fprintf Format.str_formatter "%a" pp v; 
@@ -20,6 +21,13 @@ let to_str_of_pp pp v =
 
 let src_link = 
   format_of_string "https://github.com/dbuenzli/vg/blob/master/db/%s#L%d"
+
+(* Resolution *)
+
+let ppi_300 = 11811.
+let res_ppcm = [ 2834.; 3779.; 5905.; 11811.; 23622. ]
+let pp_res ppf d = 
+  pp ppf "%3d ppi" (Float.int_of_round ((d *. 2.54) /. 100.))
 
 (* Persistent ui state. *)
 
@@ -29,6 +37,7 @@ module S = struct
       white_bg : bool;              (* white background *)
       budget : bool;
       tags : string list;           (* selected tags *)
+      resolution : float;
       prefix : string; }            (* filter prefix *)
   
   let state : t Store.key = Store.key () 
@@ -37,6 +46,7 @@ module S = struct
     { id = "arrowhead-5";
       white_bg = true; 
       budget = false;
+      resolution = ppi_300;
       tags = [];
       prefix = "default" }      
 
@@ -52,8 +62,10 @@ end
 
 (* Render *)
 
-let render_image warn c i stats = 
-  let r = Vgr_htmlc.renderer ~warn ~meta:(Db.render_meta i) c in 
+let render_image warn c res i stats = 
+  let meta = Db.render_meta i in 
+  let meta = Vgm.add meta Vgm.resolution (V2.v res res) in
+  let r = Vgr_htmlc.renderer ~warn ~meta c in 
   let start = Time.now () in
   let rec finish steps v = match Vgr.render r v with 
   | `Partial -> finish steps v (* should not happen *)
@@ -72,6 +84,7 @@ let ui () =
   let db_ids, db_tags = Db.indexes () in
   let budget, set_budget = Ui.bool s.S.budget in 
   let white, set_white = Ui.bool s.S.white_bg in
+  let res, conf_res = Ui.menu ~id:"r-res" pp_res s.S.resolution res_ppcm in
   let ids, conf_ids = Ui.select pp_str (Some s.S.id) db_ids in
   let id_count, set_id_count = Ui.text ~id:"id-count" "" in
   let tags, set_tags = Ui.mselect pp_str s.S.tags db_tags in 
@@ -79,6 +92,7 @@ let ui () =
   let title, set_title = Ui.text ~id:"i-title" "" in
   let author, set_author = Ui.text ~id:"i-author" "" in
   let note, set_note = Ui.text ~id:"i-note" "" in
+  let image_frame = Ui.group ~id:"i-frame" () in
   let image, canvas = Ui.canvas ~id:"i-canvas" () in
   let src, conf_src = Ui.link ~id:"png-btn" ~href:"#" "SRC" in
   let png, conf_png = Ui.link ~id:"png-btn" ~href:"#" "PNG" in
@@ -89,13 +103,17 @@ let ui () =
     (fun w _ -> warns := w :: !warns; conf_log (`List !warns)), 
     (fun () -> warns := []; conf_log (`List []))
   in
-  let cmd = function
+  let rec cmd = function
   | `Use_budget b -> 
       let _ = S.set { (S.get ()) with S.budget = b } in
       Log.msg "Use budget: %b" b;
   | `Use_white_bg b -> 
       let s = S.set { (S.get ()) with S.white_bg = b } in
-      Ui.classify image "white" s.S.white_bg
+      Ui.classify image_frame "white" s.S.white_bg
+  | `Set_resolution r -> 
+      let s = S.set { (S.get()) with S.resolution = r } in 
+      Log.msg "Resolution change: %f" r;
+      cmd (`Select_id s.S.id)
   | `Select_id id -> 
       let s = S.set { (S.get ()) with S.id = id } in
       let i = match Db.find ~ids:[s.S.id] () with [i] -> i | l ->assert false in
@@ -117,7 +135,8 @@ let ui () =
       | None ->  Ui.visible ~relayout:true note false
       | Some n -> set_note n; Ui.visible note true
       end;
-      render_image warn canvas i set_stats 
+      Ui.set_hash id;
+      render_image warn canvas s.S.resolution i set_stats
   | `Use_tags ts ->
       let s = S.set { (S.get ()) with S.tags = ts } in
       let ids = List.map (fun i -> i.Db.id) (Db.find ~tags:ts ()) in
@@ -134,6 +153,7 @@ let ui () =
   let link () = (* Untying the recursive knot... *)
     Ui.on_change budget (fun b -> cmd (`Use_budget b)); 
     Ui.on_change white (fun b -> cmd (`Use_white_bg b));
+    Ui.on_change res (fun r -> cmd (`Set_resolution r));
     Ui.on_change ids (fun id -> match id with 
     | Some i -> cmd (`Select_id i)
     | None -> ()); 
@@ -141,6 +161,10 @@ let ui () =
     Ui.on_change png (fun () -> cmd (`Make_png))
   in
   let init () =
+    let hash_change id = if id <> "" && Db.mem id then cmd (`Select_id id) in
+    Ui.on_hash_change hash_change;
+    let id = Ui.hash () in
+    if id <> "" && Db.mem id then ignore (S.set { (S.get ()) with S.id = id });
     ignore (cmd (`Use_white_bg s.S.white_bg));
     ignore (cmd (`Use_tags s.S.tags));
   in
@@ -153,20 +177,21 @@ let ui () =
          (Ui.group ~id:"ids" () *> 
             (Ui.group () *> Ui.label "Images" *> id_count) *> ids) *>
          (Ui.group ~id:"tags" () *> 
-            (Ui.group () *> Ui.label "Tags" *> tag_count) *> tags) *>
+            (Ui.group () *> Ui.label "Tag filter" *> tag_count) *> tags) *>
          (Ui.group ~id:"rsetts" () *> 
             Ui.label "Settings" *> 
             (Ui.label ~ctrl:true "White background" *> white) *>
+            (Ui.label ~ctrl:true "Resolution" *> res) *>
             (Ui.label ~ctrl:true "Timeout test" *> budget))) *>
       (Ui.group ~id:"image" () *>
          (Ui.group ~id:"info" () *> 
-            title *> author *> note *> image *> 
+            title *> author *> note *> (image_frame *> image) *> 
             (Ui.group ~id:"i-btns" () *> src *> png) *>
             rinfo *> log))
   in
   link (); init (); layout ()
 
-let main () = Ui.show (ui ())
+let main () = Log.msg "rhtmlc loaded"; Ui.show (ui ())
 let () = Ui.main main
 
 (*---------------------------------------------------------------------------

@@ -88,8 +88,16 @@ module Ui : sig
   val canvas : ?id:string -> unit -> unit t * Dom_html.canvasElement Js.t
   val canvas_data : Dom_html.canvasElement Js.t -> string
 
+  type 'a menu_conf = [ `Select of 'a | `List of 'a list ]
+  val menu : ?id:string -> 'a printer -> 'a -> 'a list -> 
+    ('a, 'a menu_conf) conf 
+
   val classify : 'a t -> string -> bool -> unit
   val visible : ?relayout:bool -> 'a t -> bool -> unit
+
+  val hash : unit -> string
+  val set_hash : string -> unit
+  val on_hash_change : (string -> unit) -> unit
 end
 
 val ( *> ) : 'a Ui.t -> 'b Ui.t -> 'a Ui.t

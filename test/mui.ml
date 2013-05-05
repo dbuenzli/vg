@@ -33,12 +33,11 @@ module D = struct
     e
 
   let txt s = document ## createTextNode (Js.string s) 
-  let canvas ?id () = 
+  let canvas ?id _ = 
     let e : Dom_html.canvasElement Js.t = Js.Unsafe.coerce (el ?id "canvas") in 
     let err = "Sorry, the HTML canvas is unsupported by this browser." in
     Dom.appendChild e (txt err);
     e
-
 end
 
 (* Events *)      
@@ -232,10 +231,36 @@ module Ui = struct
     in
     set l; 
     ui, set
+
+  type 'a menu_conf = [ `Select of 'a | `List of 'a list ]
+  let c_menu = Js.string "mu-menu" 
+  let menu ?id pp v l = 
+    let m = el ?id Dom_html.createSelect [c_menu ] in 
+    let ui = { n = (m :> Dom_html.element Js.t); on_change = nop } in
+    let els_v = ref [||] in
+    let opt i ov = 
+      let o = el ?id Dom_html.createOption [] <*> txt (str pp ov) in 
+      Dom.appendChild ui.n o;
+      if v = ov then (m ## selectedIndex <- i);
+      o
+    in
+    let conf = function 
+    | `Select s -> ()
+    | `List l ->
+        rem_childs ui.n;
+        els_v := Array.of_list l;
+        ignore (List.mapi opt l)
+    in
+    let on_change _ _ = ui.on_change !els_v.((m ## selectedIndex)); false in
+    Ev.cb m Ev.change on_change;
+    conf (`List l);
+    conf (`Select v);
+    ui, conf
+
    
   let c_canvas = Js.string "mu-canvas" 
   let canvas ?id () =  (* TODO don't use createCanvas because of exn. *)
-    let c = el ?id Dom_html.createCanvas [c_canvas] in 
+    let c = el ?id D.canvas [c_canvas] in 
     let ui = { n = (c :> Dom_html.element Js.t); on_change = nop } in 
     ui, c
 
@@ -256,7 +281,21 @@ module Ui = struct
       if relayout then classify_js ui c_invisible_relayout true else
       classify_js ui c_invisible true 
     end
-    
+
+  let hash () = 
+    let h = Js.to_string (D.window ## location ## hash) in 
+    let len = String.length h in 
+    if len > 0 && h.[0] = '#' then String.sub h 1 (len - 1) else 
+    h
+
+  let set_hash h = 
+    let h = if h <> "" then "#" ^ h else h in
+    D.window ## location ## hash <- Js.string h
+
+  let on_hash_change cb = 
+    let on_change _ _ = cb (hash ()); false in
+    Ev.cb D.window Ev.hashchange on_change
+
   let ( *> ) p c = Dom.appendChild p.n c.n; p
   let show ui = ignore (D.document ## body <*> ui.n)
   let main m = 

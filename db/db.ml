@@ -31,6 +31,8 @@ let image id ~title ~author ?(tags = []) ?subject ?note ?(meta = Vgm.empty)
       Hashtbl.add images id 
         { id; author; title; subject; note; tags; meta; size; view; image; }
 
+let mem id = Hashtbl.mem images id
+
 let prefixed s p =
   let ls = String.length s in 
   let lp = String.length p in 

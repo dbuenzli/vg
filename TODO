@@ -1,25 +1,18 @@
 
 * rhtmlc
-** #id
-** buttons for pdf svg and png
-** Resolution menu. 
-** Mui use my canvas creation fun. 
+** PDF and SVG
 
 * mui 
 ** Scroll to view sel. on keyboard.
 
 * Renderer API
-** Rectangle instead of Size ? 
-** What about physical size ? 
 ** Add string name and pp to Vgm.key (), provide functions to pp.
 ** Add Vgm.{merge, compare, equal}
 
 * Api
 ** Make everything t.r.
 
-
 * Image
-** TODO I.mono I.const 
 ** ? Is I.blend order the right thing to do, YES but review semant. order
    of c [] c' 
 ** ? gradient add spread mode, or not.
@@ -37,14 +30,10 @@
 
 * Path
 ** Maybe, Boolean operations, minkowski.
-** Do we really want ellipses ? YES and circles, however maybe we don't
-   want them *internally*. We could just have cubic bezier and 
-   linear segments internally. 
 ** Subdivision http://www.antigrain.com/research/adaptive_bezier/index.html
 ** Check P. for tail recursion and numerical stability.
 ** ? expose cubic ellipse and ellipse parametrization. 
 ** Review bounds of ellipse
-** Elliptical arc, angle optional ?
 ** Sort out the tolerance stuff
 ** ? P.map_pts : (p2 -> p2) -> path -> path 
 ** P.mem : area -> path -> p2 -> bool

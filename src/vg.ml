@@ -232,9 +232,9 @@ module P = struct
     let o = abs_origin p in
     push (`Ccurve (V2.(o + c), V2.(o + c'), V2.(o + pt))) p 
 
-  let earc ?(rel = false) ?(large = false) ?(ccw = false) r angle pt p = 
+  let earc ?(rel = false) ?(large = false) ?(cw = false) ?(angle = 0.) r pt p = 
     let pt = if rel then abs p pt else pt in
-    push (`Earc (large, ccw, r, angle, pt)) p
+    push (`Earc (large, cw, r, angle, pt)) p
       
   let close p = push `Close p
         
@@ -244,17 +244,18 @@ module P = struct
     let cx = P2.x c in
     let cy = P2.y c in
     let a0 = P2.v (cx +. r) cy in 
-    let api = P2.v (cx +. r) cy in
+    let api = P2.v (cx -. r) cy in
     let r = V2.v r r in
-    p >> sub ?rel a0 >> earc r 0. api >> earc r 0. a0 >> close
+    p >> sub ?rel a0 >> earc r api >> earc r a0 >> close
     
-  let ellipse ?rel c r p = 
+  let ellipse ?rel ?(angle = 0.) c r p = 
     let cx = P2.x c in
     let cy = P2.y c in
-    let rx = V2.x r in
-    let a0 = P2.v (cx +. rx) cy in
-    let api = P2.v (cx -. rx) cy in
-    p >> sub ?rel a0 >> earc r 0. api >> earc r 0. api >> close
+    let xx = (if angle = 0. then 1.0 else cos angle) *. V2.x r in
+    let xy = (if angle = 0. then 0.0 else sin angle) *. V2.x r in 
+    let a0 = P2.v (cx +. xx) (cy +. xy) in
+    let api = P2.v (cx -. xx) (cy -. xy) in
+    p >> sub ?rel a0 >> earc r ~angle api >> earc r ~angle a0 >> close
       
   let rect ?rel r p = 
     if Box2.is_empty r then p else
@@ -278,25 +279,21 @@ module P = struct
     let r = l +. Size2.w size in
     let r_inset = r -. rx in 
     let b = P2.y lb in 
-    let b_inset = l +. ry in 
+    let b_inset = b +. ry in 
     let t = b +. Size2.h size in 
     let t_inset = t -. ry in 
     p >> sub ?rel (P2.v l b_inset) >>
-    earc cr 0. (P2.v l_inset b) >> line (P2.v r_inset b) >>
-    earc cr 0. (P2.v r b_inset) >> line (P2.v r t_inset) >>
-    earc cr 0. (P2.v r_inset t) >> line (P2.v l_inset t) >>
-    earc cr 0. (P2.v l t_inset) >> close
+    earc cr (P2.v l_inset b) >> line (P2.v r_inset b) >>
+    earc cr (P2.v r b_inset) >> line (P2.v r t_inset) >>
+    earc cr (P2.v r_inset t) >> line (P2.v l_inset t) >>
+    earc cr (P2.v l t_inset) >> close
 
   (* Geometry *)
 
-  (* Returns the center of the ellipse, a transform matrix mapping
-   the unit circle to the ellipse and the angles on the unit circle
-   corresponding to the first and last point of the arc. None is returned
-   if the parameters do not define a valid arc. 
-
-   The center is found by first transforming the points on the ellipse to
-   points on a unit circle (i.e. we rotate by -a and scale by 1/rx 1/ry). *)
-  let ellipse_param p0 large ccw r a p1 = 
+  (* See Vgr.Private.P.earc_params in mli file for the doc. The center is 
+     found by first transforming the points on the ellipse to points on 
+     a unit circle (i.e. we rotate by -a and scale by 1/rx 1/ry). *)
+  let earc_params p0 ~large ~cw r a p1 = 
     let rx = V2.x r in let ry = V2.y r in
     let x0 = V2.x p0 in let y0 = V2.y p0 in
     let x1 = V2.x p1 in let y1 = V2.y p1 in
@@ -316,15 +313,15 @@ module P = struct
     let d2 = Float.round_zero ~eps (1. /. nn -. 0.25) in
     if d2 < 0. then None (* points are too far apart *) else
     let d = sqrt d2 in
-    let d = if (large && not ccw) || (not large && ccw) then -. d else d in
+    let d = if (large && cw) || (not large && not cw) then -. d else d in
     let cx' = 0.5 *. (x0' +. x1') +. d *. nx  in             (* circle center *)
     let cy' = 0.5 *. (y0' +. y1') +. d *. ny in
     let t0 = atan2 (y0' -. cy') (x0' -. cx') in               (* angle of p0' *)
     let t1 = atan2 (y1' -. cy') (x1' -. cx') in
     let dt = (t1 -. t0) in
     let adjust = 
-      if dt > 0. && not ccw then -. 2. *. Float.pi else
-      if dt < 0. && ccw then 2. *. Float.pi else
+      if dt > 0. && cw then -. 2. *. Float.pi else
+      if dt < 0. && not cw then 2. *. Float.pi else
       0.
     in
     let t1 = t0 +. (dt +. adjust) in                          (* angle of p1' *)
@@ -337,7 +334,7 @@ module P = struct
     let m = M2.v e1x e2x 
                  e1y e2y
     in
-    Some ((V2.v cx cy), m, t0, t1)
+    Some ((P2.v cx cy), m, t0, t1)
 
   let casteljau pt c c' pt' t =
     let b00 = V2.mix pt c t in
@@ -377,9 +374,9 @@ module P = struct
       | `Line pt :: l -> update pt; seg_ctrl l
       | `Qcurve (c, pt) :: l -> update c; update pt; seg_ctrl l
       | `Ccurve (c, c', pt) :: l -> update c; update c'; update pt; seg_ctrl l
-      | `Earc (large, ccw, radii, angle, pt) :: l ->
+      | `Earc (large, cw, radii, angle, pt) :: l ->
 	  let last = last_pt l in
-          begin match ellipse_param last large ccw radii angle pt with
+          begin match earc_params last large cw radii angle pt with
           | None -> update pt; seg_ctrl l
           | Some (c, m, a1, a2) ->
               (* TODO wrong in general. *)
@@ -433,9 +430,9 @@ module P = struct
 		solve cc b a upd
 	    in
 	    update_z V2.x; update_z V2.y; update pt; seg l
-	| `Earc (large, ccw, radii, angle, pt) :: l ->
+	| `Earc (large, cw, radii, angle, pt) :: l ->
 	    let last = last_pt l in
-	    begin match ellipse_param last large ccw radii angle pt with
+	    begin match earc_params last large cw radii angle pt with
 	    | None -> update pt; seg l
 	    | Some (c, m, a1, a2) ->
 		(* TODO wrong in general. *)
@@ -455,7 +452,7 @@ module P = struct
     | `Line pt -> `Line (P2.tr m pt) 
     | `Qcurve (c, pt) -> `Qcurve (P2.tr m c, P2.tr m pt) 
     | `Ccurve (c, c', pt) -> `Ccurve (P2.tr m c, P2.tr m c', P2.tr m pt)
-    | `Earc (l, ccw, r, a, pt) -> (* TODO recheck that *)
+    | `Earc (l, cw, r, a, pt) -> (* TODO recheck that *)
 	let sina = sin a in
         let cosa = cos a in
         let rx = V2.x r in
@@ -467,7 +464,7 @@ module P = struct
 	let a' = atan2 (V2.y ax') (V2.x ax') in 
 	let rx' = V2.norm ax' in
 	let ry' = V2.norm ay' in
-        `Earc (l, ccw, (V2.v rx' ry'), a', (P2.tr m pt))
+        `Earc (l, cw, (V2.v rx' ry'), a', (P2.tr m pt))
     | `Close -> `Close 
     in
     List.rev (List.rev_map (tr_seg m) p)
@@ -529,8 +526,8 @@ module P = struct
     in
     loop tol line acc p0 p1 p2 p3
   
-  let linear_earc tol line acc p0 large ccw r a p1 =
-    match ellipse_param p0 large ccw r a p1 with
+  let linear_earc tol line acc p0 large cw r a p1 =
+    match earc_params p0 large cw r a p1 with
     | None -> line acc p1
     | Some (c, m, t0, t1) -> 
 	let tol2 = tol *. tol in
@@ -560,7 +557,7 @@ module P = struct
     | `Line pt -> line acc pt, pt
     | `Qcurve (c, pt) ->  linear_qcurve tol line acc last c pt, pt
     | `Ccurve (c, c', pt) -> linear_ccurve tol line acc last c c' pt, pt
-    | `Earc (l, ccw, r, a, pt) -> linear_earc tol line acc last l ccw r a pt, pt
+    | `Earc (l, cw, r, a, pt) -> linear_earc tol line acc last l cw r a pt, pt
     | `Close -> f acc `Close, (* ignored, `Sub or end follows *) last 
     in
     fst (fold linear (acc, P2.o) p)
@@ -591,8 +588,8 @@ module P = struct
   
   let one_div_3 = 1. /. 3. 
   let two_div_3 = 2. /. 3. 
-  let cubic_earc tol cubic acc p0 large ccw r a p1 = (* TODO tailrec *)
-    match ellipse_param p0 large ccw r a p1 with
+  let cubic_earc tol cubic acc p0 large cw r a p1 = (* TODO tailrec *)
+    match earc_params p0 large cw r a p1 with
     | None -> (* line with a cubic *)
 	let c = V2.add (V2.smul two_div_3 p0) (V2.smul one_div_3 p1) in
         let c' = V2.add (V2.smul one_div_3 p0) (V2.smul two_div_3 p1) in
@@ -931,7 +928,9 @@ module Vgr = struct
     [ `Unsupported_cut of P.area
     | `Unsupported_glyph_cut of P.area
     | `Other of string ]
-                
+
+  type warn = warning -> I.t option -> unit                
+ 
   let pp_area ppf = function
   | `Aeo -> pp ppf "even-odd"
   | `Anz -> pp ppf "non-zero"
@@ -958,7 +957,7 @@ module Vgr = struct
       mutable o : string;            (* current output chunk (stored dsts). *)
       mutable o_pos : int;                (* next output position to write. *)
       mutable o_max : int;             (* maximal output position to write. *)
-      warn : warning -> I.t -> unit;   (* warning function (user provided). *)
+      warn : warning -> I.t option-> unit;   (* warning cb (user provided). *)
       meta : meta;                      (* render metadata (user provided). *)
       mutable k :                                   (* render continuation. *)
         [`Await | `End | `Image of size2 * box2 * image ] -> t -> 
@@ -982,13 +981,15 @@ module Vgr = struct
   (* Implementing renderers. *)
 
   module Private = struct
-    
-    (* Path representation *)
+
+    (* Internal data *)
 
     module Data = struct
+      
+      (* Path representation *)
+
       type segment = P.segment
       type path = P.t 
-
       
       (* Image representation *)
     
@@ -1007,16 +1008,20 @@ module Vgr = struct
         | Tr of tr * image
         | Meta of meta * image
     end
+
     external path : P.t -> path = "%identity"
     external image : I.t -> image = "%identity"
-      
+
+    module P = struct
+      let earc_params = P.earc_params
+    end
+
     (* Renderer *)
 
     type renderer = t
-    
     type k = renderer -> [ `Ok | `Partial ]
-    type 'a render_fun = 'a -> [`End | `Image of size2 * box2 * Data.image ] 
-      -> k -> k
+    type 'a render_fun = 'a -> [`End | `Image of size2 * box2 * Data.image ] ->
+      k -> k
 
     let renderer r = r
     let warn r w i = r.warn w i
@@ -1046,8 +1051,8 @@ module Vgr = struct
     | `Image _ as i -> rfun state i (ok (r_loop state rfun)) r
     | `Await -> ok (r_loop state rfun) r
 
-    let wnop _ _ = ()
-    let create_renderer ?(once = false) ?(warn = wnop) meta dst alloc_state 
+    let nop _ _ = ()
+    let create_renderer ?(once = false) ?(warn = nop) meta dst alloc_state 
         rfun = 
       let o, o_pos, o_max = match dst with 
       | `Manual | `Immediate -> "", 1, 0          (* implies [o_rem e = 0]. *)

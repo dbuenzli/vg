@@ -27,6 +27,9 @@ val image : string -> title:string -> author:string -> ?tags:string list ->
 (** [image id authors title subject note tags meta size view fimg]
     adds an image to the database. *)
 
+val mem : string -> bool
+(** [mem id] is [true] if there an image with id [id]. *)
+
 val find : ?ids:string list -> ?prefixes:string list -> ?tags:string list -> 
   unit -> image list
 (** [find ids prefixes tags ()] is a list of images lexicographically
