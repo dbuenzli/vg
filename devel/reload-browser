@@ -46,6 +46,7 @@ darwin_common ()
                  end repeat
                  if (found_tab is not -1) then 
                    set index of window wi to 1
+                   set wi to 1
                    $SET_ACTIVE_TAB
                    $RELOAD
                    exit repeat
