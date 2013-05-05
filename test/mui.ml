@@ -161,15 +161,35 @@ module Ui = struct
     | None -> () | Some i -> !els.(i) ## classList ## remove (c_selected)
     in
     let select () = match !selected with 
-    | None -> () | Some i -> !els.(i) ## classList ## add (c_selected)
+    | None -> () 
+    | Some i ->
+        let el = !els.(i) in
+        el ## classList ## add (c_selected); 
+        (* Scroll if needed *)
+        let ut = truncate (Js.to_float (ul ##getBoundingClientRect()## top)) in
+        let et = truncate (Js.to_float (el ##getBoundingClientRect()## top)) in
+        if (et < ut) then
+          ul ## scrollTop <- ul ## scrollTop - (ut - et)
+        else if (et >= ut + ul ## clientHeight) then 
+          ul ## scrollTop <- ul ## scrollTop + 
+              (et + el ## clientHeight - ut - ul ## clientHeight)
     in
-    let set_selected s = match s with 
-    | None -> deselect (); ui.on_change None
+    let set_selected = function
+    | None -> 
+        begin match !selected with 
+        | None -> () 
+        | Some _ -> 
+            deselect (); ui.on_change None
+        end
     | Some i -> 
         let max = Array.length !els - 1 in
         let i = if i < 0 then 0 else (if i > max then max else i) in
-        deselect (); selected := Some i; select (); 
-        ui.on_change (Some !els_v.(i))
+        begin match !selected with
+        | Some j when i = j -> () 
+        | _ -> 
+            deselect (); selected := Some i; select ();
+            ui.on_change (Some !els_v.(i))
+        end
     in
     let li i v = 
       let span = el Dom_html.createSpan [] <*> txt (str pp v) in
@@ -205,6 +225,7 @@ module Ui = struct
     Ev.cb ul Ev.keydown on_keydown;
     conf (`List l); conf (`Select s);
     ui, conf
+
 
   let c_mselect = Js.string "mu-mselect" 
   let mselect ?id pp sels l = 

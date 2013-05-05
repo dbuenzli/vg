@@ -136,6 +136,7 @@ let ui () =
       | Some n -> set_note n; Ui.visible note true
       end;
       Ui.set_hash id;
+      conf_ids (`Select (Some id));
       render_image warn canvas s.S.resolution i set_stats
   | `Use_tags ts ->
       let s = S.set { (S.get ()) with S.tags = ts } in
@@ -161,10 +162,15 @@ let ui () =
     Ui.on_change png (fun () -> cmd (`Make_png))
   in
   let init () =
-    let hash_change id = if id <> "" && Db.mem id then cmd (`Select_id id) in
+    let hash_change id = 
+      if id <> "" && Db.mem id then cmd (`Select_id id) else
+      Ui.set_hash ""
+    in
     Ui.on_hash_change hash_change;
     let id = Ui.hash () in
-    if id <> "" && Db.mem id then ignore (S.set { (S.get ()) with S.id = id });
+    if id <> "" && Db.mem id 
+    then ignore (S.set { (S.get ()) with S.id = id })
+    else Ui.set_hash "";
     ignore (cmd (`Use_white_bg s.S.white_bg));
     ignore (cmd (`Use_tags s.S.tags));
   in
