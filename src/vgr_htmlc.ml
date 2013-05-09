@@ -11,12 +11,16 @@ open Vgr.Private.Data
 let str = Format.sprintf 
 let pp = Format.fprintf 
 
+let warn_dash = "Outline dashes unsupported in this browser"
+
 (* JS bindings, those are not in js_of_ocaml *)
 
 class type ctx_dashes = object 
   method lineDashOffset : Js.float_prop
   method setLineDash : float Js.js_array Js.t -> unit Js.meth
 end
+
+let dash_support ctx = Js.Optdef.test ((Js.Unsafe.coerce ctx) ## setLineDash)
 
 (* Renderer *)
 
@@ -35,28 +39,26 @@ type gstate =    (* Subset of the graphics state saved by a ctx ## save (). *)
 
 type cmd = Pop of gstate | Draw of Vgr.Private.Data.image
 type state = 
-  { r : Vgr.Private.renderer;
-    c : Dom_html.canvasElement Js.t;     (* The canvas element rendered to. *)
-    ctx : Dom_html.canvasRenderingContext2D Js.t;    (* The canvas context. *)
-    resolution : Gg.v2;                        (* Resolution of the canvas. *)
-    timeout : float;   
-    mutable cost : int;                        (* cost counter for timeout. *)
-    mutable view : Gg.box2; 
+  { r : Vgr.Private.renderer;                    (* corresponding renderer. *)
+    c : Dom_html.canvasElement Js.t;         (* canvas element rendered to. *)
+    ctx : Dom_html.canvasRenderingContext2D Js.t; (* canvas context of [c]. *)
+    dash_support : bool;               (* [true] if [ctx] has dash support. *)
+    resolution : Gg.v2;                        (* resolution of the canvas. *)
+    mutable cost : int;                          (* cost counter for limit. *)
+    mutable view : Gg.box2;           (* current renderable view rectangle. *)
     mutable todo : cmd list;                        (* commands to perform. *)
-    (* Cached primitives. *)
-    prims : (Vgr.Private.Data.primitive, js_primitive) Hashtbl.t;     
-    (* Current graphics state. *)
-    mutable s_alpha : float;
-    mutable s_blender : I.blender; 
-    mutable s_outline : P.outline; 
-    mutable s_stroke : js_primitive; 
-    mutable s_fill : js_primitive; }
+    prims :                                           (* cached primitives. *)
+      (Vgr.Private.Data.primitive, js_primitive) Hashtbl.t;     
+    mutable s_alpha : float;                       (* current global alpha. *)
+    mutable s_blender : I.blender;                (* current blending mode. *)
+    mutable s_outline : P.outline;         (* current outline stroke state. *)
+    mutable s_stroke : js_primitive;               (* current stroke color. *)
+    mutable s_fill : js_primitive; }                 (* current fill color. *)
 
-let max_cost = max_int
+let limit s = Vgr.Private.limit s.r
 let warn s w = Vgr.Private.warn s.r w
 let image i = Vgr.Private.image i
-
-let save_gstate s = 
+let pop_gstate s = 
   Pop { g_alpha = s.s_alpha; g_blender = s.s_blender; g_outline = s.s_outline; 
         g_stroke = s.s_stroke; g_fill = s.s_fill; }
 
@@ -86,10 +88,7 @@ let join_str =
   function `Bevel -> bevel | `Round -> round | `Miter -> miter 
 
 let set_dashes ?(warning = true) s dashes = 
-  if not (Js.Optdef.test ((Js.Unsafe.coerce s.ctx) ## setLineDash)) then 
-    (if not warning then () else
-     warn s (`Other "Outline dashes unsupported in this browser"))
-  else
+  if not s.dash_support then (if warning then warn s (`Other warn_dash)) else
   let ctx : ctx_dashes Js.t = Js.Unsafe.coerce s.ctx in 
   match dashes with 
   | None -> ctx ## setLineDash(jsnew Js.array_empty ())
@@ -97,8 +96,7 @@ let set_dashes ?(warning = true) s dashes =
       let da = jsnew Js.array_empty () in 
       List.iteri (fun i v -> Js.array_set da i v) dashes; 
       ctx ## lineDashOffset <- offset;
-      ctx ## setLineDash(da); 
-      ()
+      ctx ## setLineDash(da)
 
 let init_ctx s = 
   s.ctx ## globalAlpha <- s.s_alpha;
@@ -110,7 +108,7 @@ let init_ctx s =
   s.ctx ## miterLimit <- o.P.miter_angle;
   set_dashes ~warning:false s o.P.dashes
 
-let r_outline s o =       
+let set_outline s o =       
   if s.s_outline == o then () else
   let old = s.s_outline in  
   s.s_outline <- o;
@@ -122,7 +120,7 @@ let r_outline s o =
   if old.P.dashes <> o.P.dashes then set_dashes s o.P.dashes; 
   ()
 
-let r_transform s = function 
+let push_transform s = function 
 | Move v -> s.ctx ## translate (V2.x v, V2.y v)
 | Rot a -> s.ctx ## rotate (a)
 | Scale sv -> s.ctx ## scale (V2.x sv, V2.y sv)
@@ -131,38 +129,37 @@ let r_transform s = function
 (* N.B. In the future, if browsers begin supporting them we could in r_path,
    1) construct and cache path objects 2) use ctx ## ellipse. *)
 
-let r_path s p =
-  let ctx = s.ctx in
+let set_path s p =
   let rec loop last = function
   | [] -> ()
   | seg :: segs -> 
       match seg with
-      | `Sub pt -> P2.(ctx ## moveTo (x pt, y pt)); loop pt segs
-      | `Line pt -> P2.(ctx ## lineTo (x pt, y pt)); loop pt segs
+      | `Sub pt -> P2.(s.ctx ## moveTo (x pt, y pt)); loop pt segs
+      | `Line pt -> P2.(s.ctx ## lineTo (x pt, y pt)); loop pt segs
       | `Qcurve (c, pt) -> 
-          P2.(ctx ## quadraticCurveTo (x c, y c, x pt, y pt)); 
+          P2.(s.ctx ## quadraticCurveTo (x c, y c, x pt, y pt)); 
           loop pt segs
       | `Ccurve (c, c', pt) ->
-          P2.(ctx ## bezierCurveTo (x c, y c, x c', y c', x pt, y pt));
+          P2.(s.ctx ## bezierCurveTo (x c, y c, x c', y c', x pt, y pt));
           loop pt segs
       | `Earc (large, cw, r, a, pt) ->
           (* TODO if r.x = r.y optimize. *)
           begin match Vgr.Private.P.earc_params last large cw r a pt with 
-          | None -> P2.(ctx ## lineTo (x pt, y pt)); loop pt segs 
+          | None -> P2.(s.ctx ## lineTo (x pt, y pt)); loop pt segs 
           | Some (c, m, a, a') -> 
-              ctx ## save ();
+              s.ctx ## save ();
               let c = V2.ltr (M2.inv m) c in  (* TODO avoid that *)
-              M2.(ctx ## transform (e00 m, e10 m, e01 m, e11 m, 0., 0.));
-              P2.(ctx ## arc (x c, y c, 1.0, a, a', (Js.bool cw))); 
+              M2.(s.ctx ## transform (e00 m, e10 m, e01 m, e11 m, 0., 0.));
+              P2.(s.ctx ## arc (x c, y c, 1.0, a, a', (Js.bool cw))); 
               s.ctx ## restore ();
               loop pt segs
           end          
-      | `Close -> ctx ## closePath (); loop last (* we don't care *) segs
+      | `Close -> s.ctx ## closePath (); loop last (* we don't care *) segs
   in
-  ctx ## beginPath ();
+  s.ctx ## beginPath ();
   loop P2.o (List.rev p)
 
-let r_primitive s p = 
+let get_primitive s p = 
   let add_stop g (t, c) = g ## addColorStop (t, css_color c) in 
   let create = function 
   | Const c -> Color (css_color c)
@@ -191,19 +188,18 @@ let rec r_cut s a = match s.todo with
             s.ctx ## save (); 
             s.ctx ## clip ();
             warn s (`Other "TODO raster unimplemented");
-            (* TODO s.ctx drawDraw_full raster *)
             s.ctx ## restore ();
             s.todo <- todo;
         end
     | Primitive p ->
-        let p = r_primitive s p in
+        let p = get_primitive s p in
         begin match a with 
         | `O o -> 
+            set_outline s o;
             if s.s_stroke != p then begin match p with 
             | Color c -> s.ctx ## strokeStyle <- c; s.s_stroke <- p
             | Grad g -> s.ctx ## strokeStyle_gradient <- g; s.s_stroke <- p
             end;
-            r_outline s o;
             s.ctx ## stroke ();
             s.todo <- todo
         | `Aeo | `Anz ->
@@ -215,24 +211,23 @@ let rec r_cut s a = match s.todo with
             s.ctx ## fill ();
             s.todo <- todo
         end
-    | Meta _ -> s.todo <- todo; r_cut s a
     | Tr (tr, i) -> 
         s.ctx ## save ();
-        s.todo <- (Draw i) :: (save_gstate s) :: todo; 
-        r_transform s tr;
+        s.todo <- (Draw i) :: (pop_gstate s) :: todo; 
+        push_transform s tr;
         r_cut s a;
-    | i ->
+    | Blend _ | Cut _ ->
         begin match a with
         | `O _ | `Aeo -> warn s (`Unsupported_cut (a, image i));
         | `Anz -> () 
         end;
         s.ctx ## save ();
         s.ctx ## clip ();
-        s.todo <- (Draw i) :: (save_gstate s) :: todo
+        s.todo <- (Draw i) :: (pop_gstate s) :: todo
+    | Meta _ -> s.todo <- todo; r_cut s a
 
 let rec r_image s k r =
-  if s.cost > Vgr.Private.limit r
-  then (s.cost <- 0; Vgr.Private.partial (r_image s k) r) 
+  if s.cost > limit s then (s.cost <- 0; Vgr.Private.partial (r_image s k) r) 
   else match s.todo with
   | [] -> Hashtbl.reset s.prims; k r
   | Pop gs :: todo -> 
@@ -244,14 +239,13 @@ let rec r_image s k r =
       s.cost <- s.cost + 1;
       match i with
       | Primitive p -> 
-          (* Uncut primitive, just cut to view. *)
-          (* s.todo <- (I (Cut (`Anz, P.empty >> P.rect s.view, i))) :: todo; *)
+          (* Uncut primitive, just cut to view, but needs current CTM. *)
           warn s (`Other "TODO, uncut primitive not implemented");
           s.todo <- todo;
           r_image s k r
       | Cut (a, p, i) -> 
           s.todo <- (Draw i) :: todo;
-          r_path s p;
+          set_path s p;
           r_cut s a;
           r_image s k r
       | Blend (blender, alpha, i, i') -> 
@@ -260,8 +254,8 @@ let rec r_image s k r =
           r_image s k r
       | Tr (tr, i) ->
           s.ctx ## save ();
-          s.todo <- (Draw i) :: (save_gstate s) :: todo; 
-          r_transform s tr; 
+          s.todo <- (Draw i) :: (pop_gstate s) :: todo; 
+          push_transform s tr; 
           r_image s k r;
       | Meta (m, i) -> 
           s.todo <- (Draw i) :: todo;
@@ -277,6 +271,7 @@ let render s v k r = match v with
     let ch = (Size2.h size /. 1000.) *. (V2.y s.resolution) in
     s.c ## width <- Float.int_of_round cw; 
     s.c ## height <- Float.int_of_round ch;
+    (* Map view rect (bot-left coords) to canvas (top-left coords) *)
     let sx = cw /. Box2.w view in 
     let sy = ch /. Box2.h view in
     let dx = -. Box2.ox view *. sx in
@@ -288,15 +283,18 @@ let render s v k r = match v with
     s.todo <- [ Draw i ];
     r_image s k r
 
+let r300ppi = V2.v 11811. 11811.             (* 300 ppi in pixel per meters. *)
 let target c =
   let target r _ = 
-    let resolution = match Vgm.find (Vgr.Private.meta r) Vgm.resolution with 
-    | Some r -> r | None -> V2.v 11811. 11811. (* 300 dpi *)
-    in
+    let meta = Vgr.Private.meta r in
+    let resolution = Vgm.get ~absent:r300ppi meta Vgm.resolution in
     let ctx = c ## getContext (Dom_html._2d_) in
-    true, render { r; c; ctx; resolution; 
-                   timeout = 0.005; cost = 0; 
-                   view = Box2.empty; todo = [];
+    true, render { r; c; ctx; 
+                   dash_support = dash_support ctx; 
+                   resolution; 
+                   cost = 0; 
+                   view = Box2.empty; 
+                   todo = [];
                    prims = Hashtbl.create 231;
                    s_blender = `Over;
                    s_alpha = 1.0; 

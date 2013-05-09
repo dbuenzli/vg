@@ -12,7 +12,6 @@ let err_empty = "empty path"
 let err_meta_unbound = "key unbound in metadata"
 let err_bounds j l = Printf.sprintf "invalid bounds (index %d, length %d)" j l 
 let err_exp_await = "`Await expected"
-let err_exp_image = "`Image expected"
 let err_end = "`End rendered, render can't be used on renderer"
 let err_once = "a single `Image can be rendered"
 
@@ -1075,21 +1074,19 @@ module Vgr = struct
   type 'a target = t -> 'a -> bool * render_fun constraint 'a = [< dst]
       
   let expect_await k v r = match v with 
-  | `Await -> k r
-  | _ -> invalid_arg err_exp_await
+  | `Await -> k r | _ -> invalid_arg err_exp_await
 
   let expect_none v r = match v with  
   | `Await | `End | `Image _ -> invalid_arg err_end
 
   let ok k r = r.k <- k; `Ok
-  let stop = expect_none
   let partial k r = r.k <- expect_await k; `Partial
                         
   let rec r_once (rfun : render_fun) v r = match v with
-  | `End -> rfun `End (ok stop) r
+  | `End -> rfun `End (ok expect_none) r
   | (`Image _) as i -> 
       let rec render_end v r = match v with
-      | `End -> rfun `End (ok stop) r
+      | `End -> rfun `End (ok expect_none) r
       | `Image _ -> invalid_arg err_once
       | `Await -> ok render_end r
       in
@@ -1097,7 +1094,7 @@ module Vgr = struct
   | `Await -> ok (r_once rfun) r
                 
   let rec r_loop (rfun : render_fun) v r = match v with
-  | `End -> rfun `End (ok stop) r
+  | `End -> rfun `End (ok expect_none) r
   | `Image _ as i -> rfun i (ok (r_loop rfun)) r
   | `Await -> ok (r_loop rfun) r
 
@@ -1110,8 +1107,8 @@ module Vgr = struct
     in
     let k _ _ = assert false in
     let r = { dst = (dst :> dst); o; o_pos; o_max; limit; warn; meta; k} in
-    let once, k_render = target r dst in 
-    r.k <- if once then r_once k_render else r_loop k_render; 
+    let once, rfun = target r dst in 
+    r.k <- if once then r_once rfun else r_loop rfun; 
     r
                                               
   let render r v = r.k (v :> [ `Await | `End | `Image of renderable ]) r
@@ -1161,8 +1158,8 @@ module Vgr = struct
         | Meta of meta * image
     end
 
-    external path : P.t -> path = "%identity"
-    external image : I.t -> image = "%identity"
+    external path : Data.path -> P.t = "%identity"
+    external image : Data.image -> I.t = "%identity"
 
     (* Path helpers *)
 

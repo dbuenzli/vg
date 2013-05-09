@@ -51,10 +51,6 @@ let av_linejoin = function
 let av_fill_rule = function 
 | `Aeo -> "evenodd" | `Anz -> "nonzero"
 
-(* Metadata keys. *)
-
-let xml_decl = Vgm.key "xml_decl" Format.pp_print_bool
-
 (* Renderer *)
 
 type gstate = 
@@ -67,9 +63,9 @@ type svg_prim = Gradient of int | Color of string
 type cmd = Pop of unit | Draw of Vgr.Private.Data.image
 type state = 
   { r : Vgr.Private.renderer; 
+    xml_decl : bool; 
     buf : Buffer.t;                                   (* formatting buffer. *)
-    timeout : float;   
-    mutable cost : int;                        (* cost counter for timeout. *)
+    mutable cost : int;                          (* cost counter for limit. *)
     mutable view : Gg.box2;                              (* view rectangle. *)
     mutable todo : cmd list;                        (* commands to perform. *)
     mutable tags : string list;                           (* tags to close. *) 
@@ -82,7 +78,7 @@ type state =
     mutable s_blender : I.blender; 
     mutable s_outline : P.outline; } 
 
-let max_cost = max_int
+let limit s = Vgr.Private.limit s.r
 let warn s w = Vgr.Private.warn s.r w
 let image i = Vgr.Private.image i
 let save_gstate s = Pop ()
@@ -224,7 +220,7 @@ let rec w_cut s a p k r = match s.todo with
         s.todo <- todo; k r
         
 let rec w_image s k r =
-  if s.cost > max_cost then (s.cost <- 0; Vgr.Private.partial (w_image s k) r) 
+  if s.cost > limit s then (s.cost <- 0; Vgr.Private.partial (w_image s k) r) 
   else match s.todo with 
   | [] -> Hashtbl.reset s.prims; Hashtbl.reset s.paths; k r
   | Pop gs :: todo -> 
@@ -264,13 +260,12 @@ let render s v k r = match v with
 | `End -> Vgr.Private.flush k r
 | `Image (size, view, i) -> 
     let m = Vgr.Private.meta r in
-    let xml_decl = match Vgm.find m xml_decl with None -> true | Some b -> b in
     let title = Vgm.find m Vgm.title in 
     let descr = Vgm.find m Vgm.subject in
     s.todo <- [ Draw i ];
     begin
       begin 
-        if xml_decl 
+        if s.xml_decl 
         then w_str "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" 
         else w_nop
       end & 
@@ -296,11 +291,11 @@ let render s v k r = match v with
       k 
     end r
 
-let target ?xml_decl () = 
+let target ?(xml_decl = true) () = 
   let target r _ = 
     false, render { r;
+                    xml_decl;
                     buf = Buffer.create 241;
-                    timeout = 0.005;
                     cost = 0;
                     view = Box2.empty; 
                     todo = [];
