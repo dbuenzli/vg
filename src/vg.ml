@@ -1012,11 +1012,11 @@ module Vgr = struct
   (* Warnings *)
 
   type warning =  
-    [ `Unsupported_cut of P.area
-    | `Unsupported_glyph_cut of P.area
+    [ `Unsupported_cut of P.area * I.t 
+    | `Unsupported_glyph_cut of P.area * I.t
     | `Other of string ]
 
-  type warn = warning -> I.t option -> unit
+  type warn = warning -> unit
 
   let pp_warning ppf w = 
     let pp_area ppf = function
@@ -1025,10 +1025,11 @@ module Vgr = struct
     | `O _ -> pp ppf "outline"
     in
     match w with
-    | `Unsupported_cut a -> pp ppf "Unsupported cut: %a" pp_area a
-    | `Unsupported_glyph_cut a -> pp ppf "Unsupported glyph cut: %a" pp_area a
-    | `Aeo -> pp ppf "The even-odd area rule is unsupported." 
     | `Other o -> pp ppf "%s" o
+    | `Unsupported_cut (a, _) -> 
+        pp ppf "Unsupported cut: %a" pp_area a
+    | `Unsupported_glyph_cut (a, _) -> 
+        pp ppf "Unsupported glyph cut: %a" pp_area a
 
   (* Renderable *)
 
@@ -1047,7 +1048,7 @@ module Vgr = struct
       mutable o_pos : int;                (* next output position to write. *)
       mutable o_max : int;             (* maximal output position to write. *)
       limit : int; 
-      warn : warning -> I.t option-> unit;   (* warning cb (user provided). *)
+      warn : warn;                           (* warning cb (user provided). *)
       meta : meta;                      (* render metadata (user provided). *)
       mutable k :                                   (* render continuation. *)
         [`Await | `End | `Image of size2 * box2 * image ] -> t -> 
@@ -1085,7 +1086,7 @@ module Vgr = struct
   | `Await -> ok (r_loop rfun) r
 
 
-  let create ?(limit = max_int) ?(warn = fun _ _ -> ()) ?(meta = Vgm.empty) 
+  let create ?(limit = max_int) ?(warn = fun _ -> ()) ?(meta = Vgm.empty) 
       target dst = 
     let o, o_pos, o_max = match dst with 
     | `Manual | `Other -> "", 1, 0          (* implies [o_rem e = 0]. *)
@@ -1164,7 +1165,7 @@ module Vgr = struct
     let renderer r = r
     let meta r = r.meta
     let limit r = r.limit
-    let warn r w i = r.warn w i
+    let warn r w = r.warn w
     let create_target t = t
     let o_rem = Manual.dst_rem
       

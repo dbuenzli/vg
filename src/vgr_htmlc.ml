@@ -53,7 +53,8 @@ type state =
     mutable s_fill : js_primitive; }
 
 let max_cost = max_int
-let warn s w i = Vgr.Private.warn s.r w i
+let warn s w = Vgr.Private.warn s.r w
+let image i = Vgr.Private.image i
 
 let save_gstate s = 
   Pop { g_alpha = s.s_alpha; g_blender = s.s_blender; g_outline = s.s_outline; 
@@ -87,7 +88,7 @@ let join_str =
 let set_dashes ?(warning = true) s dashes = 
   if not (Js.Optdef.test ((Js.Unsafe.coerce s.ctx) ## setLineDash)) then 
     (if not warning then () else
-     warn s (`Other "Outline dashes unsupported in this browser") None)
+     warn s (`Other "Outline dashes unsupported in this browser"))
   else
   let ctx : ctx_dashes Js.t = Js.Unsafe.coerce s.ctx in 
   match dashes with 
@@ -184,12 +185,12 @@ let rec r_cut s a = match s.todo with
     match i with 
     | Primitive (Raster _) -> 
         begin match a with 
-        | `O _ -> warn s (`Unsupported_cut a) (Some i); s.todo <- todo;
+        | `O _ -> warn s (`Unsupported_cut (a, image i)); s.todo <- todo;
         | `Aeo | `Anz -> 
-            if a = `Aeo then warn s (`Unsupported_cut a) (Some i) else
+            if a = `Aeo then warn s (`Unsupported_cut (a, image i)) else
             s.ctx ## save (); 
             s.ctx ## clip ();
-            warn s (`Other "TODO raster unimplemented") (Some i);
+            warn s (`Other "TODO raster unimplemented");
             (* TODO s.ctx drawDraw_full raster *)
             s.ctx ## restore ();
             s.todo <- todo;
@@ -206,7 +207,7 @@ let rec r_cut s a = match s.todo with
             s.ctx ## stroke ();
             s.todo <- todo
         | `Aeo | `Anz ->
-            if a = `Aeo then warn s (`Unsupported_cut a) (Some i); 
+            if a = `Aeo then warn s (`Unsupported_cut (a, image i)); 
             if s.s_fill != p then begin match p with 
             | Color c -> s.ctx ## fillStyle <- c; s.s_fill <- p
             | Grad g -> s.ctx ## fillStyle_gradient <- g; s.s_fill <- p
@@ -222,7 +223,7 @@ let rec r_cut s a = match s.todo with
         r_cut s a;
     | i ->
         begin match a with
-        | `O _ | `Aeo -> warn s (`Unsupported_cut a) (Some i);
+        | `O _ | `Aeo -> warn s (`Unsupported_cut (a, image i));
         | `Anz -> () 
         end;
         s.ctx ## save ();
@@ -245,7 +246,7 @@ let rec r_image s k r =
       | Primitive p -> 
           (* Uncut primitive, just cut to view. *)
           (* s.todo <- (I (Cut (`Anz, P.empty >> P.rect s.view, i))) :: todo; *)
-          warn s (`Other "TODO, uncut primitive not implemented") (Some i);
+          warn s (`Other "TODO, uncut primitive not implemented");
           s.todo <- todo;
           r_image s k r
       | Cut (a, p, i) -> 

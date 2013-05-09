@@ -93,23 +93,6 @@ let render ?limit ?warn ?(meta = Vgm.empty) target dst i finish =
   in
   loop 1 (`Image (Db.renderable i))
 
-(*
-let render_image warn c res i stats = 
-  let meta = Db.render_meta i in 
-  let meta = Vgm.add meta Vgm.resolution (V2.v res res) in
-  let r = Vgr_htmlc.renderer ~warn ~meta c in 
-  let start = Time.now () in
-  let rec finish steps v = match Vgr.render r v with 
-  | `Partial -> finish steps v (* should not happen *)
-  | `Ok -> stats (Time.now () -. start) steps 
-  in
-  let rec loop steps v = match Vgr.render r v with 
-  | `Ok -> finish steps `End 
-  | `Partial -> Time.delay (fun () -> ignore (loop (steps + 1) `Await)) 0.
-  in
-  loop 0 (`Image (Db.renderable i))
-*)
-
 (* User interface *)
 
 let ui () = 
@@ -135,7 +118,7 @@ let ui () =
   let log, conf_log = Ui.select Vgr.pp_warning None ~id:"i-rlog" [] in 
   let warn, clear_log = 
     let warns = ref [] in
-    (fun w _ -> warns := w :: !warns; conf_log (`List !warns)), 
+    (fun w -> warns := w :: !warns; conf_log (`List !warns)), 
     (fun () -> warns := []; conf_log (`List []))
   in
   let rec cmd = function

@@ -26,12 +26,12 @@ val target : unit -> Vg.Vgr.dst_stored Vg.Vgr.target
     The following standard metadata keys are supported and
     used to fill the PDF document's information dictionary. 
     {ul
-    {- {!Vg.Vgr.Meta.author}, the document's author.}
-    {- {!Vg.Vgr.Meta.creator}, name of the application creating the image.}
-    {- {!Vg.Vgr.Meta.date}, name of the application creating the image.}
-    {- {!Vg.Vgr.Meta.keywords}, list of keywords for the document.}
-    {- {!Vg.Vgr.Meta.title}, title of the document.}
-    {- {!Vg.Vgr.Meta.subject}, subject of the document.}} *)
+    {- {!Vg.Vgm.author}, the document's author.}
+    {- {!Vg.Vgm.creator}, name of the application creating the document.}
+    {- {!Vg.Vgm.date}, name of the application creating the document.}
+    {- {!Vg.Vgm.keywords}, list of keywords for the document.}
+    {- {!Vg.Vgm.title}, title of the document.}
+    {- {!Vg.Vgm.subject}, subject of the document.}} *)
 
 (** {1 Render warnings} *)
 

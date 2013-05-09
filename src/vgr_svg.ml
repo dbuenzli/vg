@@ -83,7 +83,8 @@ type state =
     mutable s_outline : P.outline; } 
 
 let max_cost = max_int
-let warn s w i = Vgr.Private.warn s.r w i 
+let warn s w = Vgr.Private.warn s.r w
+let image i = Vgr.Private.image i
 let save_gstate s = Pop ()
 let set_gstate s gs = () 
 
@@ -208,9 +209,9 @@ let rec w_cut s a p k r = match s.todo with
     match i with 
     | Primitive (Raster _) -> 
         begin match a with 
-        | `O _ -> warn s (`Unsupported_cut a) (Some i); s.todo <- todo; k r
+        | `O _ -> warn s (`Unsupported_cut (a, image i)); s.todo <- todo; k r
         | `Aeo | `Anz -> 
-            warn s (`Other "TODO raster unimplemented") (Some i); 
+            warn s (`Other "TODO raster unimplemented"); 
             s.todo <- todo; k r
         end
     | Primitive pr -> 
@@ -235,7 +236,7 @@ let rec w_image s k r =
       match i with 
       | Primitive _ -> 
           (* Uncut primitive, just cut to view. Need CTM *) 
-          warn s (`Other "TODO, uncut primitive not implemented") (Some i);
+          warn s (`Other "TODO, uncut primitive not implemented");
           s.todo <- todo; 
           w_image s k r
       | Cut (a, p, i) -> 
@@ -246,7 +247,7 @@ let rec w_image s k r =
           s.todo <- (Draw i') :: (Draw i) :: todo; 
           if blender = `Over && alpha = None then w_image s k r else
           begin
-            warn s (`Other "TODO, blend mode and group opacity") (Some i);
+            warn s (`Other "TODO, blend mode and group opacity");
             w_image s k r
           end
       | Tr (tr, i) ->

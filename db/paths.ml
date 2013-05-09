@@ -15,7 +15,7 @@ Db.image "path-square" ~author
   ~title:"Square area in gray"
   ~tags:["path"; "area"]
   ~size:(Size2.v 50. 50.)
-  ~view:(Box2.v P2.o (Size2.v 1. 1.))
+  ~view:Box2.unit
   ~note:"Gray indeed."
   begin fun _ ->
     let square = P.empty >> P.rect (Box2.v P2.o (P2.v 1. 1.)) in
@@ -27,7 +27,7 @@ Db.image "path-square-outline" ~author
   ~tags:["path"; "area" ]
   ~note:"Line width is 0.1 as we are on the surface edge."
   ~size:(Size2.v 50. 50.)
-  ~view:(Box2.v P2.o (P2.v 1. 1.))
+  ~view:Box2.unit
   begin fun _ -> 
     let square = P.empty >> P.rect (Box2.v P2.o (Size2.v 1. 1.)) in
     let area = `O { P.o with P.width = 0.2 } in
@@ -78,7 +78,7 @@ Db.image "path-square-outline-dashed" ~author
   ~tags:["path"; "area"; "dashes";]
   ~note:"Line width is 0.1 as we are on the surface edge."  
   ~size:(Size2.v 50. 50.)
-  ~view:(Box2.v P2.o (Size2.v 1. 1.))
+  ~view:Box2.unit
   begin fun _ ->
     let square = P.empty >> P.rect (Box2.v P2.o (P2.v 1. 1.)) in
     let area = `O { P.o with P.width = 0.2; dashes = Some (0., [0.05]); } in
@@ -134,17 +134,18 @@ Db.image "path-cubics" ~author
     let mgray = Color.gray 0.3 >> I.const in
     let dgray = Color.gray 0.1 >> I.const in 
     let blue =  Color.blue     >> I.const in
-    let ctrl pt = blue >> I.cut square >> I.move pt in 
-    let endpt pt = dgray >> I.cut square >> I.move pt in 
+    let ctrl_pt pt = blue >> I.cut square >> I.move pt in 
+    let end_pt pt = dgray >> I.cut square >> I.move pt in 
     let tangent p = lgray >> I.cut ~area:(`O { P.o with P.width = 0.01 }) p in 
     let cubic ~at p0 c0 c1 p1 =
       let t0 = P.empty >> P.sub p0 >> P.line c0 in 
       let t1 = P.empty >> P.sub p1 >> P.line c1 in
       let p = P.empty >> P.sub p0 >> P.ccurve c0 c1 p1 in 
-      mgray >> I.cut ~area:(`O { P.o with P.width = 0.02 }) p >> 
+      mgray >> 
+      I.cut ~area:(`O { P.o with P.width = 0.02 }) p >> 
       I.blend (tangent t0) >> I.blend (tangent t1) >>
-      I.blend (ctrl c0)    >> I.blend (ctrl c1)    >> 
-      I.blend (endpt p0)   >> I.blend (endpt p1)   >> 
+      I.blend (ctrl_pt c0) >> I.blend (ctrl_pt c1) >> 
+      I.blend (end_pt p0)  >> I.blend (end_pt p1)  >> 
       I.move at
     in
     let p0 = P2.v 0.0 0.5 in 
@@ -170,7 +171,6 @@ Db.image "path-cubics" ~author
     b10 >> I.blend b11 >> I.blend 
     b20 >> I.blend b21 
   end;
-
 
 Db.image "path-dashes" ~author
   ~title:"Dash patterns"
