@@ -24,7 +24,7 @@ let unsafe_blit = String.unsafe_blit
 let unsafe_set_byte s j byte = String.unsafe_set s j (Char.unsafe_chr byte)
 let unsafe_byte s j = Char.code (String.unsafe_get s j)
 
-(* A few useful definitions. *)
+(* A few useful definitions *)
 
 external ( >> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
 let eps = 1e-9
@@ -49,7 +49,7 @@ let to_string_of_formatter pp v =                       (* NOT thread safe. *)
   Format.fprintf Format.str_formatter "%a" pp v; 
   Format.flush_str_formatter ()
 
-(* Render metadata. 
+(* Render metadata 
 
    The type for metadata is an heterogenous dictionary, for the tricks
    see http://mlton.org/PropertyList. Map keys are augmented to allow
@@ -150,57 +150,30 @@ type 'a key = 'a Vgm.key
 
 module P = struct
 
-  (* Path areas *)
+  (* Path outline caps *)
 
   type cap = [ `Butt | `Round | `Square ]
+
+  let pp_cap ppf = function 
+  | `Butt -> pp ppf "Butt" | `Round -> pp ppf "Round" 
+  | `Square -> pp ppf "Square"
+
+  (* Path outline joins *)
+
   type join = [ `Miter | `Round | `Bevel ]
+
+  let pp_join ppf = function 
+  | `Bevel -> pp ppf "Bevel" | `Miter -> pp ppf "Miter" 
+  | `Round -> pp ppf "Round"
+
+  (* Path outline dashes *)
+
   type dashes = float * float list
-  type outline = 
-    { width : float; cap : cap; join : join; miter_angle : float; 
-      dashes : dashes option }
-
-  type area = [ `Aeo | `Anz | `O of outline ]
-
-  let o = { width = 1.; cap = `Butt; join = `Miter; miter_angle = 0.; 
-            dashes = None }
-
-  let pp_outline_f pp_f ppf o =
-    let pp_cap ppf = function 
-    | `Butt -> pp ppf "Butt" | `Round -> pp ppf "Round" 
-    | `Square -> pp ppf "Square"
-    in
-    let pp_join ppf = function 
-    | `Bevel -> pp ppf "Bevel" | `Miter -> pp ppf "Miter" 
-    | `Round -> pp ppf "Round"
-    in
-    let pp_dashes ppf = function 
-    | None -> () | Some (f, ds) -> 
-        let pp_dashes ppf ds = pp_list ~pp_sep:pp_space pp_f ppf ds in
-        pp ppf "@ (dashes %a @[<1>(%a)@])" pp_f f pp_dashes ds
-    in
-    pp ppf "@[<1>(outline@ (width %a)@ (cap %a)@ (join %a)\
-            @ (miter-angle %a)%a)@]"
-      pp_f o.width pp_cap o.cap pp_join o.join pp_f o.miter_angle 
-      pp_dashes o.dashes
-
-  let pp_outline ppf o = pp_outline_f pp_float ppf o
-  let pp_area_f pp_f ppf = function 
-  | `Anz -> pp ppf "@[<1>anz@]"
-  | `Aeo -> pp ppf "@[<1>aeo@]"
-  | `O o -> pp ppf "%a" (pp_outline_f pp_f) o
-
-  let pp_area ppf a = pp_area_f pp_float ppf a 
 
   let eq_dashes eq d d' = match d, d' with 
   | Some (f, ds), Some (f', ds') -> 
       eq f f' && (try List.for_all2 eq ds ds' with Invalid_argument _ -> false)
   | d, d' -> d = d'
-        
-  let eq_area eq a a' = match a, a' with
-  | `O o, `O o' ->
-      eq o.width o'.width && o.cap = o'.cap && o.join = o'.join &&
-      eq o.miter_angle o'.miter_angle && eq_dashes eq o.dashes o'.dashes
-  | a, a' -> a = a'
           
   let cmp_dashes cmp d d' = match d, d' with
   | Some (f, ds), Some (f', ds') -> 
@@ -214,6 +187,38 @@ module P = struct
       if c <> 0 then c else dashes ds ds'
   | d, d' -> Pervasives.compare d d'
 
+  let pp_dashes pp_f ppf = function 
+  | None -> () | Some (f, ds) -> 
+      let pp_dashes ppf ds = pp_list ~pp_sep:pp_space pp_f ppf ds in
+      pp ppf "@ (dashes %a @[<1>(%a)@])" pp_f f pp_dashes ds
+
+  (* Path outlines *)
+
+  type outline = 
+    { width : float; cap : cap; join : join; miter_angle : float; 
+      dashes : dashes option }
+
+  let o = { width = 1.; cap = `Butt; join = `Miter; miter_angle = 0.; 
+            dashes = None }
+
+  let pp_outline_f pp_f ppf o =
+    pp ppf "@[<1>(outline@ (width %a)@ (cap %a)@ (join %a)\
+            @ (miter-angle %a)%a)@]"
+      pp_f o.width pp_cap o.cap pp_join o.join pp_f o.miter_angle 
+      (pp_dashes pp_f) o.dashes
+
+  let pp_outline ppf o = pp_outline_f pp_float ppf o
+
+  (* Path areas *)
+
+  type area = [ `Aeo | `Anz | `O of outline ]
+        
+  let eq_area eq a a' = match a, a' with
+  | `O o, `O o' ->
+      eq o.width o'.width && o.cap = o'.cap && o.join = o'.join &&
+      eq o.miter_angle o'.miter_angle && eq_dashes eq o.dashes o'.dashes
+  | a, a' -> a = a'
+
   let cmp_area cmp a a' = match a, a' with
   | `O o, `O o' ->
       let c = cmp o.width o'.width in 
@@ -225,6 +230,13 @@ module P = struct
       let c = cmp o.miter_angle o'.miter_angle in 
       if c <> 0 then c else cmp_dashes cmp o.dashes o'.dashes
   | a, a' -> Pervasives.compare a a'
+
+  let pp_area_f pp_f ppf = function 
+  | `Anz -> pp ppf "@[<1>anz@]"
+  | `Aeo -> pp ppf "@[<1>aeo@]"
+  | `O o -> pp ppf "%a" (pp_outline_f pp_f) o
+
+  let pp_area ppf a = pp_area_f pp_float ppf a 
 
   (* Paths *)
   
@@ -350,6 +362,7 @@ module P = struct
   (* See Vgr.Private.P.earc_params in mli file for the doc. The center is 
      found by first transforming the points on the ellipse to points on 
      a unit circle (i.e. we rotate by -a and scale by 1/rx 1/ry). *)
+
   let earc_params p0 ~large ~cw a r p1 = 
     let rx = V2.x r in let ry = V2.y r in
     let x0 = V2.x p0 in let y0 = V2.y p0 in
@@ -878,7 +891,7 @@ module I = struct
     | Tr of tr * t
     | Meta of meta * t
 
-  (* Primitive images. *)
+  (* Primitive images *)
 
   let const c = Primitive (Const c)
   let void = const Color.void
@@ -888,7 +901,7 @@ module I = struct
     let f = match f with None -> c | Some f -> f in
     Primitive (Radial (stops, f, c, r))
 
-  (* Cutting images. *)
+  (* Cutting images *)
 
   let cut ?(area = `Anz) p i = Cut (area, p, i)  
 
@@ -1007,9 +1020,11 @@ end
 
 type image = I.t
 
+(* Image renderers *)
+
 module Vgr = struct
 
-  (* Warnings *)
+  (* Render warnings *)
 
   type warning =  
     [ `Unsupported_cut of P.area * I.t 
@@ -1025,7 +1040,8 @@ module Vgr = struct
     | `O _ -> pp ppf "outline"
     in
     match w with
-    | `Other o -> pp ppf "%s" o
+    | `Other o -> 
+        pp ppf "%s" o
     | `Unsupported_cut (a, _) -> 
         pp ppf "Unsupported cut: %a" pp_area a
     | `Unsupported_glyph_cut (a, _) -> 
@@ -1033,7 +1049,7 @@ module Vgr = struct
 
   (* Renderable *)
 
-  type renderable = size2 * box2  * image
+  type renderable = size2 * box2 * image
 
   (* Rendering *)
 
@@ -1047,9 +1063,9 @@ module Vgr = struct
       mutable o : string;            (* current output chunk (stored dsts). *)
       mutable o_pos : int;                (* next output position to write. *)
       mutable o_max : int;             (* maximal output position to write. *)
-      limit : int; 
-      warn : warn;                           (* warning cb (user provided). *)
-      meta : meta;                      (* render metadata (user provided). *)
+      limit : int;                                         (* render limit. *)
+      warn : warn;                                     (* warning callback. *)
+      meta : meta;                                      (* render metadata. *)
       mutable k :                                   (* render continuation. *)
         [`Await | `End | `Image of size2 * box2 * image ] -> t -> 
         [ `Ok | `Partial ] }
@@ -1058,17 +1074,17 @@ module Vgr = struct
   type render_fun = [`End | `Image of size2 * box2 * image ] -> k -> k 
   type 'a target = t -> 'a -> bool * render_fun constraint 'a = [< dst]
       
+  let expect_await k v r = match v with 
+  | `Await -> k r
+  | _ -> invalid_arg err_exp_await
+
+  let expect_none v r = match v with  
+  | `Await | `End | `Image _ -> invalid_arg err_end
 
   let ok k r = r.k <- k; `Ok
-  let partial k r = 
-    let exp_await v r =
-      match v with `Await -> k r | v -> invalid_arg err_exp_await
-    in
-    r.k <- exp_await; `Partial
-
-  let stop = fun v r -> 
-    match v with  `Await | `End | `Image _ -> invalid_arg err_end
-                                                
+  let stop = expect_none
+  let partial k r = r.k <- expect_await k; `Partial
+                        
   let rec r_once (rfun : render_fun) v r = match v with
   | `End -> rfun `End (ok stop) r
   | (`Image _) as i -> 
@@ -1084,7 +1100,6 @@ module Vgr = struct
   | `End -> rfun `End (ok stop) r
   | `Image _ as i -> rfun i (ok (r_loop rfun)) r
   | `Await -> ok (r_loop rfun) r
-
 
   let create ?(limit = max_int) ?(warn = fun _ -> ()) ?(meta = Vgm.empty) 
       target dst = 
@@ -1104,7 +1119,7 @@ module Vgr = struct
   let renderer_meta r = r.meta
   let renderer_limit r = r.limit 
 
-  (* Manual rendering destinations. *)
+  (* Manual rendering destinations *)
       
   module Manual = struct
     let dst r s j l =                                (* set [r.o] with [s]. *)
@@ -1149,27 +1164,28 @@ module Vgr = struct
     external path : P.t -> path = "%identity"
     external image : I.t -> image = "%identity"
 
+    (* Path helpers *)
+
     module P = struct
       let earc_params = P.earc_params
     end
 
-    (* Renderer *)
+    (* Renderers *)
 
     type renderer = t
 
     type k = renderer -> [ `Ok | `Partial ]
     type render_fun = [`End | `Image of size2 * box2 * Data.image ] -> k -> k 
-    type 'a render_target = renderer -> 
-      'a -> bool * render_fun constraint 'a = [< dst]
+    type 'a render_target = renderer -> 'a -> bool * render_fun 
+    constraint 'a = [< dst]
 
     let renderer r = r
+    let create_target t = t
     let meta r = r.meta
     let limit r = r.limit
     let warn r w = r.warn w
-    let create_target t = t
-    let o_rem = Manual.dst_rem
-      
     let partial = partial 
+    let o_rem = Manual.dst_rem
     let flush k r =               (* get free space in [r.o] and [k]ontinue. *)
       match r.dst with
       | `Manual -> partial k r

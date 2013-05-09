@@ -717,7 +717,7 @@ module Vgr : sig
     
     (** {1 Internal data} *)
 
-    (** Vg internal data types. *)
+    (** Internal data. *)
     module Data : sig
 
       (** {1 Path representation} *)
@@ -759,12 +759,12 @@ module Vgr : sig
     end
     
     val path : Data.path -> P.t
-    (** [path p] is [p]'s internal representation. *)
+    (** [path p] is [p]'s path from its internal representation. *)
 
     val image : Data.image -> I.t
-    (** [image i] is [i]'s internal representation. *)
+    (** [image i] is [i]'s path from its internal representation. *)
 
-    (** Helpers for implementing paths. *)
+    (** Paths helpers. *)
     module P : sig
       val earc_params : p2 -> large:bool -> cw:bool -> float -> v2 -> p2 -> 
         (p2 * m2 * float * float) option 
@@ -780,10 +780,7 @@ module Vgr : sig
     
     type renderer
     (** The type for renderers. *)
-      
-    val renderer : t -> renderer
-    (** [renderer r] is [r]'s internal representation. *)
-      
+            
     type k = renderer -> [ `Ok | `Partial ] 
     (** The type for renderer continuations. *)
                          
@@ -800,12 +797,15 @@ module Vgr : sig
 
     val create_target : 'a render_target -> 'a target
     (** [create_target t] makes an end-user render target from [t]. *)
-            
-    val limit : renderer -> int
-    (** [limit r] is [r]'s render limit. *)
+
+    val renderer : t -> renderer
+    (** [renderer r] is [r]'s internal representation. *)
 
     val meta : renderer -> meta
     (** [meta r] is [r]'s render metadata. *)
+            
+    val limit : renderer -> int
+    (** [limit r] is [r]'s render limit. *)
       
     val warn : renderer -> warning -> unit
     (** [warn r w] reports the warning [w] on [r]. *)       
@@ -817,7 +817,8 @@ module Vgr : sig
     (** {1 Writing {!dst_stored} destinations} *)
                                    
     val flush : k -> renderer -> [ `Ok | `Partial ]
-    (** [flush k r] flushes the renderer [r]. This must be called
+    (** [flush k r] flushes the renderer [r]. If [r] writes 
+        on a stored destination this function {b must} be called
         by the rendering function on [`End]. *)
                                  
     val writeb : int -> k -> renderer -> [ `Ok | `Partial ]
