@@ -14,10 +14,10 @@ let author = "Daniel C. Bünzli <daniel.buenzl i@erratique.ch>"
 
 Db.image "alpha-squares" ~author
   ~title:"Blue, yellow and green squares overlapping"
-  ~tags:["alpha"; "blend"]
+  ~tags:["alpha"]
   ~size:(Size2.v 60. 60.)
   ~view:(Box2.v (P2.v ~-.0.1 ~-.0.1) (Size2.v 1.2 1.2))
-  begin fun () -> 
+  begin fun _ -> 
     let rr = P.empty >> P.rect (Box2.v (P2.v 0.1 0.3) (Size2.v 0.4 0.6)) in
     let rg = P.empty >> P.rect (Box2.v (P2.v 0.25 0.) (Size2.v 0.4 0.6)) in
     let rb = P.empty >> P.rect (Box2.v (P2.v 0.4 0.4) (Size2.v 0.6 0.4)) in

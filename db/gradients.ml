@@ -14,10 +14,10 @@ let author = "Daniel C. Bünzli <daniel.buenzl i@erratique.ch>"
 
 Db.image "gradient-axial" ~author 
   ~title:"Black to red, red to white, axial gradient"
-  ~tags:["gradient"; "gradient-axial";]
+  ~tags:["gradient"]
   ~size:(Size2.v 60. 20.)
   ~view:(Box2.v P2.o (Size2.v 2. 1.))
-  begin fun () -> 
+  begin fun _ -> 
     let r = P.empty >> P.rect (Box2.v P2.o (Size2.v 2. 1.)) in 
     let stops = [0.0, Color.black; 0.5, Color.red; 1.0, Color.white] in 
     I.cut r (I.axial stops P2.o (P2.v 2. 0.))
@@ -25,12 +25,12 @@ Db.image "gradient-axial" ~author
 
 Db.image "gradient-scaling" ~author
   ~title:"Gradients and scaled ones side-by-side"
-  ~tags:["gradient"; "gradient-axial"; "gradient-radial"]
+  ~tags:["gradient"]
   ~note:"In the right column the gradient on the left is scaled by 
          (1/2, 1/3)."
   ~size:(Size2.v 60. 60.)
   ~view:(Box2.v (P2.v ~-.0.1 ~-.0.1) (Size2.v 1.2 1.2))
-  begin fun () -> 
+  begin fun _ -> 
     let r = P.empty >> P.rect (Box2.v (P2.v 0. 0.) (Size2.v 0.45 0.45)) in
     let stops = [ 0.0, Color.red; 0.5, Color.green; 1.0, Color.blue ] in
     let axial = I.axial stops P2.o (P2.v 0.45 0.) in
@@ -45,10 +45,10 @@ Db.image "gradient-scaling" ~author
 
 Db.image "gradient-rgb-squares" ~author
   ~title:"Shaded red, green and blue squares"
-  ~tags:["gradient"; "gradient-axial"]
+  ~tags:["gradient"]
   ~size:(Size2.v 50. 50.)
   ~view:(Box2.v P2.o (Size2.v 4. 4.))
-  begin fun () -> 
+  begin fun _ -> 
     let w = 2. in
     let r = Box2.v P2.o (Size2.v w w) in
     let p = P.empty >> P.rect r in

@@ -20,7 +20,7 @@ type image =
     meta : Vg.meta;
     size : Gg.size2;
     view : Gg.box2;
-    image : unit -> Vg.image; }
+    image : Gg.box2 -> Vg.image; }
 
 let images = Hashtbl.create 537
 let image id ~title ~author ?(tags = []) ?subject ?note ?(meta = Vgm.empty) 
@@ -32,7 +32,6 @@ let image id ~title ~author ?(tags = []) ?subject ?note ?(meta = Vgm.empty)
         { id; author; title; subject; note; tags; meta; size; view; image; }
 
 let mem id = Hashtbl.mem images id
-
 let prefixed s p =
   let ls = String.length s in 
   let lp = String.length p in 
@@ -62,16 +61,16 @@ let indexes () =
   let ids, tags = Hashtbl.fold add images ([],[]) in
   List.sort compare ids, List.sort compare tags
 
-let render_meta i = (* TODO i.meta should override *)
-  let m = i.meta in 
+let render_meta i =
+  let m = Vgm.empty in 
   let m = Vgm.add m Vgm.title i.title in
-  let m = Vgm.add m Vgm.author i.author in 
+  let m = Vgm.add m Vgm.authors [i.author] in 
   let m = Vgm.add m Vgm.keywords i.tags in 
   let m = match i.subject with None -> m | Some s -> Vgm.add m Vgm.subject s in
-  m
+  let m = match i.note with None -> m | Some n -> Vgm.add m Vgm.description n in
+  Vgm.add_meta m i.meta
 
-let renderable i = i.size, i.view, i.image ()
-
+let renderable i = i.size, i.view, i.image i.view
 let find_loc id locs = 
   let rec loop found = function 
   | [] -> found

@@ -156,7 +156,7 @@ let r_path s p =
               s.ctx ## restore ();
               loop pt segs
           end          
-      | `Close -> ctx ## closePath (); loop  last (* we don't care *) segs
+      | `Close -> ctx ## closePath (); loop last (* we don't care *) segs
   in
   ctx ## beginPath ();
   loop P2.o (List.rev p)
@@ -220,7 +220,7 @@ let rec r_cut s a = match s.todo with
         s.todo <- (Draw i) :: (save_gstate s) :: todo; 
         r_transform s tr;
         r_cut s a;
-    | i -> 
+    | i ->
         begin match a with
         | `O _ | `Aeo -> warn s (`Unsupported_cut a) (Some i);
         | `Anz -> () 
@@ -229,9 +229,10 @@ let rec r_cut s a = match s.todo with
         s.ctx ## clip ();
         s.todo <- (Draw i) :: (save_gstate s) :: todo
 
-and r_image s k r =
-  if s.cost > max_cost then Vgr.Private.partial (r_image s k) r else
-  match s.todo with
+let rec r_image s k r =
+  if s.cost > Vgr.Private.limit r
+  then (s.cost <- 0; Vgr.Private.partial (r_image s k) r) 
+  else match s.todo with
   | [] -> Hashtbl.reset s.prims; k r
   | Pop gs :: todo -> 
       s.ctx ## restore ();
@@ -286,23 +287,23 @@ let render s v k r = match v with
     s.todo <- [ Draw i ];
     r_image s k r
 
-let alloc_state c m r = 
-  let resolution = match Vgm.find m Vgm.resolution with 
-  | Some r -> r | None -> V2.v 11811. 11811. (* 300 dpi *)
+let target c =
+  let target r _ = 
+    let resolution = match Vgm.find (Vgr.Private.meta r) Vgm.resolution with 
+    | Some r -> r | None -> V2.v 11811. 11811. (* 300 dpi *)
+    in
+    let ctx = c ## getContext (Dom_html._2d_) in
+    true, render { r; c; ctx; resolution; 
+                   timeout = 0.005; cost = 0; 
+                   view = Box2.empty; todo = [];
+                   prims = Hashtbl.create 231;
+                   s_blender = `Over;
+                   s_alpha = 1.0; 
+                   s_outline = P.o; 
+                   s_stroke = dumb_prim; 
+                   s_fill = dumb_prim; }
   in
-  let ctx = c ## getContext (Dom_html._2d_) in
-  { r; c; ctx; resolution; 
-    timeout = 0.005; cost = 0; 
-    view = Box2.empty; todo = [];
-    prims = Hashtbl.create 231;
-    s_blender = `Over;
-    s_alpha = 1.0; 
-    s_outline = P.o; 
-    s_stroke = dumb_prim; 
-    s_fill = dumb_prim; } 
-
-let renderer ?warn ?(meta = Vgm.empty) c = 
-  Vgr.Private.create_renderer ?warn meta `Immediate (alloc_state c) render
+  Vgr.Private.create_target target
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

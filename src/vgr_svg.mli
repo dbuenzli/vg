@@ -3,35 +3,47 @@
    Distributed under the BSD3 license, see license at the end of the file.
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
+
 (** Vg SVG renderer.
 
-    The SVG renderer outputs a {!renderable} value as an
-    {{:http://www.w3.org/Graphics/SVG/} SVG} 1.1 document.
-
-    {b Render metadata.} The following metadata keys are supported.
-    {ul
-    {- {!Vg.Vgr.Meta.title}, title of the document.}}
-
-    {b Unsupported capabilities.} Only the default [`Over] blend mode 
-    is supported. Any use of other blend mode falls back on [`Over].
+    {b References.}
+    {ul {- Erik Dashlström et al. {{:http://www.w3.org/TR/SVG11/}{e
+    Scalable Vector Graphics (SVG) 1.1}}, 2011.}}
 
     {e Release %%VERSION%% - %%AUTHORS%% } *)
 
-(** {1 Renderer} *)
+(** {1 SVG render targets} *)
 
-val renderer : ?meta:Vg.meta -> [< Vg.Vgr.dst_stored] -> Vg.renderer
-(** [renderer ?meta dst] is an SVG renderer rendering to [dst]. *)
+val target : ?xml_decl:bool -> unit -> Vg.Vgr.dst_stored Vg.Vgr.target
+(** [target ?xml_decl ()] is an SVG render target for rendering to the
+    stored destination given to {!Vg.Vgr.create}. If [xml_decl] is
+    [true] (default) the
+    {{:http://www.w3.org/TR/REC-xml/#NT-XMLDecl}XML declaration} is
+    output. *)
 
-(** {1 Render metadata} *)
+(** {1 Render metadata} 
 
-type warning = [`Blend]
-(** The type for rendering warnings. 
+    The following standard render keys are supported:
     {ul
-    {- [`Blend] a blend mode different from [`Over] was used.}} *)
+    {- {!Vg.Vgm.title}, used for the SVG document's 
+       {{:http://www.w3.org/TR/SVG11/struct.html#TitleElement}title 
+       element}.}
+    {- {!Vg.Vgm.description}, used for the SVG document's 
+       {{:http://www.w3.org/TR/SVG11/struct.html#DescElement}desc
+       element}.} 
+    {- TODO add dublin core metadata.}} *)
 
-val warn : (warning -> unit) Vg.key
-(** [warn] is the function used to report unsupported capabilities. The warning
-    are the following. *)
+(** {1 Render warnings} 
+   
+    The following render warnings are reported:
+    {ul 
+    {- [`Unsupported_cut (`O o)], outline cuts can be performed 
+       only on [I.const], [I.axial] and [I.radial] primitive images.}} *)
+
+(** {1 Multiple images} 
+
+    Multiple image renders are not supported. [Invalid_argument] is raised
+    if multiple images are rendered. *)
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

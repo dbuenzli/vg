@@ -12,9 +12,16 @@
 
     {e Release %%VERSION%% - %%AUTHORS%% } *)
 
+
+(** {1 HTML canvas render targets} *)
+
+val target : Dom_html.canvasElement Js.t -> [`Other] Vg.Vgr.target
+(** [target c] is a render target for rendering to the canvas element 
+    [c]. *)
+
 (** {1 Render metadata}  
 
-    The following standard keys are supported:    
+    The following standard render keys are supported:
     {ul 
     {- {!Vg.Vgm.resolution}, specifies the rendering resolution.
        If unspecified 11811 pixels per meters (300 ppi) is used in both 
@@ -27,14 +34,12 @@
     {- [`Unsupported_cut `Aeo], even-odd area cuts are not unsupported by
        the standard.}
     {- [`Unsupported_cut (`O o)], outline cuts can be performed only on 
-       {!I.const}, {!I.axial} and {!I.radial} primitive images.}}
-*)
+       {!I.const}, {!I.axial} and {!I.radial} primitive images.}} *)
 
-(** {1 Renderer} *)
+(** {1 Multiple images} 
 
-val renderer : ?warn:Vg.Vgr.warn -> ?meta:Vg.meta -> 
-  Dom_html.canvasElement Js.t -> Vg.renderer
-(** [renderer meta c] is an HTML canvas renderer rendering to [c]. *)
+    Rendering multiple images is supported. Each new render 
+    clears the HTML canvas. *)
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

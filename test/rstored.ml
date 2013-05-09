@@ -11,7 +11,7 @@ open Vg
 
 let str = Printf.sprintf 
 let pp = Format.fprintf
-let pp_dur ppf dur = pp ppf "%.4fs" dur
+let pp_dur ppf dur = pp ppf "%.2fms" (dur *. 1000.)
 let pp_str = Format.pp_print_string
 let rec pp_list ?(pp_sep = Format.pp_print_cut) pp_v ppf = function  
 | [] -> ()
@@ -107,7 +107,7 @@ let render sout use_unix usize dir ftype pack renderer imgs =
   in
   let render_to_file fn img = try
     log "Writing %s @?" fn;
-    let dur = duration (render fn renderer) imgs in
+    let dur = duration (render fn renderer) img in
     log "(%a) [DONE]@." pp_dur dur;
   with
   | Sys_error e -> log "[FAIL]@."; log_msg "%s@." e; exit 1
@@ -127,7 +127,7 @@ let dump dir ftype i = try
   let ppf = Format.formatter_of_out_channel oc in
   try 
     log "Writing %s @?" fn;
-    let dur = duration (I.pp ppf) (i.Db.image ()) in
+    let dur = duration (I.pp ppf) (i.Db.image i.Db.view) in
     log "(%a) [DONE]@." pp_dur dur;
     close_out oc
   with e -> log "[FAIL]@."; close_out oc; raise e

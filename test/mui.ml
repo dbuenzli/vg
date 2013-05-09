@@ -278,14 +278,12 @@ module Ui = struct
     conf (`Select v);
     ui, conf
 
-   
   let c_canvas = Js.string "mu-canvas" 
+  let canvas_data c = Js.to_string (c ## toDataURL ())
   let canvas ?id () =  (* TODO don't use createCanvas because of exn. *)
     let c = el ?id D.canvas [c_canvas] in 
     let ui = { n = (c :> Dom_html.element Js.t); on_change = nop } in 
     ui, c
-
-  let canvas_data c = Js.to_string (c ## toDataURL ())
 
   let classify_js ui c is_c = 
     if is_c then ui.n ## classList ## add (c) else 
@@ -317,6 +315,8 @@ module Ui = struct
     let on_change _ _ = cb (hash ()); false in
     Ev.cb D.window Ev.hashchange on_change
 
+  let escape_binary d = Js.to_string (Js.escape (Js.bytestring d))
+      
   let ( *> ) p c = Dom.appendChild p.n c.n; p
   let show ui = ignore (D.document ## body <*> ui.n)
   let main m = 
@@ -342,7 +342,9 @@ module Store = struct
   let key = 
     let id = ref 0 in 
     fun () -> id := !id + 1; Js.string ("k" ^ (string_of_int !id))
-        
+
+  let version = key () 
+    
   let mem ?(scope = `Persist) k = match scope_store scope with 
   | Some s -> Js.Opt.test (s ## getItem (k))
   | None -> false 
@@ -354,21 +356,32 @@ module Store = struct
   | Some s -> s ## removeItem (k) | None -> () 
     
   let find ?(scope = `Persist) k = match scope_store scope with
+  | None -> None
   | Some s -> 
       begin match Js.Opt.to_option (s ## getItem (k)) with
       | None -> None 
       | Some vs -> Some (Json.unsafe_input vs)
       end
-  | None -> None
     
-  let get ?(scope = `Persist) k = match scope_store scope with 
+  let get ?(scope = `Persist) ?absent k = match scope_store scope with 
+  | None -> invalid_arg "store unsupported"
   | Some s -> 
       begin match Js.Opt.to_option (s ## getItem (k)) with
-      | None -> invalid_arg "key unbound"
+      | None -> 
+          begin match absent with
+          | None -> invalid_arg "key unbound"
+          | Some v -> v
+          end
       | Some vs -> Json.unsafe_input vs
       end
-  | None -> invalid_arg "store unsupported"
-                    
+
+  let force_version ?(scope = `Persist) v = match scope_store scope with 
+  | None -> ()
+  | Some s -> 
+      match find ~scope version with
+      | None -> add ~scope version v 
+      | Some sv -> if v <> sv then (s ## clear (); add ~scope version v)
+                  
   let clear ?(scope = `Persist) () = match scope_store scope with
   | Some s -> s ## clear () | None -> ()
 end

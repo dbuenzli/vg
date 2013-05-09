@@ -18,12 +18,12 @@ type image =
     meta : Vg.meta;                                   (** render metadata. *)
     size : Gg.size2;                              (** render surface size. *)
     view : Gg.box2;                              (** image view rectangle. *)
-    image : unit -> Vg.image; }                      (** image definition. *) 
+    image : Gg.box2 -> Vg.image; }    (** image definition, arg is [view]. *) 
 (** The type for database images. *)
 
 val image : string -> title:string -> author:string -> ?tags:string list -> 
   ?subject:string -> ?note:string -> ?meta:Vg.meta -> size:Gg.size2 -> 
-  view:Gg.box2 -> (unit -> Vg.image) -> unit
+  view:Gg.box2 -> (Gg.box2 -> Vg.image) -> unit
 (** [image id authors title subject note tags meta size view fimg]
     adds an image to the database. *)
 

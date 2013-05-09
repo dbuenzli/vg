@@ -31,11 +31,11 @@ for i = 0 to 8 do
   let s = (if i = 0 then "" else "s") in
   let note = str "Curve made of %g segment%s." (3. ** (float i)) s in
   Db.image id ~author ~title
-    ~tags:["arrowhead"; "fractal"; "curve"]
+    ~tags:["fractal"; "image"]
     ~size:(Size2.v 60. 52.5)
     ~view:(Box2.v (P2.v ~-.0.1 ~-.0.1) (Size2.v 1.2 1.05))
     ~note
-    begin fun () ->
+    begin fun _ ->
       let area = `O { P.o with P.width = 0.005 } in
       I.const (Color.gray 0.2) >> I.cut ~area (arrowhead_path i 1.0) 
     end

@@ -15,10 +15,11 @@
 
     {e Release %%VERSION%% - %%AUTHORS%% } *)
 
-(** {1 Renderer} *)
+(** {1 PDF render targets} *)
 
-val renderer : ?meta:Vg.meta -> [< Vg.Vgr.dst_stored] -> Vg.renderer
-(** [renderer meta dst] is a PDF renderer rendering to [dst]. *)
+val target : unit -> Vg.Vgr.dst_stored Vg.Vgr.target
+(** [target ()] is a PDF render target for rendering to the stored
+    destination given to {!Vg.Vgr.create}. *)
 
 (** {1 Render metadata}
 
@@ -31,6 +32,13 @@ val renderer : ?meta:Vg.meta -> [< Vg.Vgr.dst_stored] -> Vg.renderer
     {- {!Vg.Vgr.Meta.keywords}, list of keywords for the document.}
     {- {!Vg.Vgr.Meta.title}, title of the document.}
     {- {!Vg.Vgr.Meta.subject}, subject of the document.}} *)
+
+(** {1 Render warnings} *)
+
+(** {1 Multiple images} 
+
+    Rendering multiple images is supported. Each image defines 
+    a page of the PDF file. *)
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

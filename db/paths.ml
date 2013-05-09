@@ -13,22 +13,22 @@ let author = "Daniel C. Bünzli <daniel.buenzl i@erratique.ch>";;
 
 Db.image "path-square" ~author
   ~title:"Square area in gray"
-  ~tags:["path"; "area-nz"]
+  ~tags:["path"; "area"]
   ~size:(Size2.v 50. 50.)
   ~view:(Box2.v P2.o (Size2.v 1. 1.))
   ~note:"Gray indeed."
-  begin fun () ->
+  begin fun _ ->
     let square = P.empty >> P.rect (Box2.v P2.o (P2.v 1. 1.)) in
     I.const (Color.gray 0.3) >> I.cut square
   end;
 
 Db.image "path-square-outline" ~author
   ~title:"Square outline in gray"
-  ~tags:["path"; "area-outline"]
+  ~tags:["path"; "area" ]
   ~note:"Line width is 0.1 as we are on the surface edge."
   ~size:(Size2.v 50. 50.)
   ~view:(Box2.v P2.o (P2.v 1. 1.))
-  begin fun () -> 
+  begin fun _ -> 
     let square = P.empty >> P.rect (Box2.v P2.o (Size2.v 1. 1.)) in
     let area = `O { P.o with P.width = 0.2 } in
     I.const (Color.gray 0.3) >> I.cut ~area square 
@@ -36,11 +36,11 @@ Db.image "path-square-outline" ~author
 
 Db.image "path-cap-styles" ~author
   ~title:"Lines with different cap styles"
-  ~tags:["path"; "area-outline"; "cap-style";]
+  ~tags:["path"; "area" ]
   ~size:(Size2.v 50. 50.)
   ~view:(Box2.v P2.o (Size2.v 14. 14.))
   ~note:"From top to bottom, `Butt, `Round, `Square."
-  begin fun () ->
+  begin fun _ ->
     let gray = I.const (Color.gray 0.3) in 
     let white = I.const Color.white in 
     let line = P.(empty >> sub (P2.v 3. 0.) >> line (P2.v 11. 0.)) in 
@@ -54,11 +54,11 @@ Db.image "path-cap-styles" ~author
 
 Db.image "path-join-styles" ~author
   ~title:"Lines with different join styles" 
-  ~tags:["path"; "area-outline"; "join-style";]
+  ~tags:["path"; "area" ]
   ~size:(Size2.v 50. 100.)
   ~view:(Box2.v P2.o (Size2.v 18. 36.))
   ~note:"From top to bottom `Miter, `Round, `Bevel."
-  begin fun () ->
+  begin fun _ ->
     let gray = I.const (Color.gray 0.3) in 
     let white = I.const Color.white in
     let wedge = 
@@ -75,11 +75,11 @@ Db.image "path-join-styles" ~author
 
 Db.image "path-square-outline-dashed" ~author 
   ~title:"Dashed square outline in gray"
-  ~tags:["path"; "area-outline"; "dashes";]
+  ~tags:["path"; "area"; "dashes";]
   ~note:"Line width is 0.1 as we are on the surface edge."  
   ~size:(Size2.v 50. 50.)
   ~view:(Box2.v P2.o (Size2.v 1. 1.))
-  begin fun () ->
+  begin fun _ ->
     let square = P.empty >> P.rect (Box2.v P2.o (P2.v 1. 1.)) in
     let area = `O { P.o with P.width = 0.2; dashes = Some (0., [0.05]); } in
     I.const (Color.gray 0.3) >> I.cut ~area square
@@ -87,20 +87,17 @@ Db.image "path-square-outline-dashed" ~author
 
 Db.image "path-earcs" ~author
   ~title:"Elliptical arcs"
-  ~tags:["path"; "ellipse";]
+  ~tags:["path"]
   ~note:"In red, elliptical arc from left point to right point. Top row \
          is ~large:false. Left column is ~cw:false."
   ~size:(Size2.v 75. 45.)
   ~view:(Box2.v P2.o (Size2.v 7.5 4.5))
-  begin fun () ->
+  begin fun _ ->
     let angle = Float.rad_of_deg 0. in
     let r = Size2.v 1.0 0.5 in
     let p0 = P2.v 0. (Size2.h r) in
     let p1 = P2.v (Size2.w r) 0.0 in 
-    let square = 
-      let o = V2.(neg (v 0.05 0.05)) in
-      P.empty >> P.rect (Box2.v o V2.(2. * neg o))
-    in
+    let square = P.empty >> P.rect (Box2.v_mid P2.o (Size2.v 0.1 0.1)) in
     let mark pt = I.const (Color.gray 0.1) >> I.cut square >> I.move pt in
     let ellipses =
       let area = `O { P.o with P.width = 0.02 } in
@@ -124,16 +121,68 @@ Db.image "path-earcs" ~author
     (arc ~large:true  ~cw:true  >> solution r b)
   end;
 
+Db.image "path-cubics" ~author
+  ~title:"Cubic paths cases" 
+  ~tags:["path"]
+  ~note:"Geometric cases for cubic curves. Except in the bottom row, only \
+         the end point moves."
+  ~size:(Size2.v 115. 105.) 
+  ~view:(Box2.v (P2.v (-. 0.75) (0.625)) (Size2.v 5.75 5.25))
+  begin fun _ ->
+    let square = P.empty >> P.rect (Box2.v_mid P2.o (Size2.v 0.06 0.06)) in
+    let lgray = Color.gray 0.5 >> I.const in
+    let mgray = Color.gray 0.3 >> I.const in
+    let dgray = Color.gray 0.1 >> I.const in 
+    let blue =  Color.blue     >> I.const in
+    let ctrl pt = blue >> I.cut square >> I.move pt in 
+    let endpt pt = dgray >> I.cut square >> I.move pt in 
+    let tangent p = lgray >> I.cut ~area:(`O { P.o with P.width = 0.01 }) p in 
+    let cubic ~at p0 c0 c1 p1 =
+      let t0 = P.empty >> P.sub p0 >> P.line c0 in 
+      let t1 = P.empty >> P.sub p1 >> P.line c1 in
+      let p = P.empty >> P.sub p0 >> P.ccurve c0 c1 p1 in 
+      mgray >> I.cut ~area:(`O { P.o with P.width = 0.02 }) p >> 
+      I.blend (tangent t0) >> I.blend (tangent t1) >>
+      I.blend (ctrl c0)    >> I.blend (ctrl c1)    >> 
+      I.blend (endpt p0)   >> I.blend (endpt p1)   >> 
+      I.move at
+    in
+    let p0 = P2.v 0.0 0.5 in 
+    let c1 = P2.v 0.3 1.5 in 
+    let c2 = P2.v 1.1 0.9 in 
+    let pa = P2.v 1.5 0.0 in
+    let pb = P2.v (0.8) 1.8 in
+    let pc = P2.v (-. 0.7) 0.7 in
+    let pd = P2.v (-. 0.4) 1.2 in
+    let b00 = cubic ~at:(P2.v 0.00 4.00) p0 c1 c2 pa in 
+    let b01 = cubic ~at:(P2.v 2.85 3.60) p0 c1 c2 pb in
+    let b10 = cubic ~at:(P2.v 0.50 1.75) p0 c1 c2 pc in
+    let b11 = cubic ~at:(P2.v 3.15 1.75) p0 c1 c2 pd in
+    let p0 = P2.o in
+    let c1 = P2.v 0.3 0.0 in 
+    let c2 = P2.v 1.2 0.0 in 
+    let p1 = P2.v 1.5 0.0 in
+    let b20 = cubic ~at:(P2.v (-. 0.1) 1.25) p0 c1 c2 p1 in
+    let c1 = P2.v (-. 0.3) 0.0 in 
+    let c2 = P2.v 1.8 0.0 in
+    let b21 = cubic ~at:(P2.v 2.7 1.25) p0 c1 c2 p1 in
+    b00 >> I.blend b01 >> I.blend 
+    b10 >> I.blend b11 >> I.blend 
+    b20 >> I.blend b21 
+  end;
+
+
 Db.image "path-dashes" ~author
-  ~title: "Dash patterns"
-  ~tags:["path"; "dashes"]
+  ~title:"Dash patterns"
+  ~tags:["path";]
+  ~note:"Miscelleneous dash patterns and offsets. "
   ~size:(Size2.v 100. 100.)
   ~view:(Box2.v P2.o (Size2.v 26. 26.))
-  begin fun () -> 
+  begin fun _ -> 
     let path = P.empty >> P.sub (P2.v 1. 0.) >> P.line (P2.v 25. 0.) in
     let line y d = 
       let area = `O { P.o with P.dashes = Some d } in
-      I.const (Color.gray 0.3) >> I.cut ~area path >> I.move (V2.v 0. y)
+      Color.gray 0.3 >> I.const >> I.cut ~area path >> I.move (V2.v 0. y)
     in
     line 25. (0., []) >> 
     I.blend (line 23. (0., [1.])) >> 
@@ -152,17 +201,15 @@ Db.image "path-dashes" ~author
 
 Db.image "path-cantor-dashes" ~author
   ~title:"Cantor set with dashes" 
-  ~tags:["path"; "dashes"; "fractal"]
+  ~tags:["path"; "fractal"]
   ~note:"The Cantor set is drawn with dashes to represent its elements. \
          Maximal dash pattern size is a largely undocumented parameter of \
          the renderer backends, the line renderings may quickly become \
          incorrect."
   ~size:(Size2.v 120. 90.)
   ~view:(Box2.v P2.o (Size2.v 1.2 0.9))
-  begin fun () ->
-
+  begin fun _ ->
     (* Cantor set http://mathworld.wolfram.com/CantorSet.html *)
-
     let unit = P.empty >> P.line V2.ox in 
     let o = { P.o with P.width = 0.05 } in
     let cantor max =
@@ -189,10 +236,12 @@ Db.image "path-cantor-dashes" ~author
   
 Db.image "path-derived" ~author
   ~title:"Derived subpath of Vg.P"
-  ~size:(Size2.v 100. 100.)
   ~tags:["path";]
+  ~note:"From inward to outward, ellipse, circle, rectangle, rectangle \ 
+          with round corners."
+  ~size:(Size2.v 50. 50.)
   ~view:(Box2.v P2.o (Size2.v 1. 1.)) 
-  begin fun () -> 
+  begin fun _ -> 
     let c = P2.v 0.5 0.5 in
     let p = 
       P.empty >> 

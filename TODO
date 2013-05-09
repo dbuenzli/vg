@@ -1,16 +1,13 @@
 
 * rhtmlc
 ** PDF and SVG
-
-* mui 
-** Scroll to view sel. on keyboard.
+** Bug when reload and tag filter has not the id.
+** Use that to save files, data-uri is limited
+   https://github.com/eligrey/FileSaver.js
 
 * Renderer API
-** Add string name and pp to Vgm.key (), provide functions to pp.
-** Add Vgm.{merge, compare, equal}
-
-* Api
-** Make everything t.r.
+** Try to reverse the creation function 
+   type 'a impl contraint 'a [< dst ] 
 
 * Image
 ** ? Is I.blend order the right thing to do, YES but review semant. order
@@ -19,7 +16,6 @@
 ** TODO semantics of radial is wrong. 
 ** TODO semantics of rimage. Provide rendering intent attribute or part of 
    rimage.
-** let miter_angle_to_miter_limit a = 1. /. (sin (0.5 *. a))
 ** Image.raster. Accept any raster value, renderer does its
    best, but it also accepts a 
    raster:Gg.raster -> [`Await | `Ok of Gg.raster ] function that the
@@ -35,13 +31,31 @@
 ** ? expose cubic ellipse and ellipse parametrization. 
 ** Review bounds of ellipse
 ** Sort out the tolerance stuff
+** Sort out miter angle / limit and set default value.
+** let miter_angle_to_miter_limit a = 1. /. (sin (0.5 *. a))
 ** ? P.map_pts : (p2 -> p2) -> path -> path 
 ** P.mem : area -> path -> p2 -> bool
 ** P.length : path -> float (* arc length *)
 ** P.split : path -> float -> path * path (* split at given distance on path *)
 ** ? P.cubic_fold
+** ? P.square 
+
+* Renderers
+** Primitive images careful when a transform immediatly follows add it
+   e.g. to the gradient transform. Test.
+** allow to choose rendering intent.
+** Generate PDF/A
+
+* HTML Canvas 
+** Check color space spec.
+
+
+* SVG
+** Use dublin core for metadata ? Look into inkscape. 
+** Check color space 
 
 * Samples
+** Cubic paths.
 ** vgrender that takes a cmxs and outputs svg or pdf.
 ** Test degenerate color stops discarding.
 ** Test degenerate subpaths rendering. 
@@ -95,14 +109,6 @@
 ** Test miànjï 面积 (area, surface area), vector.
 ** Test font http://www.twardoch.com/fonts/ Nadeyezhda 
 
-* Renderers
-** What about NaNs ? 
-** Primitive images careful when a transform immediatly follows add it
-   e.g. to the gradient transform. Test.
-** allow to choose rendering intent.
-** Use mm as units so that they can be represented precisely. 
-** Generate PDF/A
-
 * Misc pointers
 ** http://www.fontconfig.org/fontconfig-user.html
 ** http://processingjs.nihongoresources.com/bezierinfo/
@@ -137,4 +143,3 @@
    to get data and call the first one to output. Hard to integrate
    I think (input).
 ** %F or %f ?
-

@@ -15,12 +15,14 @@ include Db_htmlc
 let str = Format.sprintf
 let pp = Format.fprintf
 let pp_str = Format.pp_print_string 
+let pp_dur ppf dur = pp ppf "%dms" (Float.int_of_round (dur *. 1000.))
 let to_str_of_pp pp v =
   Format.fprintf Format.str_formatter "%a" pp v; 
   Format.flush_str_formatter ()
 
 let src_link = 
   format_of_string "https://github.com/dbuenzli/vg/blob/master/db/%s#L%d"
+
 
 (* Resolution *)
 
@@ -32,6 +34,10 @@ let pp_res ppf d =
 (* Persistent ui state. *)
 
 module S = struct
+  
+  let store_version = "%%VERSION%%-001"
+  let () = Store.force_version store_version 
+
   type t = 
     { id : string;                  (* selected image id *)
       white_bg : bool;              (* white background *)
@@ -39,9 +45,8 @@ module S = struct
       tags : string list;           (* selected tags *)
       resolution : float;
       prefix : string; }            (* filter prefix *)
-  
+
   let state : t Store.key = Store.key () 
-  
   let default = 
     { id = "arrowhead-5";
       white_bg = true; 
@@ -62,6 +67,33 @@ end
 
 (* Render *)
 
+let txt_data_url i set = 
+  let b = Buffer.create 1024 in 
+  let ppf = Format.formatter_of_buffer b in
+  let _, _, i = Db.renderable i in
+  pp ppf "%a" I.pp i;
+  Log.msg "Pretty printed !";
+  let esc = (Ui.escape_binary (Buffer.contents b)) in
+  Log.msg "Escaped size: %d!" ((String.length esc) / 1024);
+  set ("data:text/plain," ^ esc)
+
+
+let render ?limit ?warn ?(meta = Vgm.empty) target dst i finish = 
+  let meta = Vgm.add_meta (Db.render_meta i) meta in
+  let r = Vgr.create ?limit ?warn ~meta target dst in 
+  let start = Time.now () in
+  let rec loop steps v = match Vgr.render r v with 
+  | `Ok ->
+      let rec flush steps v = match Vgr.render r v with 
+      | `Partial -> flush (steps + 1) v 
+      | `Ok -> finish (Time.now () -. start) steps 
+      in
+      flush steps `End
+  | `Partial -> Time.delay (fun () -> ignore (loop (steps + 1) `Await)) 0. 
+  in
+  loop 1 (`Image (Db.renderable i))
+
+(*
 let render_image warn c res i stats = 
   let meta = Db.render_meta i in 
   let meta = Vgm.add meta Vgm.resolution (V2.v res res) in
@@ -76,6 +108,7 @@ let render_image warn c res i stats =
   | `Partial -> Time.delay (fun () -> ignore (loop (steps + 1) `Await)) 0.
   in
   loop 0 (`Image (Db.renderable i))
+*)
 
 (* User interface *)
 
@@ -96,6 +129,8 @@ let ui () =
   let image, canvas = Ui.canvas ~id:"i-canvas" () in
   let src, conf_src = Ui.link ~id:"png-btn" ~href:"#" "SRC" in
   let png, conf_png = Ui.link ~id:"png-btn" ~href:"#" "PNG" in
+  let svg, conf_svg = Ui.link ~id:"png-btn" ~href:"#" "SVG" in
+  let txt, conf_txt = Ui.link ~id:"png-btn" ~href:"#" "TXT" in
   let rinfo, set_rinfo = Ui.text ~id:"i-rinfo" "" in
   let log, conf_log = Ui.select Vgr.pp_warning None ~id:"i-rlog" [] in 
   let warn, clear_log = 
@@ -118,7 +153,7 @@ let ui () =
       let s = S.set { (S.get ()) with S.id = id } in
       let i = match Db.find ~ids:[s.S.id] () with [i] -> i | l ->assert false in
       let set_stats dur steps =
-        let steps = if steps = 0 then "" else str "and %d steps" steps in 
+        let steps = if steps = 1 then "" else str "and %d steps" steps in 
         let dur = Float.int_of_round (dur *. 1000.) in
         set_rinfo (str "Rendered in %dms%s" dur steps)
       in
@@ -137,7 +172,9 @@ let ui () =
       end;
       Ui.set_hash id;
       conf_ids (`Select (Some id));
-      render_image warn canvas s.S.resolution i set_stats
+      let res = s.S.resolution in 
+      let meta = Vgm.add Vgm.empty Vgm.resolution (V2.v res res) in
+      render ~warn ~meta (Vgr_htmlc.target canvas) `Other i set_stats
   | `Use_tags ts ->
       let s = S.set { (S.get ()) with S.tags = ts } in
       let ids = List.map (fun i -> i.Db.id) (Db.find ~tags:ts ()) in
@@ -150,6 +187,20 @@ let ui () =
   | `Make_png -> 
       let durl = Ui.canvas_data canvas in 
       conf_png (`Href durl)
+  | `Make_svg -> 
+      let s = S.get () in
+      let i = match Db.find ~ids:[s.S.id] () with [i] -> i | l ->assert false in
+      let b = Buffer.create 1024 in
+      let finish dur steps = 
+        Log.msg "SVG time: %a in %d steps" pp_dur dur steps;
+        let u = "data:image/svg+xml," ^ (Ui.escape_binary (Buffer.contents b))in
+        conf_svg (`Href u)
+      in
+      render ~limit:200 ~warn (Vgr_svg.target ()) (`Buffer b) i finish
+  | `Make_txt -> 
+      let s = S.get () in 
+      let i = match Db.find ~ids:[s.S.id] () with [i] -> i | l ->assert false in
+      txt_data_url i (fun u -> conf_txt (`Href u))
   in
   let link () = (* Untying the recursive knot... *)
     Ui.on_change budget (fun b -> cmd (`Use_budget b)); 
@@ -159,7 +210,9 @@ let ui () =
     | Some i -> cmd (`Select_id i)
     | None -> ()); 
     Ui.on_change tags (fun ts -> cmd (`Use_tags ts)); 
-    Ui.on_change png (fun () -> cmd (`Make_png))
+    Ui.on_change png (fun () -> cmd (`Make_png));
+    Ui.on_change svg (fun () -> cmd (`Make_svg));
+    Ui.on_change txt (fun () -> cmd (`Make_txt))
   in
   let init () =
     let hash_change id = 
@@ -192,7 +245,7 @@ let ui () =
       (Ui.group ~id:"image" () *>
          (Ui.group ~id:"info" () *> 
             title *> author *> note *> (image_frame *> image) *> 
-            (Ui.group ~id:"i-btns" () *> src *> png) *>
+            (Ui.group ~id:"i-btns" () *> src *> png *> svg *> txt) *>
             rinfo *> log))
   in
   link (); init (); layout ()

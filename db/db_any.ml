@@ -13,6 +13,8 @@ include Gradients
 include Uncut
 
 include Arrowhead
+include Graph
+include Rmark
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

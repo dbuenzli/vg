@@ -12,7 +12,7 @@ let log f = Format.printf (f ^^ "@?")
 let fail fmt = 
   let fail _ = failwith (Format.flush_str_formatter ()) in
   Format.kfprintf fail Format.str_formatter fmt
-
+  
 let paths () = 
   log "Paths.\n";
   ()

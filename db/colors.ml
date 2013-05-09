@@ -17,7 +17,7 @@ Db.image "color-rgb-squares" ~author
   ~tags:["color"]
   ~size:(Size2.v 50. 50.) 
   ~view:(Box2.v P2.o (Size2.v 40. 40.))
-  begin fun () -> 
+  begin fun _ -> 
     let r = P.empty >> P.rect (Box2.v P2.o (Size2.v 20. 20.)) in
     let square ~at c = I.const c >> I.cut r >> I.move at in 
     square ~at:P2.o Color.red >> 

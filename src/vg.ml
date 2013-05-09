@@ -20,72 +20,127 @@ let err_once = "a single `Image can be rendered"
    invariants, replacing with safe versions makes everything safe in the 
    module. He won't be upset. *)
 
-let io_buffer_size = 65536                          (* IO_BUFFER_SIZE 4.0.0 *)
-
 let unsafe_blit = String.unsafe_blit
 let unsafe_set_byte s j byte = String.unsafe_set s j (Char.unsafe_chr byte)
 let unsafe_byte s j = Char.code (String.unsafe_get s j)
 
 (* A few useful definitions. *)
 
-let pp = Format.fprintf 
-let pp_float ppf f = Format.fprintf ppf "%g" f
-let to_string_of_formatter pp v =                        (* NOT thread safe. *)
+external ( >> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
+let eps = 1e-9
+let io_buffer_size = 65536                          (* IO_BUFFER_SIZE 4.0.0 *)
+
+(* Pretty printing *)
+
+let pp ppf fmt = Format.fprintf ppf fmt
+let pp_str = Format.pp_print_string
+let pp_space = Format.pp_print_space 
+let pp_float ppf v = pp ppf "%g" v
+let pp_comma ppf () = pp ppf ",@ "
+let pp_date ppf ((y, m, d), (hh, mm, ss)) = 
+  pp ppf "%4d-%2d-%2dT%2d:%2d:%2dZ" y m d hh mm ss
+
+let rec pp_list ?(pp_sep = Format.pp_print_cut) pp_v ppf = function 
+| [] -> ()
+| v :: vs -> 
+    pp_v ppf v; if vs <> [] then (pp_sep ppf (); pp_list ~pp_sep pp_v ppf vs)
+
+let to_string_of_formatter pp v =                       (* NOT thread safe. *)
   Format.fprintf Format.str_formatter "%a" pp v; 
   Format.flush_str_formatter ()
 
-external ( >> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
-let eps = 1e-9
+(* Render metadata. 
 
-(* Render metadata *)
+   The type for metadata is an heterogenous dictionary, for the tricks
+   see http://mlton.org/PropertyList. Map keys are augmented to allow
+   key value comparison and pretty printing. *)
 
 module Vgm = struct
-    
-  (* Heterogenous dictionaries, see http://mlton.org/PropertyList. *)
 
-  module Id = struct
-    type t = int
-    let compare : int -> int -> int = compare
-    let create =        (* thread-safe UID, don't use Oo.id (object end). *)
-      let c = ref min_int in
-      fun () ->
-        let id = !c in
-        incr c; if id > !c then assert false (* too many ids *) else id
-  end
+  let uid =               (* thread-safe UID, don't use Oo.id (object end). *) 
+    let c = ref min_int in
+    fun () ->
+      let id = !c in
+      incr c; if id > !c then assert false (* too many ids *) else id
   
   (* Keys *)
-  
-  type 'a key = Id.t * ('a -> exn) * (exn -> 'a option)
-  let key () (type v) =
-    let module M = struct exception E of v end in
-    Id.create (), (fun x -> M.E x), (function M.E x -> Some x | _ -> None)
-    
+
+  type key_u =                                   (* concrete Map.Make keys. *)
+    { id : int;                   (* key identifier, defines the key order. *)
+      name : string;                                           (* key name. *)
+      pp : Format.formatter -> exn -> unit;    (* key value pretty-printer. *)
+      cmp : exn -> exn -> int; }                   (* key value comparison. *)
+
+  module Key = struct
+    type t = key_u
+    let compare k0 k1 = Pervasives.compare k0.id k1.id
+  end
+
+  type 'a key =                                     (* typed metadata keys. *)
+    { k : key_u;                                                (* map key. *)
+      set : 'a -> exn;                                 (* key value setter. *)
+      get : exn -> 'a; }                               (* key value getter. *)
+
+  let key (type v) ?(cmp = Pervasives.compare) name pp =
+    let module Store = struct exception V of v end in
+    let set = fun v -> Store.V v in 
+    let get = function Store.V v -> v | _ -> assert false in
+    let pp ppf = function Store.V v -> pp ppf v | _ -> assert false in
+    let cmp e e' = match e, e' with 
+    | Store.V v, Store.V v' -> cmp v v' 
+    | _, _ -> assert false
+    in
+    let k = { id = uid (); name; pp; cmp } in
+    { k; set; get}
+
   (* Metadata *)
-    
-  module M = (Map.Make (Id) : Map.S with type key = Id.t)
+      
+  module M = (Map.Make (Key) : Map.S with type key = Key.t)
   type t = exn M.t
       
-  let compare = M.compare compare 
-  let equal = M.equal ( = )      
   let empty = M.empty 
   let is_empty = M.is_empty
-  let mem m (id, _, _ ) = M.mem id m
-  let add m (id, inj, _) v = M.add id (inj v) m
-  let rem m (id, _, _) = M.remove id m
-  let find m (id, _, proj) = try proj (M.find id m) with Not_found -> None
-  let get m (id, _, proj) =
-    try match proj (M.find id m) with Some v -> v | None -> raise Not_found 
-    with Not_found -> invalid_arg err_meta_unbound
-                        
-  let resolution = key ()
-  let quality = key ()
-  let author = key () 
-  let creator = key () 
-  type date = (int * int * int) * (int * int * int)
-  let date = key ()
-  let keywords = key () 
-  let title = key () 
-  let subject = key ()
+  let mem m k = M.mem k.k m
+  let add m k v = M.add k.k (k.set v) m
+  let rem m k = M.remove k.k m
+  let find m k = try Some (k.get (M.find k.k m)) with Not_found -> None
+  let get ?absent m k = try k.get (M.find k.k m) with 
+  | Not_found -> 
+      match absent with 
+      | Some d -> d
+      | None -> invalid_arg err_meta_unbound
+
+  let add_meta m m' = M.fold M.add m' m 
+  let compare m0 m1 = 
+    let rec loop b0 b1 = match b0, b1 with 
+    | (k0, v0) :: b0, (k1, v1) :: b1 ->
+        let c = Pervasives.compare k0.id k1.id in 
+        if c <> 0 then c else
+        let c = k0.cmp v0 v1 in 
+        if c <> 0 then c else 
+        loop b0 b1
+    | [], [] -> 0 
+    | [], _ :: _ -> -1 
+    | _ :: _, [] -> 1
+    in
+    loop (M.bindings m0) (M.bindings m1)
+        
+  let equal m m' = compare m m' = 0 
+  let pp ppf m =
+    let pp_kv ppf (k, v) = pp ppf "@[(%s@ %a)@]" k.name k.pp v in
+    let bs = M.bindings m in 
+    pp ppf "@[(meta@ %a)@]" (pp_list ~pp_sep:Format.pp_print_space pp_kv) bs
+
+  (* Standard keys *)
+      
+  let resolution = key "resolution" ~cmp:V2.compare V2.pp
+  let title = key "title" pp_str
+  let authors = key "authors" (pp_list ~pp_sep:pp_comma pp_str)
+  let creator = key "creator" pp_str
+  let keywords = key "keywords" (pp_list ~pp_sep:pp_comma pp_str)
+  let subject = key "subject" pp_str
+  let description = key "description" pp_str
+  let creation_date = key "creation_date" pp_date
 end
 
 type meta = Vgm.t
@@ -101,11 +156,13 @@ module P = struct
   type join = [ `Miter | `Round | `Bevel ]
   type dashes = float * float list
   type outline = 
-    { width : float; cap : cap; join : join; miter_angle : float;
+    { width : float; cap : cap; join : join; miter_angle : float; 
       dashes : dashes option }
 
-  let o = 
-    { width = 1.; cap = `Butt; join = `Miter; miter_angle = 0.; dashes = None }
+  type area = [ `Aeo | `Anz | `O of outline ]
+
+  let o = { width = 1.; cap = `Butt; join = `Miter; miter_angle = 0.; 
+            dashes = None }
 
   let pp_outline_f pp_f ppf o =
     let pp_cap ppf = function 
@@ -118,16 +175,21 @@ module P = struct
     in
     let pp_dashes ppf = function 
     | None -> () | Some (f, ds) -> 
-        let pp_dashes ppf ds = List.iter (fun d -> pp ppf "@ %a" pp_f d) ds in
-        pp ppf "dashes:(%a,%a)" pp_f f pp_dashes ds
+        let pp_dashes ppf ds = pp_list ~pp_sep:pp_space pp_f ppf ds in
+        pp ppf "@ (dashes %a @[<1>(%a)@])" pp_f f pp_dashes ds
     in
-    pp ppf "(outline@ width:%a@ cap:%a@ join:%a@ miter-angle:%a%a)"
+    pp ppf "@[<1>(outline@ (width %a)@ (cap %a)@ (join %a)\
+            @ (miter-angle %a)%a)@]"
       pp_f o.width pp_cap o.cap pp_join o.join pp_f o.miter_angle 
       pp_dashes o.dashes
 
   let pp_outline ppf o = pp_outline_f pp_float ppf o
+  let pp_area_f pp_f ppf = function 
+  | `Anz -> pp ppf "@[<1>anz@]"
+  | `Aeo -> pp ppf "@[<1>aeo@]"
+  | `O o -> pp ppf "%a" (pp_outline_f pp_f) o
 
-  type area = [ `Aeo | `Anz | `O of outline ]
+  let pp_area ppf a = pp_area_f pp_float ppf a 
 
   let eq_dashes eq d d' = match d, d' with 
   | Some (f, ds), Some (f', ds') -> 
@@ -136,7 +198,7 @@ module P = struct
         
   let eq_area eq a a' = match a, a' with
   | `O o, `O o' ->
-      o.cap = o'.cap && o.join = o'.join && eq o.width o'.width && 
+      eq o.width o'.width && o.cap = o'.cap && o.join = o'.join &&
       eq o.miter_angle o'.miter_angle && eq_dashes eq o.dashes o'.dashes
   | a, a' -> a = a'
           
@@ -164,13 +226,6 @@ module P = struct
       if c <> 0 then c else cmp_dashes cmp o.dashes o'.dashes
   | a, a' -> Pervasives.compare a a'
 
-  let pp_area_f pp_f ppf = function 
-  | `Anz -> pp ppf "@[<1>anz@]"
-  | `Aeo -> pp ppf "@[<1>aeo@]"
-  | `O o -> pp ppf "%a" (pp_outline_f pp_f) o
-
-  let pp_area ppf a = pp_area_f pp_float ppf a 
-
   (* Paths *)
   
   type segment = 
@@ -190,17 +245,17 @@ module P = struct
   let empty = []
   let last_pt = function 
   | [] -> None
-  | s :: p -> 
+  | s :: ss -> 
       match s with 
       | `Sub pt | `Line pt | `Qcurve (_, pt) | `Ccurve (_, _, pt) 
       | `Earc (_, _, _, _, pt) -> Some pt 
       | `Close -> 
           let rec find_sub = function
           | `Sub pt :: _ -> pt
-          | _ :: p -> find_sub p
+          | _ :: ss -> find_sub ss
           | [] -> assert false
           in
-          Some (find_sub p)
+          Some (find_sub ss)
             
   (* Subpath and segments *)	
 
@@ -240,37 +295,39 @@ module P = struct
         
   (* Derived subpaths *)
 
-  let circle ?rel c r p =
+  let circle ?(rel = false) c r p =
+    let c = if rel then abs p c else c in
     let cx = P2.x c in
     let cy = P2.y c in
     let a0 = P2.v (cx +. r) cy in 
     let api = P2.v (cx -. r) cy in
     let r = V2.v r r in
-    p >> sub ?rel a0 >> earc r api >> earc r a0 >> close
+    p >> sub a0 >> earc r api >> earc r a0 >> close
     
-  let ellipse ?rel ?(angle = 0.) c r p = 
+  let ellipse ?(rel = false) ?(angle = 0.) c r p = 
+    let c = if rel then abs p c else c in
     let cx = P2.x c in
     let cy = P2.y c in
     let xx = (if angle = 0. then 1.0 else cos angle) *. V2.x r in
     let xy = (if angle = 0. then 0.0 else sin angle) *. V2.x r in 
     let a0 = P2.v (cx +. xx) (cy +. xy) in
     let api = P2.v (cx -. xx) (cy -. xy) in
-    p >> sub ?rel a0 >> earc r ~angle api >> earc r ~angle a0 >> close
+    p >> sub a0 >> earc r ~angle api >> earc r ~angle a0 >> close
       
-  let rect ?rel r p = 
+  let rect ?(rel = false) r p = 
     if Box2.is_empty r then p else
-    let lb = Box2.o r in
+    let lb = if rel then abs p (Box2.o r) else (Box2.o r) in
     let size = Box2.size r in
     let l = P2.x lb in
     let r = l +. Size2.w size in
     let b = P2.y lb in 
     let t = b +. Size2.h size in
-    p >> sub ?rel lb >> 
-    line (P2.v r b) >> line (P2.v r t) >> line (P2.v l t) >> close
+    p >> sub lb >> line (P2.v r b) >> line (P2.v r t) >> line (P2.v l t) >> 
+    close
       
-  let rrect ?rel r cr p = 
+  let rrect ?(rel = false) r cr p = 
     if Box2.is_empty r then p else
-    let lb = Box2.o r in
+    let lb = if rel then abs p (Box2.o r) else (Box2.o r) in
     let size = Box2.size r in
     let rx = V2.x cr in
     let ry = V2.y cr in
@@ -282,7 +339,7 @@ module P = struct
     let b_inset = b +. ry in 
     let t = b +. Size2.h size in 
     let t_inset = t -. ry in 
-    p >> sub ?rel (P2.v l b_inset) >>
+    p >> sub (P2.v l b_inset) >>
     earc cr (P2.v l_inset b) >> line (P2.v r_inset b) >>
     earc cr (P2.v r b_inset) >> line (P2.v r t_inset) >>
     earc cr (P2.v r_inset t) >> line (P2.v l_inset t) >>
@@ -300,13 +357,13 @@ module P = struct
     if Float.is_zero ~eps rx || Float.is_zero ~eps ry then None else
     let sina = Float.round_zero ~eps (sin a) in
     let cosa = Float.round_zero ~eps (cos a) in
-    let x0' = (cosa *. x0 +. sina *. y0) /. rx in (* transform to unit circle *)
+    let x0' = (cosa *. x0 +. sina *. y0) /. rx in(* transform to unit circle *)
     let y0' = (-. sina *. x0 +. cosa *. y0) /. ry in
     let x1' = (cosa *. x1 +. sina *. y1) /. rx in
     let y1' = (-. sina *. x1 +. cosa *. y1) /. ry in
     let vx = x1' -. x0' in
     let vy = y1' -. y0' in
-    let nx = vy in                                        (* normal to p0'p1' *)
+    let nx = vy in                                       (* normal to p0'p1' *)
     let ny = -. vx in 
     let nn = (nx *. nx) +. (ny *. ny) in
     if Float.is_zero ~eps nn then None (* points coincide *) else 
@@ -314,9 +371,9 @@ module P = struct
     if d2 < 0. then None (* points are too far apart *) else
     let d = sqrt d2 in
     let d = if (large && cw) || (not large && not cw) then -. d else d in
-    let cx' = 0.5 *. (x0' +. x1') +. d *. nx  in             (* circle center *)
+    let cx' = 0.5 *. (x0' +. x1') +. d *. nx  in            (* circle center *)
     let cy' = 0.5 *. (y0' +. y1') +. d *. ny in
-    let t0 = atan2 (y0' -. cy') (x0' -. cx') in               (* angle of p0' *)
+    let t0 = atan2 (y0' -. cy') (x0' -. cx') in              (* angle of p0' *)
     let t1 = atan2 (y1' -. cy') (x1' -. cx') in
     let dt = (t1 -. t0) in
     let adjust = 
@@ -324,12 +381,12 @@ module P = struct
       if dt < 0. && not cw then 2. *. Float.pi else
       0.
     in
-    let t1 = t0 +. (dt +. adjust) in                          (* angle of p1' *)
+    let t1 = t0 +. (dt +. adjust) in                         (* angle of p1' *)
     let e1x = rx *. cosa in 
     let e1y = rx *. sina in
     let e2x = -. ry *. sina in
     let e2y = ry *. cosa in
-    let cx = e1x *. cx' +. e2x *. cy' in             (* transform center back *)
+    let cx = e1x *. cx' +. e2x *. cy' in            (* transform center back *)
     let cy = e1y *. cx' +. e2y *. cy' in 
     let m = M2.v e1x e2x 
                  e1y e2y
@@ -478,8 +535,8 @@ module P = struct
   let fold ?(rev = false) f acc p = 
     List.fold_left f acc (if rev then p else List.rev p) 
 
-  (* TODO the linear_* curves are not t.r. but doesn't the recursion
-     converge rapidly ? *)
+  (* linear_{qcurve,ccurve,earc} functions are not t.r. but the recursion
+     should converge stop rapidly. *)
 
   let linear_qcurve tol line acc p0 p1 p2 = 
     let tol = 16. *. tol *. tol in
@@ -583,7 +640,7 @@ module P = struct
     acc
 
   (* TODO This is needed by the PDF renderer to approximate elliptical arcs. 
-     To we add something like Vg.P.cubic_fold or just move that to 
+     Do we add something like Vg.P.cubic_fold or just move that to 
      the pdf renderer ? *)
   
   let one_div_3 = 1. /. 3. 
@@ -622,9 +679,10 @@ module P = struct
 
   let is_empty = function [] -> true | _ -> false 
   let equal p p' = p = p' 
-  let rec equal_f eq p p' = 
+  let rec equal_f eq p p' =
     let equal_seg eq s s' = match s, s' with 
-    | `Sub pt, `Sub pt' | `Line pt, `Line pt' -> 
+    | `Sub pt, `Sub pt' 
+    | `Line pt, `Line pt' -> 
         V2.equal_f eq pt pt' 
     | `Qcurve (c0, pt), `Qcurve (c0', pt') -> 
         V2.equal_f eq c0 c0' && V2.equal_f eq pt pt'
@@ -644,7 +702,8 @@ module P = struct
   let compare p p' = Pervasives.compare p p'
   let rec compare_f cmp p p' = 
     let compare_seg cmp s s' = match s, s' with 
-    | `Sub pt, `Sub pt' | `Line pt, `Line pt' -> 
+    | `Sub pt, `Sub pt' 
+    | `Line pt, `Line pt' -> 
         V2.compare_f cmp pt pt' 
     | `Qcurve (c0, pt), `Qcurve (c0', pt') -> 
         let c = V2.compare_f cmp c0 c0' in 
@@ -675,22 +734,22 @@ module P = struct
 
   let pp_seg pp_f pp_v2 ppf = function
   | `Sub pt -> 
-      pp ppf "@ @[<h>S%a@]" pp_v2 pt 
+      pp ppf "@ s@ %a" pp_v2 pt 
   | `Line pt -> 
-      pp ppf "@ @[<h>L%a@]" pp_v2 pt
+      pp ppf "@ l@ %a" pp_v2 pt
   | `Qcurve (c, pt) -> 
-      pp ppf "@ @[<3>Qc(%a@ %a)@]" pp_v2 c pp_v2 pt
+      pp ppf "@ qc@ %a@ %a" pp_v2 c pp_v2 pt
   | `Ccurve (c, c', pt) -> 
-      pp ppf "@ @[<3>Cc(%a@ %a@ %a@)]" pp_v2 c pp_v2 c' pp_v2 pt
+      pp ppf "@ cc@ %a@ %a@ %a" pp_v2 c pp_v2 c' pp_v2 pt
   | `Earc (l, ccw, a, r, pt) -> 
-      pp ppf "@ @[<3>Ea(%B@ %B@ %a@ %a@ %a)@]" l ccw pp_f a pp_v2 r pp_v2 pt
+      pp ppf "@ e@ %B@ %B@ %a@ %a@ %a" l ccw pp_f a pp_v2 r pp_v2 pt
   | `Close ->
-      pp ppf "@ C"
+      pp ppf "@ c"
         
   let pp_path pp_f ppf p = 
     let pp_v2 = V2.pp_f pp_f in
     let pp_segs ppf ss = List.iter (pp_seg pp_f pp_v2 ppf) ss in 
-    pp ppf "@[<1>(P%a)@]" pp_segs (List.rev p)
+    pp ppf "@[<1>(path%a)@]" pp_segs (List.rev p)
 
   let pp_f pp_f ppf p = pp_path pp_f ppf p    
   let pp ppf p = pp_path pp_float ppf p
@@ -702,14 +761,116 @@ type path = P.t
 (* Images *)
 
 module I = struct
+
+  (* Blenders *)
+
   type blender = [ `Atop | `In | `Out | `Over | `Plus | `Copy | `Xor ]  
+
+  let pp_blender ppf = function
+  | `Atop -> pp ppf "Atop" | `Copy -> pp ppf "Copy" | `In -> pp ppf "In" 
+  | `Out -> pp ppf "Out" | `Over -> pp ppf "Over" | `Plus -> pp ppf "Plus"
+  | `Xor -> pp ppf "Xor"
+
+  (* Transforms *)
+
   type tr = Move of v2 | Rot of float | Scale of v2 | Matrix of m3
+
+  let eq_tr eq tr tr' = match tr, tr' with 
+  | Move v, Move v' -> V2.equal_f eq v v' 
+  | Rot r, Rot r' -> eq r r' 
+  | Scale s, Scale s' -> V2.equal_f eq s s' 
+  | Matrix m, Matrix m' -> M3.equal_f eq m m' 
+  | _, _ -> false
+
+  let compare_tr cmp tr tr' = match tr, tr' with 
+  | Move v, Move v' -> V2.compare_f cmp v v' 
+  | Rot r, Rot r' -> cmp r r' 
+  | Scale s, Scale s' -> V2.compare_f cmp s s' 
+  | Matrix m, Matrix m' -> M3.compare_f cmp m m' 
+  | tr, tr' -> compare tr tr'
+
+  let pp_tr pp_f ppf = function 
+  | Move v -> pp ppf "(move %a)" (V2.pp_f pp_f) v
+  | Rot a -> pp ppf "(rot %a)" pp_f a
+  | Scale s -> pp ppf "(scale %a)" (V2.pp_f pp_f) s
+  | Matrix m -> pp ppf "%a" (M3.pp_f pp_f) m
+
+  (* Color stops *)
+
+  type stops = Color.stops
+  
+  let pp_stops pp_f ppf ss =
+    let pp_stop ppf (s, c) = pp ppf "@ %a@ %a" pp_f s (V4.pp_f pp_f) c in 
+    pp ppf "@[<1>(stops%a)@]" (fun ppf ss -> List.iter (pp_stop ppf) ss) ss
+
+  let rec eq_stops eq ss ss' = match ss, ss' with 
+  | (s, c) :: ss, (s', c') :: ss' -> 
+      eq s s' && V4.equal_f eq c c' && eq_stops eq ss ss'
+  | [], [] -> true
+  | _, _ -> false
+
+  let rec compare_stops cmp ss ss' = match ss, ss' with
+  | (s, sc) :: ss, (s', sc') :: ss' -> 
+      let c = cmp s s' in
+      if c <> 0 then c else 
+      let c = V4.compare_f cmp sc sc' in 
+      if c <> 0 then c else compare_stops cmp ss ss' 
+  | ss, ss' -> Pervasives.compare ss ss'
+
+  (* Primitives *)
+
   type primitive = 
     | Const of color
     | Axial of Color.stops * p2 * p2
     | Radial of Color.stops * p2 * p2 * float
     | Raster of box2 * raster
           
+  let eq_primitive eq i i' = match i, i' with 
+  | Const c, Const c' -> 
+      V4.equal_f eq c c'
+  | Axial (stops, p1, p2), Axial (stops', p1', p2') -> 
+      V2.equal_f eq p1 p1' && V2.equal_f eq p2 p2' && eq_stops eq stops stops'
+  | Radial (stops, p1, p2, r), Radial (stops', p1', p2', r') -> 
+      V2.equal_f eq p1 p1' && V2.equal_f eq p2 p2' && eq r r' && 
+      eq_stops eq stops stops'
+  | Raster (r, ri), Raster (r', ri') ->
+      Box2.equal_f eq r r' && Raster.equal ri ri'
+  | _, _ -> false
+                 
+  let compare_primitive cmp i i' = match i, i' with 
+  | Const c, Const c' -> 
+      V4.compare_f cmp c c' 
+  | Axial (stops, p1, p2), Axial (stops', p1', p2') -> 
+      let c = compare_stops cmp stops stops' in 
+      if c <> 0 then c else 
+      let c = V2.compare_f cmp p1 p1' in 
+      if c <> 0 then c else V2.compare_f cmp p2 p2'
+  | Radial (stops, p1, p2, r), Radial (stops', p1', p2', r') -> 
+      let c = compare_stops cmp stops stops' in 
+      if c <> 0 then c else 
+      let c = V2.compare_f cmp p1 p1' in 
+      if c <> 0 then c else 
+      let c = V2.compare_f cmp p2 p2' in 
+      if c <> 0 then c else cmp r r'
+  | Raster (r, ri), Raster (r', ri') ->
+      let c = Box2.compare_f cmp r r' in 
+      if c <> 0 then c else Raster.compare ri ri'
+  | i, i' -> Pervasives.compare i i'
+
+  let pp_primitive pp_f ppf = function
+  | Const c -> 
+      pp ppf "@[<1>(i-const@ %a)@]" (V4.pp_f pp_f) c
+  | Axial (stops, p, p') -> 
+      pp ppf "@[<1>(i-axial@ %a@ %a@ %a)@]" 
+        (pp_stops pp_f) stops (V2.pp_f pp_f) p (V2.pp_f pp_f) p'
+  | Radial (stops, p, p', r) ->
+      pp ppf "@[<1>(i-radial@ %a@ %a@ %a@ %a)@]"
+        (pp_stops pp_f) stops (V2.pp_f pp_f) p (V2.pp_f pp_f) p' pp_f r
+  | Raster (r, ri) -> 
+      pp ppf "@[<1>(i-raster %a@ %a)@]" (Box2.pp_f pp_f) r Raster.pp ri
+          
+  (* Images *)
+
   type t = 
     | Primitive of primitive
     | Cut of P.area * P.t * t
@@ -750,37 +911,12 @@ module I = struct
 
   let is_void i = i == void 
   let equal i i' = i = i'
-  let rec eq_stops eq ss ss' = match ss, ss' with 
-  | (s, c) :: ss, (s', c') :: ss' -> 
-      eq s s' && V4.equal_f eq c c' && eq_stops eq ss ss'
-  | [], [] -> true
-  | _, _ -> false
-
-  let eq_tr eq tr tr' = match tr, tr' with 
-  | Move v, Move v' -> V2.equal_f eq v v' 
-  | Rot r, Rot r' -> eq r r' 
-  | Scale s, Scale s' -> V2.equal_f eq s s' 
-  | Matrix m, Matrix m' -> M3.equal_f eq m m' 
-  | _, _ -> false
-
-  let eq_primitive eq i i' = match i, i' with 
-  | Const c, Const c' -> 
-      V4.equal_f eq c c'
-  | Axial (stops, p1, p2), Axial (stops', p1', p2') -> 
-      V2.equal_f eq p1 p1' && V2.equal_f eq p2 p2' && eq_stops eq stops stops'
-  | Radial (stops, p1, p2, r), Radial (stops', p1', p2', r') -> 
-      V2.equal_f eq p1 p1' && V2.equal_f eq p2 p2' && eq r r' && 
-      eq_stops eq stops stops'
-  | Raster (r, ri), Raster (r', ri') ->
-      Box2.equal_f eq r r' && Raster.equal ri ri'
-  | _, _ -> false
-
-  let eq_alpha eq a a' = match a, a' with 
-  | Some a, Some a' -> eq a a' 
-  | None, None -> true
-  | _, _ -> false
-
   let equal_f eq i i' = 
+    let eq_alpha eq a a' = match a, a' with 
+    | Some a, Some a' -> eq a a' 
+    | None, None -> true
+    | _, _ -> false
+    in
     let rec loop = function
     | [] -> false 
     | (i, i') :: acc -> 
@@ -794,52 +930,17 @@ module I = struct
         | Tr (tr, i), Tr (tr', i') -> 
             eq_tr eq tr tr' && loop ((i, i') :: acc)
         | Meta (m, i), Meta (m', i') -> 
-            failwith "TODO"
+            Vgm.equal m m' && loop ((i, i') :: acc)
         | _, _ -> false
     in
     loop [(i, i')]
       
   let compare i i' = Pervasives.compare i i' 
-  let compare_tr cmp tr tr' = match tr, tr' with 
-  | Move v, Move v' -> V2.compare_f cmp v v' 
-  | Rot r, Rot r' -> cmp r r' 
-  | Scale s, Scale s' -> V2.compare_f cmp s s' 
-  | Matrix m, Matrix m' -> M3.compare_f cmp m m' 
-  | tr, tr' -> compare tr tr'
-
-  let rec compare_stops cmp ss ss' = match ss, ss' with
-  | (s, sc) :: ss, (s', sc') :: ss' -> 
-      let c = cmp s s' in
-      if c <> 0 then c else 
-      let c = V4.compare_f cmp sc sc' in 
-      if c <> 0 then c else compare_stops cmp ss ss' 
-  | ss, ss' -> Pervasives.compare ss ss'
-                 
-  let compare_primitive cmp i i' = match i, i' with 
-  | Const c, Const c' -> 
-      V4.compare_f cmp c c' 
-  | Axial (stops, p1, p2), Axial (stops', p1', p2') -> 
-      let c = compare_stops cmp stops stops' in 
-      if c <> 0 then c else 
-      let c = V2.compare_f cmp p1 p1' in 
-      if c <> 0 then c else V2.compare_f cmp p2 p2'
-  | Radial (stops, p1, p2, r), Radial (stops', p1', p2', r') -> 
-      let c = compare_stops cmp stops stops' in 
-      if c <> 0 then c else 
-      let c = V2.compare_f cmp p1 p1' in 
-      if c <> 0 then c else 
-      let c = V2.compare_f cmp p2 p2' in 
-      if c <> 0 then c else cmp r r'
-  | Raster (r, ri), Raster (r', ri') ->
-      let c = Box2.compare_f cmp r r' in 
-      if c <> 0 then c else Raster.compare ri ri'
-  | i, i' -> Pervasives.compare i i'
-
-  let compare_alpha cmp a a' = match a, a' with 
-  | Some a, Some a' -> cmp a a' 
-  | a, a' -> Pervasives.compare a a'
-
   let compare_f cmp i i' =
+    let compare_alpha cmp a a' = match a, a' with 
+    | Some a, Some a' -> cmp a a' 
+    | a, a' -> Pervasives.compare a a'
+    in
     let rec loop = function
     | [] -> assert false
     | (i, i') :: acc -> 
@@ -862,57 +963,43 @@ module I = struct
             if c <> 0 then c else 
             loop ((i, i') :: acc)
         | Meta (m, i), Meta (m', i') -> 
-            failwith "TODO"
+            let c = Vgm.compare m m' in 
+            if c <> 0 then c else 
+            loop ((i, i') :: acc)
         | i, i' -> Pervasives.compare i i'
     in
     loop [(i, i')]
 
-  (* Printesr *)
-
-  let pp_stops pp_f ppf ss =
-    let pp_stop ppf (s, c) = pp ppf "@ %a@ %a" pp_f s (V4.pp_f pp_f) c in 
-    pp ppf "@[<1>(stops %a)@]" (fun ppf ss -> List.iter (pp_stop ppf) ss) ss
-
-  let pp_blender ppf = function
-  | `Atop -> pp ppf "Atop" | `Copy -> pp ppf "Copy" | `In -> pp ppf "In" 
-  | `Out -> pp ppf "Out" | `Over -> pp ppf "Over" | `Plus -> pp ppf "Plus"
-  | `Xor -> pp ppf "Xor"
-
-  let pp_alpha pp_f ppf = function
-  | None -> () | Some a -> pp ppf "alpha(%a)" pp_f a
-
-  let pp_tr pp_f ppf = function 
-  | Move v -> pp ppf "move%a" (V2.pp_f pp_f) v
-  | Rot a -> pp ppf "rot(%a)" pp_f a
-  | Scale s -> pp ppf "scale%a" (V2.pp_f pp_f) s
-  | Matrix m -> pp ppf "%a" (M3.pp_f pp_f) m
-
-  let pp_primitive pp_f ppf = function
-  | Const c -> 
-      pp ppf "@[<1>(I-const@ %a)@]" (V4.pp_f pp_f) c
-  | Axial (stops, p, p') -> 
-      pp ppf "@[<1>(I-axial@ %a@ %a@ %a)@]" 
-        (pp_stops pp_f) stops (V2.pp_f pp_f) p (V2.pp_f pp_f) p'
-  | Radial (stops, p, p', r) ->
-      pp ppf "@[<1>(I-radial@ %a@ %a@ %a@ %a)@]"
-        (pp_stops pp_f) stops (V2.pp_f pp_f) p (V2.pp_f pp_f) p' pp_f r
-  | Raster (r, ri) -> 
-      pp ppf "@[<1>(I-raster %a@ %a)@]" (Box2.pp_f pp_f) r Raster.pp ri
+  (* Printers *)
       
-  let rec pp_image pp_f ppf = function                      (* TODO not t.r. *)
-  | Primitive i ->
-      pp ppf "%a" (pp_primitive pp_f) i
-  | Cut (a, p, i) -> 
-      pp ppf "@[<1>(I-cut@ %a@ %a@ %a)@]" 
-        (P.pp_area_f pp_f) a (P.pp_f pp_f) p (pp_image pp_f) i
-  | Blend (b, a, i, i') -> 
-      pp ppf "@[<1>(I-blend@ %a @ %a@ %a@ %a)@]" 
-        pp_blender b (pp_alpha pp_f) a (pp_image pp_f) i (pp_image pp_f) i'
-  | Tr (tr, i) ->
-      pp ppf "@[<1>(I-tr@ %a@ %a)@]" (pp_tr pp_f) tr (pp_image pp_f) i
-  | Meta (tr, i) -> 
-      pp ppf "@[<1>(I-meta@ TODO %a)@]" (pp_image pp_f) i
-        
+  let pp_image pp_f ppf i = 
+    let pp_alpha pp_f ppf = function
+    | None -> () | Some a -> pp ppf "@ (alpha@ %a)" pp_f a
+    in
+    let rec loop = function 
+    | [] -> () 
+    | `Pop :: todo -> pp ppf ")@]"; loop todo
+    | `Sep :: todo -> pp ppf "@ "; loop todo 
+    | `I i :: todo ->
+        match i with
+        | Primitive prim ->
+            pp ppf "%a" (pp_primitive pp_f) prim; 
+            loop todo
+        | Cut (a, p, i) -> 
+            pp ppf "@[<1>(i-cut@ %a@ %a@ "(P.pp_area_f pp_f) a (P.pp_f pp_f) p; 
+            loop (`I i :: `Pop :: todo)
+        | Blend (b, a, i, i') -> 
+            pp ppf "@[<1>(i-blend@ %a%a@ " pp_blender b (pp_alpha pp_f) a;
+            loop (`I i :: `Sep :: `I i' :: `Pop :: todo)
+        | Tr (tr, i) ->
+            pp ppf "@[<1>(i-tr@ %a@ " (pp_tr pp_f) tr; 
+            loop (`I i :: `Pop :: todo)
+        | Meta (m, i) -> 
+            pp ppf "@[<1>(i-meta@ %a@ " Vgm.pp m; 
+            loop (`I i :: `Pop :: todo)
+    in
+    loop [`I i]
+
   let pp_f pp_f ppf i = pp_image pp_f ppf i
   let pp ppf i = pp_image pp_float ppf i
   let to_string p = to_string_of_formatter pp p 
@@ -929,18 +1016,19 @@ module Vgr = struct
     | `Unsupported_glyph_cut of P.area
     | `Other of string ]
 
-  type warn = warning -> I.t option -> unit                
- 
-  let pp_area ppf = function
-  | `Aeo -> pp ppf "even-odd"
-  | `Anz -> pp ppf "non-zero"
-  | `O _ -> pp ppf "outline"
-  
-  let pp_warning ppf = function 
-  | `Unsupported_cut a -> pp ppf "Unsupported cut: %a" pp_area a
-  | `Unsupported_glyph_cut a -> pp ppf "Unsupported glyph cut: %a" pp_area a
-  | `Aeo -> pp ppf "The even-odd area rule is unsupported." 
-  | `Other o -> pp ppf "%s" o
+  type warn = warning -> I.t option -> unit
+
+  let pp_warning ppf w = 
+    let pp_area ppf = function
+    | `Aeo -> pp ppf "even-odd"
+    | `Anz -> pp ppf "non-zero"
+    | `O _ -> pp ppf "outline"
+    in
+    match w with
+    | `Unsupported_cut a -> pp ppf "Unsupported cut: %a" pp_area a
+    | `Unsupported_glyph_cut a -> pp ppf "Unsupported glyph cut: %a" pp_area a
+    | `Aeo -> pp ppf "The even-odd area rule is unsupported." 
+    | `Other o -> pp ppf "%s" o
 
   (* Renderable *)
 
@@ -951,22 +1039,70 @@ module Vgr = struct
   type dst_stored = 
     [ `Buffer of Buffer.t | `Channel of Pervasives.out_channel | `Manual ] 
     
-  type dst = [ dst_stored | `Immediate ]
+  type dst = [ dst_stored | `Other ]
+
   type t = 
     { dst : dst;                                     (* output destination. *)
       mutable o : string;            (* current output chunk (stored dsts). *)
       mutable o_pos : int;                (* next output position to write. *)
       mutable o_max : int;             (* maximal output position to write. *)
+      limit : int; 
       warn : warning -> I.t option-> unit;   (* warning cb (user provided). *)
       meta : meta;                      (* render metadata (user provided). *)
       mutable k :                                   (* render continuation. *)
         [`Await | `End | `Image of size2 * box2 * image ] -> t -> 
         [ `Ok | `Partial ] }
+
+  type k = t -> [ `Ok | `Partial ]
+  type render_fun = [`End | `Image of size2 * box2 * image ] -> k -> k 
+  type 'a target = t -> 'a -> bool * render_fun constraint 'a = [< dst]
+      
+
+  let ok k r = r.k <- k; `Ok
+  let partial k r = 
+    let exp_await v r =
+      match v with `Await -> k r | v -> invalid_arg err_exp_await
+    in
+    r.k <- exp_await; `Partial
+
+  let stop = fun v r -> 
+    match v with  `Await | `End | `Image _ -> invalid_arg err_end
+                                                
+  let rec r_once (rfun : render_fun) v r = match v with
+  | `End -> rfun `End (ok stop) r
+  | (`Image _) as i -> 
+      let rec render_end v r = match v with
+      | `End -> rfun `End (ok stop) r
+      | `Image _ -> invalid_arg err_once
+      | `Await -> ok render_end r
+      in
+      rfun i (ok render_end) r
+  | `Await -> ok (r_once rfun) r
+                
+  let rec r_loop (rfun : render_fun) v r = match v with
+  | `End -> rfun `End (ok stop) r
+  | `Image _ as i -> rfun i (ok (r_loop rfun)) r
+  | `Await -> ok (r_loop rfun) r
+
+
+  let create ?(limit = max_int) ?(warn = fun _ _ -> ()) ?(meta = Vgm.empty) 
+      target dst = 
+    let o, o_pos, o_max = match dst with 
+    | `Manual | `Other -> "", 1, 0          (* implies [o_rem e = 0]. *)
+    | `Buffer _ 
+    | `Channel _ -> String.create io_buffer_size, 0, io_buffer_size - 1
+    in
+    let k _ _ = assert false in
+    let r = { dst = (dst :> dst); o; o_pos; o_max; limit; warn; meta; k} in
+    let once, k_render = target r dst in 
+    r.k <- if once then r_once k_render else r_loop k_render; 
+    r
                                               
   let render r v = r.k (v :> [ `Await | `End | `Image of renderable ]) r
   let renderer_dst r = r.dst
   let renderer_meta r = r.meta
-  
+  let renderer_limit r = r.limit 
+
   (* Manual rendering destinations. *)
       
   module Manual = struct
@@ -1019,60 +1155,26 @@ module Vgr = struct
     (* Renderer *)
 
     type renderer = t
+
     type k = renderer -> [ `Ok | `Partial ]
-    type 'a render_fun = 'a -> [`End | `Image of size2 * box2 * Data.image ] ->
-      k -> k
+    type render_fun = [`End | `Image of size2 * box2 * Data.image ] -> k -> k 
+    type 'a render_target = renderer -> 
+      'a -> bool * render_fun constraint 'a = [< dst]
 
     let renderer r = r
+    let meta r = r.meta
+    let limit r = r.limit
     let warn r w i = r.warn w i
-    let ok k r = r.k <- k; `Ok
-    let partial k r = 
-      let exp_await v r =
-        match v with `Await -> k r | v -> invalid_arg err_exp_await
-      in
-      r.k <- exp_await; `Partial
-
-    let stop = fun v r -> 
-      match v with  `Await | `End | `Image _ -> invalid_arg err_end
- 
-    let rec r_once state (rfun : 'a render_fun) v r = match v with
-    | `End -> rfun state `End (ok stop) r
-    | (`Image _) as i -> 
-        let rec render_end v r = match v with
-        | `End -> rfun state `End (ok stop) r
-        | `Image _ -> invalid_arg err_once
-        | `Await -> ok render_end r
-        in
-        rfun state i (ok render_end) r
-    | `Await -> ok (r_once state rfun) r
-
-    let rec r_loop state (rfun : 'a render_fun) v r = match v with
-    | `End -> rfun state `End (ok stop) r
-    | `Image _ as i -> rfun state i (ok (r_loop state rfun)) r
-    | `Await -> ok (r_loop state rfun) r
-
-    let nop _ _ = ()
-    let create_renderer ?(once = false) ?(warn = nop) meta dst alloc_state 
-        rfun = 
-      let o, o_pos, o_max = match dst with 
-      | `Manual | `Immediate -> "", 1, 0          (* implies [o_rem e = 0]. *)
-      | `Buffer _ 
-      | `Channel _ -> String.create io_buffer_size, 0, io_buffer_size - 1
-      in
-      let k _ _ = assert false in
-      let r = { dst = (dst :> dst); o; o_pos; o_max; warn; meta; k = k } in
-      let state = alloc_state meta r in 
-      r.k <- if once then r_once state rfun else r_loop state rfun; 
-      r
-
+    let create_target t = t
     let o_rem = Manual.dst_rem
       
+    let partial = partial 
     let flush k r =               (* get free space in [r.o] and [k]ontinue. *)
       match r.dst with
       | `Manual -> partial k r
       | `Buffer b -> Buffer.add_substring b r.o 0 r.o_pos; r.o_pos <- 0; k r
       | `Channel oc -> output oc r.o 0 r.o_pos; r.o_pos <- 0; k r
-      | `Immediate -> assert false
+      | `Other -> assert false
 
     let rec writeb b k r =                 (* write byte [b] and [k]ontinue. *)
       if r.o_pos > r.o_max then flush (writeb b k) r else
@@ -1090,7 +1192,9 @@ module Vgr = struct
     let rec writebuf buf j l k r = (* write [l] bytes from [buf] start at [j].*)
       let rem = o_rem r in
       if rem >= l 
-      then (Buffer.blit buf j r.o r.o_pos l; r.o_pos <- r.o_pos + l; k r)
+      then (
+        Printf.eprintf "HEY:%d:%d%!\n" j l;
+        Buffer.blit buf j r.o r.o_pos l; r.o_pos <- r.o_pos + l; k r)
       else begin 
         Buffer.blit buf j r.o r.o_pos rem; r.o_pos <- r.o_pos + rem; 
         flush (writebuf buf (j + rem) (l - rem) k) r

@@ -6,9 +6,9 @@
 
 open Vg;;
 
-let render state v k r = match v with 
-| `Image i -> failwith "TODO"
+let render s v k r = match v with 
 | `End -> Vgr.Private.flush k r
+| `Image i -> failwith "TODO"
 
 type pid = int
 type state = 
@@ -20,12 +20,13 @@ type state =
     mutable pid : pid; 
     paths : (P.t, pid) Hashtbl.t; }                  (* maps paths to pids. *)
 
-let renderer ?(meta = Vgm.empty) dst = 
-  let state = { buf = Buffer.create 1024; bytes = 0; id = 0; index = []; 
-                page_objs = []; pid = 0; paths = Hashtbl.create 255; }
+let target () = 
+  let target r _ = 
+    true, render { buf = Buffer.create 1024; bytes = 0; id = 0; index = []; 
+                   page_objs = []; pid = 0; paths = Hashtbl.create 255; }
   in
-  Vgr.Private.create_renderer meta dst state render
-
+  Vgr.Private.create_target target
+  
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
    All rights reserved.

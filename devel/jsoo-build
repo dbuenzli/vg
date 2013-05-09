@@ -58,7 +58,7 @@ BASE="`dirname "$MLFILE"`/`basename "$MLFILE" .ml`"
 
 # Compile javascript
 $OCAMLBUILD -no-links $BASE.byte
-$JSOO $JSFILES $BDIR/$BASE.byte
+$JSOO $JSOOOPTS $JSFILES $BDIR/$BASE.byte
 
 # Copy .html and .css if they exist
 if [ -f $BASE.html ]; then cp $BASE.html $BDIR/$BASE.html; fi

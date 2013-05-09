@@ -47,6 +47,10 @@ fi
 $OCAMLBUILD -no-links $OCAMLDOCFLAGS $DOCDIRFILE/index.html
 cp doc/style.css $BDIR/$DOCDIRFILE/style.css
 
+if [ -f $LOC/pkg-doc-hook ]; then
+    . $LOC/pkg-doc-hook
+fi
+
 # Reload browser
 if [ "$RELOAD_BROWSER" == "true" ]; then 
      $LOC/reload-browser $THE_BROWSER file://$PWD/$BDIR/$DOCDIRFILE/

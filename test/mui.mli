@@ -87,6 +87,7 @@ module Ui : sig
 
   val canvas : ?id:string -> unit -> unit t * Dom_html.canvasElement Js.t
   val canvas_data : Dom_html.canvasElement Js.t -> string
+(*  val canvas_blob : Dom_html.canvasElement Js.t -> File.blob Js.t *)
 
   type 'a menu_conf = [ `Select of 'a | `List of 'a list ]
   val menu : ?id:string -> 'a printer -> 'a -> 'a list -> 
@@ -98,6 +99,11 @@ module Ui : sig
   val hash : unit -> string
   val set_hash : string -> unit
   val on_hash_change : (string -> unit) -> unit
+
+  val escape_binary : string -> string 
+  (** [escape data] escapes the binary data [data]. *)
+
+(*  val save_as : File.blob Js.t -> Js.js_string Js.t -> unit *)
 end
 
 val ( *> ) : 'a Ui.t -> 'b Ui.t -> 'a Ui.t
@@ -110,7 +116,8 @@ val ( *> ) : 'a Ui.t -> 'b Ui.t -> 'a Ui.t
     Safe if nobody messes with the storage outside of the program. 
 
     {b WARNING/TODO} During developement code reorderings of {!key}
-    will corrupt existing storage.  
+    will corrupt existing storage. {!Store.version} can mitigate
+    that problem.
 *)
 module Store : sig
   
@@ -130,11 +137,17 @@ module Store : sig
   val key : unit -> 'a key
   (** [key ()] is a new storage key. *)
       
+  (** {1 Versioning} *)
+      
+  val force_version : ?scope:scope -> string -> unit
+  (** [force_version v] checks that the version of the store is [v].  If
+      it's not it {!clear}s the store and sets the version to [v]. *)
+
   (** {1 Storage} 
 
       In the functions below [scope] defaults to [`Persist]. *)
       
-  val mem : ?scope:scope-> 'a key -> bool
+  val mem : ?scope:scope -> 'a key -> bool
   (** [mem k] is [true] iff [k] has a mapping. *)
     
   val add : ?scope:scope -> 'a key -> 'a -> unit 
@@ -146,12 +159,15 @@ module Store : sig
   val find : ?scope:scope -> 'a key -> 'a option
   (** [find k] is [k]'s mapping in [m], if any. *)
       
-  val get : ?scope:scope -> 'a key -> 'a 
-  (** [get k] is [k]'s mapping. 
-      @raise Invalid_argument if [k] is not bound. *)
+  val get : ?scope:scope -> ?absent:'a -> 'a key -> 'a 
+  (** [get k] is [k]'s mapping. If [absent] is provided and [m] has 
+      not binding for [k], [absent] is returned. 
+
+      @raise Invalid_argument if [k] is not bound and [absent] 
+      is unspecified. *)
     
   val clear : ?scope:scope -> unit -> unit
-    (** [clear ()], clears all mapping. *)
+  (** [clear ()], clears all mapping. *)
 end
 
 (** {1 Timing and logging} *)

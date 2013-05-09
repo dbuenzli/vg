@@ -8,12 +8,12 @@
 
 
     [Vg] is a declarative 2D vector graphics library. It provides
-    {{!Vg.I}combinators} to compose images as first class values
+    {{!Vg.I}combinators} to compose images: first class values
     denoting functions from the infinite plane to colors. Renderers
     for {{!Vgr_pdf}PDF}, {{!Vgr_svg}SVG} and the HTML
     {{!Vgr_htmlc}canvas} element are bundled with the library and an
     API allows to implement new renderers.
-
+    
     Consult the {{!basics}basics} and the {{!semantics}semantics}. 
     Open the module to use it, this defines only modules and types in 
     your scope and a single {{!(>>)}sequencing operator}.
@@ -33,20 +33,24 @@ type 'a key
 (** Render and image metadata.  
     
       A metadata value is set of {{!keys}keys} mapping to typed
-      values.  It is used to provide renderers with additional data
-      about rendering and images. This data may be renderer specific
-      or common to more than one renderer by using
-      {{!stdkeys}standard} keys.
+      values.  
 
-      Consult the documentation of renderers to see which 
-      keys they support. *)
+      Metadata values provide a uniform interface to specify
+      additional information about the rendering or images to the
+      renderers. The same key may be used by more than one renderer,
+      see the {{!stdkeys}standard} keys. The documentation of
+      renderers lists the key they support. *)
 module Vgm : sig
   
   (** {1:keys Keys} *)
   
-  val key : unit -> 'a key 
-  (** [key ()] is a new metadata key. *)
-      
+  val key : ?cmp:('a -> 'a -> int) -> string -> 
+    (Format.formatter -> 'a -> unit) -> 'a key 
+  (** [key ?cmp name pp] is a new metadata key. [cmp] is used to
+      compare the key values, defaults to {!Pervasives.compare}. The
+      [name] and [pp] arguments are convenience arguments used for
+      pretty-printing purposes.  *)
+
   (** {1:metadata Metadata} *)    
       
   type t = meta
@@ -70,10 +74,25 @@ module Vgm : sig
   val find : meta -> 'a key -> 'a option
   (** [find m k] is [k]'s mapping in [m], if any. *)
       
-  val get : meta -> 'a key -> 'a
-  (** [get m k] is [k]'s mapping in [m].
-        @raise Invalid_argument if [k] is not bound in [m]. *)
-    
+  val get : ?absent:'a -> meta -> 'a key -> 'a
+  (** [get m k] is [k]'s mapping in [m]. If [absent] is 
+      provided and [m] has no binding for [k], [absent] is returned.
+      
+      @raise Invalid_argument if [k] is not bound in [m] and 
+      [absent] is [None]. *)
+ 
+  val add_meta : meta -> meta -> meta
+  (** [add_meta m m'] is [m] with all the mappings of [m']. *)
+
+  val equal : meta -> meta -> bool 
+  (** [equal m m'] is [true] iff [m] and [m'] have the same bindings. *)
+
+  val compare : meta -> meta -> int 
+  (** [compare m m'] is a total ordering of [m] and [m']. *)
+
+  val pp : Format.formatter -> meta -> unit 
+  (** [pp ppf m] prints a textual representation of [m] on [ppf]. *)
+
   (** {1:stdkeys Standard keys} 
       
       {b Note.} All string values must be UTF-8 encoded. *)
@@ -83,36 +102,36 @@ module Vgm : sig
   val resolution : v2 key
   (** [resolution] specifies a rendering resolution in samples per
       meters for raster renderers. *) 
-
-  val quality : [`Best | `Speed] key
-  (** [quality] specifies the rendering quality. *)
       
   (** {2:imagemeta Image metadata} *)
+
+  val title : string key 
+  (** [title] is the title of the image. *)
       
-  val author : string key 
-  (** [author] is the author of the image. *)
-      
+  val authors : string list key 
+  (** [authors] are the authors of the image. *)
+
   val creator : string key 
   (** [creator] is the name of the application creating the image. *)
       
-  val date : ((int * int * int) * (int * int * int)) key
-  (** [date] is the date of creation of the image. 
+  val subject : string key 
+  (** [subject] is the subject of the image. *)
+
+  val keywords : string list key 
+  (** [keywords] is a list of keywords for the image. *)      
+
+  val description : string key 
+  (** [description] is a description for the image. *)
+      
+  val creation_date : ((int * int * int) * (int * int * int)) key
+  (** [creation_date] is the date of creation of the image. 
       
       The first triple is the year (0-9999), the month (1-12) and
       the day (1-31). The second triple is the time in UTC, the hour
       (0-23), minutes (0-59) and seconds (0-59). 
       
-      {b Warning.} Numerical constraints are not checked by
-      renderers. *)
-
-  val title : string key 
-  (** [title] is the title of the image. *)
-      
-  val subject : string key 
-  (** [subject] is the subject of the image. *)
-      
-  val keywords : string list key 
-  (** [keywords] is a list of keywords for the image. *)
+      {b Warning.} The date should be valid. Numerical constraints 
+      are not checked by renderers. *)
 end
 
 
@@ -170,7 +189,7 @@ module P : sig
       {{!sempaths}Semantics}.*)
 
   val pp_area : Format.formatter -> area -> unit
-  (** [pp_area ppf a] print a textual representation of [a] on [ppf] *)
+  (** [pp_area ppf a] prints a textual representation of [a] on [ppf] *)
 
   (** {1 Paths} *)
 
@@ -189,7 +208,7 @@ module P : sig
       In the functions below the default value of the optional
       argument [rel] is [false]. If [true], the points given to the
       function are expressed {e relative} to the {{!last_pt}last
-      point} of the path or {!Gg.P2.o} if the path is empty. *)
+      point} of the path or {!Gg.P2.o} if the path is {{!empty}[empty]}. *)
 
   val sub : ?rel:bool -> p2 -> path -> path
   (** [sub pt p] is [p] with a new subpath starting at [pt]. If [p]'s last 
@@ -208,18 +227,22 @@ module P : sig
 
   val earc : ?rel:bool -> ?large:bool -> ?cw:bool -> ?angle:float -> size2 -> 
     p2 -> path -> path
-  (** [earc large cw angle r pt p] is [p] with an elliptical arc from [p]'s
-      last point to [pt].  The ellipse is defined by the horizontal
-      and vertical radii [r] which are rotated by [angle] with respect
-      to the current coordinate system. In the general case this
-      defines four possible arcs, thus [large] indicates if more than
-      pi radians of the arc is to be traversed and [cw] if the arc is
-      to be traversed in the clockwise direction (both default
-      to [false]). See
-      {{:http://www.w3.org/TR/2000/CR-SVG-20001102/images/paths/arcs02.png}this
-      figure}. If parameters do not define a valid ellipse (coincident
-      or too far apart points, zero radius) the arc collapses to a
-      line. *)
+  (** [earc large cw a r pt p] is [p] with an elliptical arc from
+      [p]'s last point to [pt].  The ellipse is defined by the
+      horizontal and vertical radii [r] which are rotated by [a] with
+      respect to the current coordinate system. If the parameters do not
+      define a valid ellipse (points coincident or too far apart, zero
+      radius) the arc collapses to a line.
+
+      In general the parameters define four possible arcs, thus
+      [large] indicates if more than pi radians of the arc is to be
+      traversed and [cw] if the arc is to be traversed in the
+      clockwise direction (both default to [false]). In the following
+      image, in red, the elliptical arc from the left point to the
+      right one.  The top row is [~large:false] and the left columns
+      is [~cw:false]:
+      {%html: <img src="earc.png" style="width:75mm; height:45mm;"/> %}
+  *)
 
   val close : path -> path
   (** [close p] is [p] with a straight line from [p]'s last point to
@@ -516,14 +539,14 @@ module I : sig
       to print floating point values. *)
 end
 
-(** {1 Renderers} *)
+(** {1:rendering Rendering} *)
 
 type renderer
 (** The type for image renderers. *)
 
-(** Image renderers. 
+(** Image rendering. 
 
-    Renderer render finite rectangular regions of images on
+    A renderer renders a finite rectangular regions of images on
     rectangular surfaces. The following renderers are distributed with
     the library:
     {ul 
@@ -584,45 +607,65 @@ module Vgr : sig
       destination the client must provide output storage see
       {!Manual.dst}. *)
 
-  type dst = [ dst_stored | `Immediate ]
+  type dst = [ dst_stored | `Other ]
   (** The type for renderer destinations. Either a stored destination 
-      or an [`Immediate] surface destination, usually denoting some
+      or an [`Other] surface destination, usually denoting some
       kind of interactive renderer. *)
 
+  type 'a target constraint 'a = [< dst ]
+  (** The type for render targets. The type parameter specifies the supported
+      type of destinations. Values of this type are provided by concrete 
+      renderer implementation. *)
+
   type t = renderer
-  (** The type for renderers. Values of this type are created by the renderer
-      modules. The type parameter specifies the type for warnings. *)
-    
-  val render : t -> [< `Image of renderable | `Await | `End ] -> 
+  (** The type for renderers. *)
+
+  val create : ?limit:int -> ?warn:warn -> ?meta:meta ->
+    ([< dst] as 'dst) target -> 'dst -> renderer
+  (** [create limit warn meta target dst] is a renderer rendering to
+      [dst] and using [target] to drive the rendering of images and
+      [meta] as the render metadata. [warn] is called whenever the
+      renderer lacks a capability, see {{!warnings}warnings}.
+
+      [limit] limits the time spent rendering an image (defaults to
+      [max_int], unlimited).  The cost model may change in a future
+      version of the library. For now each image combinator costs one
+      unit, when the limit is reached {!render} returns with
+      [`Partial].  *)
+
+  val render : renderer -> [< `Image of renderable | `Await | `End ] -> 
     [ `Ok | `Partial ]
   (** [render r v] is:
-        {ul
-        {- [`Partial] iff [r] has a [`Manual] destination and needs more 
-        output storage. The client must use {!Manual.dst} to provide a new
-        buffer can then call {!render} with [`Await] until [`Ok] is returned.
-        This can also be returned by renderer that support timeouts.}
-        {- [`Ok] when the encoder is ready to encode a new [`Image]
-        (if the renderer supports it) or [`End].}}
-        For [`Manual] destinations, encoding [`End] always returns [`Partial]
-        the client should as usual use {!Manual.dst} and continue with [`Await]
-        until [`Ok] is returned at which point {!Manual.dst_rem}[ r] is 
-        guaranteed to be the size of the last provided buffer (i.e. nothing
-        was written). 
+      {ul
+      {- [`Partial] iff [r] has a [`Manual] destination and needs more
+         output storage or if [r] has a rendering limit. In the first
+         case the client must use {!Manual.dst} to provide
+         a new buffer. In both cases the client should then 
+         call {!render} with [`Await] until
+         [`Ok] is returned.}
+      {- [`Ok] when the encoder is ready to encode a new [`Image] (if
+         the renderer supports it) or [`End].}}  For [`Manual]
+         destinations, encoding [`End] always returns [`Partial] the
+         client should as usual use {!Manual.dst} and continue with
+         [`Await] until [`Ok] is returned at which point
+         {!Manual.dst_rem}[ r] is guaranteed to be the size of the
+         last provided buffer (i.e. nothing was written).
 
-        {b Semantics of multiple images render.} If multiple images are 
-        rendered the previous image is cleared from the render surface. 
-        This can take the form of defining a new page like in {!Vgr_pdf} or
-        simply clearing the render surface like in {!Vgr_htmlc}.
-
-        @raise Invalid_argument if [`Image] or [`End] is encoded after
-        a [`Partial] encode. Or if multiple [`Image]s are encoded in 
-        a renderer that doesn't support them. *)
+         {b Semantics of multiple images render.} The semantics
+         of multiple image renders are left to the backend.
+       
+         @raise Invalid_argument if [`Image] or [`End] is encoded after
+         a [`Partial] encode. Or if multiple [`Image]s are encoded in 
+         a renderer that doesn't support them. *)
        
   val renderer_dst : renderer -> dst
   (** [render_dst r] is [r]'s output destination. *)
 
   val renderer_meta : renderer -> meta 
   (** [renderer_meta r] is [r]'s render metadata. *)
+
+  val renderer_limit : renderer -> int 
+  (** [renderer_limit r] is [r]'s rendering limit. *)
 
   (** {1 Manual render destinations} *)
 
@@ -656,17 +699,16 @@ module Vgr : sig
       {ul
       {- If you render to "Bla", define you renderer in a module
          called [Vgr_bla] (lowercase).}
-      {- The renderer creation function must be named
-         [Vgr_bla.renderer], have an optional argument
-         [?meta:Vg.meta], an optional [?warn:warn]
-         function if it doesn't support [Vg]'s full rendering model
-         and return a [Vgr.t] value.}
+      {- The renderer target creation function or value must be named
+         [Vgr_bla.target].}
       {- Images must be rendered via the {!render} function. If you 
          are writing a batch renderer provide support for each of the 
          {!dst} types and especially the non-blocking interface.}
       {- If your renderer supports render metadata or needs user-defined
          parameters use the {!Vg.meta} type to define it. Whenever possible
          reuse the the existing {{!Vgm.stdkeys}standard} keys.}
+      {- The renderer should implement the rendering cost model, 
+         see the [limit] parameter of {!render}.} 
       {- Follow [Vg]'s 
          {{!coordinates}coordinate system conventions} to 
          specify the relationship between a surface and the view 
@@ -720,69 +762,69 @@ module Vgr : sig
         | Meta of meta * image
     end
     
-   val path : P.t -> Data.path 
-   (** [path p] is [p]'s internal representation. *)
+    val path : P.t -> Data.path 
+    (** [path p] is [p]'s internal representation. *)
 
-   val image : I.t -> Data.image
-   (** [image i] is [i]'s internal representation. *)
+    val image : I.t -> Data.image
+    (** [image i] is [i]'s internal representation. *)
 
-   (** Helpers for implementing paths. *)
-   module P : sig
-     val earc_params : p2 -> large:bool -> cw:bool -> float -> v2 -> p2 -> 
-       (p2 * m2 * float * float) option 
-     (** [earc_params p large cw angle r p'] is [Some (c, m, a, a')] 
-         with [c] the center of the ellipse, [m] a transform matrix 
-         mapping the unit circle to the ellipse, [a] and [a'] the 
-         angle on the unit circle corresponding to the first and last
-         point of the arc. [None] is returned if the parameters do not
-         define a valid arc. *)
-   end
+    (** Helpers for implementing paths. *)
+    module P : sig
+      val earc_params : p2 -> large:bool -> cw:bool -> float -> v2 -> p2 -> 
+        (p2 * m2 * float * float) option 
+        (** [earc_params p large cw angle r p'] is [Some (c, m, a, a')] 
+            with [c] the center of the ellipse, [m] a transform matrix 
+            mapping the unit circle to the ellipse, [a] and [a'] the 
+            angle on the unit circle corresponding to the first and last
+            point of the arc. [None] is returned if the parameters do not
+            define a valid arc. *)
+    end
 
-   (** {1 Renderers } *)
-   
-   type renderer
-   (** The type for renderers. *)
+    (** {1 Renderers } *)
     
-   val renderer : t -> renderer
-   (** [renderer r] is [r]'s internal representation. *)
+    type renderer
+    (** The type for renderers. *)
+      
+    val renderer : t -> renderer
+    (** [renderer r] is [r]'s internal representation. *)
+      
+    type k = renderer -> [ `Ok | `Partial ] 
+    (** The type for renderer continuations. *)
+                         
+    type render_fun = [`End | `Image of size2 * box2 * Data.image ] -> k -> k 
+    (** The type for rendering functions. *)
+      
+    type 'a render_target = renderer -> 
+      'a -> bool * render_fun constraint 'a = [< dst]
+                                                                        
+    val create_target : 'a render_target -> 'a target
+            
+    val limit : renderer -> int
+    (** [limit r] is [r]'s render limit. *)
 
-   type k = renderer -> [ `Ok | `Partial ] 
-   (** The type for renderer continuations. *)
-
-   type 'a render_fun = 'a -> [`End | `Image of size2 * box2 * Data.image ] -> 
-     k -> k
-   (** The type for rendering functions. TODO *)
-
-   val create_renderer : ?once:bool -> ?warn:warn -> 
-     meta -> [< dst] -> (meta -> renderer -> 'a) -> 'a render_fun -> t
-   (** [create_renderer once meta dst alloc_state rfun] is a renderer
-       [r] such that, let [state] be [alloc meta r] (called once).
-       {ul
-       {- [render r (`Image i)] invokes [rfun state (`Image i)]}
-       {- [render r `End] invokes [rfun state `End]}}
-       If [once] is [true] (defaults to [false]) calling {!render}
-       with more than one [`Image] will raise an [Invalid_argument] exception.*)
-
+    val meta : renderer -> meta
+    (** [meta r] is [r]'s render metadata. *)
+      
     val warn : renderer -> warning -> Data.image option -> unit
-    (** [warn r w i] reports a warning [w] for image [i]. *)
-       
+    (** [warn r w i] reports a warning [w] for image [i]. *)       
+      
     val partial : k -> renderer -> [> `Partial]
     (** [partial k r] suspends the renderer [r] and returns [`Partial]. 
         Rendering will continue with [k r], on [`Await] {!render}. *)
-
+                                   
     (** {1 Writing {!dst_storage} destinations} *)
-
+                                   
     val flush : k -> renderer -> [ `Ok | `Partial ]
     (** [flush k r] flushes the renderer [r]. This must be called
         by the rendering function on [`End]. *)
-
+                                 
     val writeb : int -> k -> renderer -> [ `Ok | `Partial ]
     (** [writeb b k r] writes the byte [b] and [k]ontinues. *)
-        
+                                         
     val writes : string -> int -> int -> k -> renderer -> [ `Ok | `Partial ]
     (** [writes s j l k r]  writes [l] bytes from [s] starting at [j]
         and [k]ontinues. *)
-
+                                                          
     val writebuf : Buffer.t -> int -> int -> k -> renderer -> [`Ok | `Partial ]
     (** [writebuf buf j l k r] write [l] bytes from [buf] starting at [j]
         and [k]ontinues. *)
@@ -794,8 +836,8 @@ end
     [Vg] is designed to be opened in your module. This defines only
     types and modules in your scope and a {e single} value, the
     sequencing operator {!(>>)}. Thus to use [Vg] start with :
-{[open Gg;;
-open Vg;;]}
+{[open Gg
+open Vg]}
     {!Gg} gives us types for points ({!Gg.p2}), vectors ({!Gg.v2}), 2D
     extents ({!Gg.size2}), rectangles ({!Gg.box2}) and colors
     ({!Gg.color}). Later you may want to read {!Gg}'s documentation
@@ -803,53 +845,74 @@ open Vg;;]}
     types has a constructor [v] in a module named after the
     capitalized type name ({!P2.v}, {!V2.v}, etc.).
 
+    {2 A collage model}
+
+    Usual vector graphics libraries follow a {e painter model} in
+    which paths are stroked, filled and blended on top of each
+    other. In a nutshell, [Vg] follows a {e collage model} in which
+    path define areas in infinite images that are {e cut} to define
+    new infinite images to be blended on top of each other.
+
+    The collage model maps very well to a declarative imaging model.
+    It is also very clear from a specification point of view, both
+    mathematically and metaphorically. This contrasts with the painter
+    model where the result of an operation like stroking a
+    self-interesting translucent path (which usually applies the paint
+    only once) doesn't map to the underlying paint stroke metaphor.
+
     {2 Infinite images}
 
-    In [Vg], images are {e conceptually} infinite. They are seen as
-    functions mapping points of the plane to colors.  Images are
-    immutable values of type {!image}.
+    Images are immutable and abstract value of type {!image}. They are
+    {e conceptually} infinite and {e seen} as functions mapping points
+    of the plane to colors: [Gg.p2 -> Gg.color].
 
     The simplest image is a constant image: an image that associates
     the same color to every point in the plane.  This expression
-    defines an infinite red image:
-{[let red = I.const Color.red]}
+    defines an infinite gray image:
+{[let gray = I.const (Color.gray 0.3)]}
+    It can be seen as the function [fun _ -> Color.gray 0.3] that
+    maps any point of the plane to the same gray color. 
+
     The module {!I} contains all the combinators to define and compose
     infinite images, we'll explore some of them later.
 
     {2 Rendering}
 
-    Manipulating infinite images with combinators is blissful but
-    seeing them is more interesting. Images defined with [Vg] can be
-    rendered to multiple renderers. The module {!Vgr} defines a few
-    functions common to certain renderers and allows to specify image
-    metadata for non-interactive renderers.
+    In order to see a {e finite} rectangular region of an image it
+    needs to be be fed to a renderer via the function {!Vgr.render}. 
+    A renderer is created with {!Vgr.create} and needs a {{!Vgr.target}render 
+    target} value defined by the concrete renderer implementation used.
 
-    The following code outputs the unit square of [red] on a
-    4x4 centimeters PDF surface in the file [/tmp/vg-tutorial.pdf]: 
-{[let usquare_to_pdf i = 
-  let size = Size2.v 40. 40. in
+    The following code outputs the unit square of [gray] on a
+    50x50 millimiters PDF surface in the file [/tmp/vg-tutorial.pdf]: 
+{[let pdf_of_usquare i = 
+  let size = Size2.v 50. 50. in
   let view = Box2.v P2.o (Size2.v 1. 1.) in
   try
     let oc = open_out "/tmp/vg-tutorial.pdf" in
-    let r = Vgr_pdf.renderer (`Channel oc) in
-    ignore (Vgr.render r (`Image (size, view, i));
-    ignore (Vgr.render r `End);
-    close_out oc
+    let r = Vgr.create (Vgr_pdf.target ()) (`Channel oc) in
+    try 
+      ignore (Vgr.render r (`Image (size, view, i));
+      ignore (Vgr.render r `End);
+      close_out oc
+    with e -> close_out oc; raise e
   with Sys_error e -> prerr_endline e
 
-let () = usquare_to_pdf red]}
-    The result should be a red square like {{:TODObasics-red-usquare.png} 
-    this}.
+let () = pdf_of_usquare gray]}
+    The result should be a single page PDF with a gray square 
+    like this:
+    {%html: <img src="gray-square.png" style="width:50mm; height:50mm;"/> %}
 
     {2:coordinates Coordinate spaces} 
 
-    [Vg]'s cartesian coordinate space has the y-axis pointing up and
-    x-axis right. It has no units, you define what they mean to you.
+    [Vg]'s cartesian coordinate space has the x-axis pointing right
+    and the y-axis pointing up. It has no units, you define what they
+    mean to you.
 
     On rendering the corners of the specified view rectangle are
     mapped one to one to the surface's corners. This is done
-    regardless of the (renderer dependent) surface coordinate's system,
-    appropriate transforms are applied so that the bottom-left corner
+    regardless of the renderer dependent surface coordinate's system.
+    Appropriate transforms are applied so that the bottom-left corner
     of the view rectangle maps to the bottom-left corner of the
     surface and so forth for each corner.
 
@@ -954,12 +1017,11 @@ let red_circle = I.cut `Aeo red circle]}
     
     {2:remarkstips Remarks and tips}
     {ul
-    {- Everything is tail-recursive unless otherwise mentionned.}
-    {- [to_string] functions are not thread-safe. Thread-safety
-       can be achieved with [print] functions.}
     {- Angles follow [Gg]'s {{!Gg.mathconv}conventions}.}
     {- Matrices given to {P.tr} and {I.tr} are supposed to 
        be affine and as such ignore the last row of the matrix.} 
+    {- [to_string] functions are not thread-safe. Thread-safety
+       can be achieved with [print] functions.}
     {- Do not rely on the output of printer functions, they
        are subject to change.}
     {- Rendering results are undefined if path
@@ -989,18 +1051,17 @@ let red_circle = I.cut `Aeo red circle]}
 
     {2:refs References}
 
-    [Vg]'s collage model draws from the following works of Conal Elliott 
-    and Antony Courtney.
+    [Vg]'s collage model draws from the following works.
 
-    Conal Elliott. 
+    {ul 
+    {- Conal Elliott. 
     {e {{:http://conal.net/papers/bridges2001/}Functional Image
-    Synthesis}}, Proceedings of Bridges, 2001.
-
-    Antony Courtney. {e Haven : Functional Vector Graphics}, chapter 6
+    Synthesis}}, Proceedings of Bridges, 2001.}
+    {- Antony Courtney. {e Haven : Functional Vector Graphics}, chapter 6
     in
     {{:http://web.archive.org/web/20060207195702/http://www.apocalypse.org/pub/u/antony/work/pubs/ac-thesis.pdf}Modeling
     User Interfaces in a Functional Language}, Ph.D. Thesis, Yale
-    University, 2004. *)
+    University, 2004.}} *)
 
 (** {1:semantics Semantics} 
 

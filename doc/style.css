@@ -92,6 +92,9 @@ a:hover { text-decoration : underline }
 .paramstable code { margin-left: 1ex; margin-right: 1ex }
 .sig_block {margin-left: 1em}
 
+/* Images */
+
+img { margin-top: 1.375em }
 
 
 
