@@ -11,17 +11,6 @@ open Vg
 
 let author = "Daniel C. Bünzli <daniel.buenzl i@erratique.ch>";;
 
-Db.image "path-square" ~author
-  ~title:"Square area in gray"
-  ~tags:["path"; "area"]
-  ~size:(Size2.v 50. 50.)
-  ~view:Box2.unit
-  ~note:"Gray indeed."
-  begin fun _ ->
-    let square = P.empty >> P.rect (Box2.v P2.o (P2.v 1. 1.)) in
-    I.const (Color.gray 0.3) >> I.cut square
-  end;
-
 Db.image "path-square-outline" ~author
   ~title:"Square outline in gray"
   ~tags:["path"; "area" ]

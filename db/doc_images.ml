@@ -4,18 +4,68 @@
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
-(* Renderer independent images *)
+open Gg
+open Vg
 
-include Paths
-include Colors
-include Alphas
-include Gradients
-include Uncut
+(** Images from the documentation. *)
 
-include Arrowhead
-include Graph
-include Rmark
-include Doc_images
+let author = "Daniel C. Bünzli <daniel.buenzl i@erratique.ch>";;
+
+Db.image "doc-gray-square" ~author
+  ~title:"Unit square area in gray"
+  ~tags:["doc";]
+  ~size:(Size2.v 30. 30.)
+  ~view:Box2.unit
+  ~note:"Gray indeed."
+  begin fun _ ->
+    let gray = I.const (Color.gray 0.5) in
+    gray >> I.cut (P.empty >> P.rect Box2.unit) (* TODO remove cut *)
+  end;
+
+Db.image "doc-gray-circle" ~author
+  ~title:"Gray circle centered in the unit square."
+  ~tags:["doc";]
+  ~size:(Size2.v 30. 30.)
+  ~view:Box2.unit
+  ~note:"Indeed, gray circle."
+  begin fun _ ->
+    let circle = P.empty >> P.circle (P2.v 0.5 0.5) 0.4 in 
+    let gray = I.const (Color.gray 0.5) in
+    let gray_circle = I.cut circle gray in 
+    gray_circle
+  end;
+
+Db.image "doc-circle-outline" ~author
+  ~title:"Black circle outline centered in the unit square."
+  ~tags:["doc";]
+  ~size:(Size2.v 30. 30.)
+  ~view:Box2.unit
+  begin fun _ ->
+    let circle = P.empty >> P.circle (P2.v 0.5 0.5) 0.4 in 
+    let circle_outline = 
+      let area = `O { P.o with P.width = 0.04 } in 
+      let black = I.const Color.black in 
+      I.cut ~area circle black 
+    in
+    circle_outline
+  end;
+
+
+Db.image "doc-dot" ~author
+  ~title:"Outlined gray circle centered in the unit square."
+  ~tags:["doc";]
+  ~size:(Size2.v 30. 30.)
+  ~view:Box2.unit
+  begin fun _ ->
+    let circle = P.empty >> P.circle (P2.v 0.5 0.5) 0.4 in 
+    let area = `O { P.o with P.width = 0.04 } in 
+    let gray = I.const (Color.gray 0.5) in
+    let black = I.const Color.black in 
+    let gray_circle = I.cut circle gray in
+    let circle_outline = I.cut ~area circle black in
+    let dot = I.blend circle_outline gray_circle in 
+    dot
+  end;
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
@@ -49,5 +99,3 @@ include Doc_images
    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ---------------------------------------------------------------------------*)
-
-

@@ -94,7 +94,7 @@ a:hover { text-decoration : underline }
 
 /* Images */
 
-img { margin-top: 1.375em }
+img { margin-top: 1.375em; display:block }
 
 
 

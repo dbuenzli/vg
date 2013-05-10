@@ -135,7 +135,6 @@ module Vgm : sig
       are not checked by renderers. *)
 end
 
-
 (** {1 Paths and images} *)
 
 type path 
@@ -839,8 +838,10 @@ end
     [Vg] is designed to be opened in your module. This defines only
     types and modules in your scope and a {e single} value, the
     sequencing operator {!(>>)}. Thus to use [Vg] start with :
-{[open Gg
-open Vg]}
+{[
+open Gg
+open Vg
+]}
     {!Gg} gives us types for points ({!Gg.p2}), vectors ({!Gg.v2}), 2D
     extents ({!Gg.size2}), rectangles ({!Gg.box2}) and colors
     ({!Gg.color}). Later you may want to read {!Gg}'s documentation
@@ -851,11 +852,11 @@ open Vg]}
     {2 A collage model}
 
     Usual vector graphics libraries follow a {e painter model} in
-    which paths are stroked, filled and blended on top of each other
-    to produce a final image. In a nutshell, [Vg] follows a {e collage
-    model} in which paths define areas in infinite images that are {e
-    cut} to define new infinite images to be blended on top of each
-    other.
+    which paths are filled, stroked and blended on top of each other
+    to produce a final image. [Vg] departs from that. In a nutshell,
+    it follows a {e collage model} in which paths define 2D areas in
+    infinite images that are {e cut} to define new infinite images to
+    be blended on top of each other.
 
     The collage model maps very well to a declarative imaging model.
     It is also very clear from a specification point of view, both
@@ -864,8 +865,8 @@ open Vg]}
     self-interesting translucent path (which usually applies the paint
     only once) doesn't map to the underlying paint stroke metaphor.
 
-    It should be mentionned that the collage model introduced in the
-    following sections has its root in the following works.
+    It should be mentioned that the collage model introduced in the
+    following sections was stolen from the following works.
     {ul 
     {- Conal Elliott. 
     {e {{:http://conal.net/papers/bridges2001/}Functional Image
@@ -876,45 +877,52 @@ open Vg]}
     User Interfaces in a Functional Language}, Ph.D. Thesis, Yale
     University, 2004.}}
 
-
     {2 Infinite images}
 
-    Images are immutable and abstract value of type {!image}. They are
-    {e conceptually} infinite and {e seen} as functions mapping points
-    of the plane to colors: [Gg.p2 -> Gg.color].
+    [Vg]'s images are immutable and abstract value of type {!image}. {e
+    Conceptually}, images are seen as functions mapping points of the
+    infinite 2D plane to colors:
+
+    [type Vg.image ] ≈  [Gg.p2 -> Gg.color]
 
     The simplest image is a constant image: an image that associates
-    the same color to every point in the plane.  This expression
-    defines an infinite gray image:
-{[let gray = I.const (Color.gray 0.3)]}
-    It can be seen as the function [fun _ -> Color.gray 0.3] that
-    maps any point of the plane to the same gray color. 
-
+    the same color to every point in the plane. For a constant 
+    gray of intensity 0.5 this would be expressed by the function: 
+{[
+fun _ -> Color.gray 0.5
+]}
+    In [Vg] the combinator {!I.const} represents constant infinite images 
+    and the above function is written:
+{[
+let gray = I.const (Color.gray 0.5)
+]}
     The module {!I} contains all the combinators to define and compose
-    infinite images, we'll explore some of them later.
+    infinite images, we will explore some of them later. Now we would
+    like to actually see that [gray] image.
 
     {2 Rendering}
 
-    An infinite image alone cannot be rendered. We need a {e finite} view
-    rectangle and a specification of the physical size on the render
-    target. These informations are coupled together to form a
-    {!Vgr.renderable}.
+    An infinite image alone cannot be rendered. We need a {e finite}
+    view rectangle and a specification of that view's physical size on
+    the render target. These informations are coupled together with an
+    image to form a {!Vgr.renderable}.
 
-    Renderables can be fed to a renderer via the function
-    {!Vgr.render}.  A renderer is created with {!Vgr.create} and needs
-    a {{!Vgr.target}render target} value defined by the concrete
-    renderer implementation used.
+    Renderables can be given to a renderer for display via the
+    function {!Vgr.render}.  Renderers are created with {!Vgr.create}
+    and need a {{!Vgr.target}render target} value that defines the
+    concrete renderer implementation used (e.g. PDF or
+    interactive renderer).
 
-    The following code outputs the unit square of [gray] on a
-    50x50 millimiters PDF target in the file [/tmp/vg-tutorial.pdf]: 
+    The following function outputs the unit square of [gray] on a
+    30x30 millimiters PDF target in the file [/tmp/vg-tutorial.pdf]:
 {[let pdf_of_usquare i = 
-  let size = Size2.v 50. 50. in
+  let size = Size2.v 30. 30. in
   let view = Box2.unit in
   try
     let oc = open_out "/tmp/vg-tutorial.pdf" in
     let r = Vgr.create (Vgr_pdf.target ()) (`Channel oc) in
     try 
-      ignore (Vgr.render r (`Image (size, view, i));
+      ignore (Vgr.render r (`Image (size, view, i)));
       ignore (Vgr.render r `End);
       close_out oc
     with e -> close_out oc; raise e
@@ -923,7 +931,7 @@ open Vg]}
 let () = pdf_of_usquare gray]}
     The result should be a single page PDF with a gray square 
     like this:
-    {%html: <img src="gray-square.png" style="width:50mm; height:50mm;"/> %}
+{%html: <img src="doc-gray-square.png" style="width:30mm; height:30mm;"/> %}
 
     {2:coordinates Coordinate spaces} 
 
@@ -931,67 +939,92 @@ let () = pdf_of_usquare gray]}
     and the y-axis pointing up. It has no units, you define what they
     mean to you.
 
-    On image render, the corners of the specified view rectangle are
-    mapped on a rectangular area of the given physical size on the
-    target. At that point the view rectangle implicitely defines a
-    physical unit [Vg]'s coordinate space.
+    However a {{!Vgr.renderable}renderable} implicitely defines a
+    physical unit for [Vg]'s coordinate space: the corners of the
+    specified view rectangle are mapped on a rectangular area of the
+    given physical size on the target.
 
     {2 Scissors and glue}
 
     Constant images can be boring. To make things more interesting
-    [Vg] gives you scissors. Suppose you have a path (more on paths
-    later) defining a circle, the following code cuts out that circle
-    in the constant image [red] and returns it as an infinite image.
+    [Vg] gives you scissors: the {!I.cut} combinator. 
+
+    This combinator takes a finite area of the plane defined by a path
+    [path] (more on path later) and a source image [img] to define the
+    image [I.cut path img] that has the color of the source image in the
+    area defined by the path and the invisible transparent black color
+    ({!Gg.Color.void}) everywhere else. In other words [I.cut path img]
+    represents this function: 
+{[
+fun pt -> if inside path pt then img pt else Color.void
+]}
+    The following code cuts a circle of radius [0.4] centered in the 
+    unit square in the [gray] image defined before.
 {[
 let circle = P.empty >> P.circle (P2.v 0.5 0.5) 0.4 
-let red_circle = I.cut `Aeo red circle
+let gray_circle = I.cut gray circle
 ]}
-    Look at the {{:TODObasics-red-circle.png}result} rendered by
-    [usquare_to_pdf].  
+    Rendered by [pdf_of_usquare] the result is:
 
-    The value [red_circle] is still an infinite image, it associates
-    the color {!Gg.Color.red} to the points located in the circle and
-    an invisible transparent black color ({!Gg.Color.void}) at every
-    other point of the plane. The white color surrounding the circle
-    in the rendered image does not belong to the image itself, it is
-    the color of the background against which the image is composited
-    (your eyes require a wavelength there and {!Gg.Color.void} cannot
-    provide it).
+{%html: <img src="doc-gray-circle.png" style="width:30mm; height:30mm;"/> %}
 
-    The first argument to {!I.cut} is a value of type {!P.area}.
-    An area rule determines how a path should be interpreted as an
-    area of the plane. Here [`Aeo] is the even-odd rule and for
-    [circle] this defines its interior. But [circle] can also be seen
-    as defining a thin outline area of a given width with an
-    area rule [`O o]. The argument [o] of type {!P.outline} defines
-    parameters for the outline area; for example the width of the
-    outline. The following code defines an image with a black [circle]
-    outline area of width [0.01].
-{[let circle_outline =
-  let ol = { I.ol with I.width = 0.01 } in
-  I.cut (`Ol ol) (I.const Color.black) circle]}
-    {{:TODObasics-circle-outline.png} Result}. Here the image
-    [circle_outline] is an infinite image that associates the color
-    {!Gg.Color.black} in the outline area and the invisible color
-    {!Gg.Color.void} at every other point of the plane. Remember that
-    the white color you see is in fact {!Gg.Color.void}.
+    Note that the background color surrounding the circle does not 
+    belong to the image itself, it is the color of the webpage background 
+    against which the image is composited. Your eyes require a wavelength 
+    there and {!Gg.Color.void} cannot provide it.
 
-    With {!I.cut}, area rules and paths can cut out interesting,
-    finite portions of infinite images (e.g. areas with holes). This
-    gives us scissors, but to combine the results we need some
-    glue. Glue is provided by the function {!I.blend} which pastes
-    (alpha blends to be precise) an image on top of the other. Here's
-    how you glue [circle_outline] on top of [red_circle] :
-{[let dot = I.blend circle_outline red_circle]} 
-    {{:TODObasics-dot.png}Result}. 
-    Again, the image [dot] is still an infinite image, the color at a
-    point [p] is the color of [red_circle] at [p] alpha blended with
-    the color of [circle_outline] at [p].
+    {!I.cut} has an optional [area] argument of type {!P.area} that
+    determines how a path should be interpreted as an area of the
+    plane. The default value is [`Anz], which means that it uses the
+    non-zero winding number rule and for [circle] that defines its
+    interior.
 
-    If you need to blend many images, use the sequencing operator, 
-    it makes code more readable : 
-{[red_circle >> I.blend circle_outline >> I.blend other]} 
-  
+    But the [circle] path can also be seen as defining a thin outline
+    area around the mathematical path of [circle]. This can be
+    specified by using an outline area `O o. The value [o] defines
+    various parameters that define the outline area; for example its
+    width. The following code cuts the [circle] outline area of width [0.04] 
+    in an infinite black image.
+
+{[
+let circle_outline = 
+  let area = `O { P.o with P.width = 0.04 } in 
+  let black = I.const Color.black in 
+  I.cut ~area circle black
+]}
+
+    Below is the result and again, the white you see here is in 
+    fact {!Gg.Color.void}. 
+
+{%html: <img src="doc-circle-outline.png" style="width:30mm; height:30mm;"/> %}
+
+    {!I.cut} gives us scissors but to combine the results of cuts we
+    need some glue: the {!I.blend} combinator. This combinator takes
+    two infinite images [front] and [back] and defines an image
+    [I.blend front back] that has the colors of [front] alpha blended
+    on top of those of [back]. [I.blend front back] represents
+    this function: 
+{[
+fun pt -> Color.blend (front pt) (back pt) 
+]}
+    If we blend [circle_outline] on top of [gray_circle]:
+{[
+let dot = I.blend circle_outline gray_circle
+]}
+    We get:
+
+{%html: <img src="doc-dot.png" style="width:30mm; height:30mm;"/> %}
+
+    The order of arguments in {!I.blend} is defined so that images can
+    be blended using the left-associative sequencing operator
+    {!Vg.(>>)}. That is [dot] can also be written as follows:
+{[
+let dot = gray_circle >> I.blend circle_outline
+]}  
+
+    This means that with {!Vg.(>>)} and {!I.blend} left to right order in 
+    code maps to back to front image blending.
+
     {2 Transforming images}
     
     It can be useful to transform an image, for example to rescale or
@@ -1029,7 +1062,7 @@ let red_circle = I.cut `Aeo red circle
   let red = I.const Color.red in 
   I.cut o black (circle 0.15) +++
   I.cut o black circle
-  I.blend (I.cut o black (circle 0.3)) &
+  I.blend (I.cut o black (circle 0.5)) &
   I.blend (I.cut o red (circle))]}
 
     
