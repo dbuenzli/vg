@@ -4,19 +4,27 @@
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
-(* Renderer independent images *)
+open Gg
+open Vg
 
-include Paths
-include Colors
-include Alphas
-include Gradients
-include Uncut
-include Escapes
+(** Test images for data escapes *)
 
-include Arrowhead
-include Graph
-include Rmark
-include Doc_images
+let author = "Daniel C. Bünzli <daniel.buenzl i@erratique.ch>"
+;;
+
+Db.image "escape-svg" ~author
+  ~title:"SVG metadata escape </g> & \"bla\""
+  ~tags:["escape"; ]
+  ~note:"These </g> markup \"delimiters\" should be & escaped."
+  ~size:(Size2.v 50. 50.)
+  ~view:Box2.unit
+  begin fun _ -> 
+    let square = P.empty >> P.rect (Box2.v P2.o (Size2.v 1. 1.)) in
+    let area = `O { P.o with P.width = 0.2 } in
+    I.const (Color.gray 0.3) >> I.cut ~area square 
+  end;
+
+
 
 
 (*---------------------------------------------------------------------------
@@ -51,5 +59,3 @@ include Doc_images
    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ---------------------------------------------------------------------------*)
-
-

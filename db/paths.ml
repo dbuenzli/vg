@@ -122,16 +122,15 @@ Db.image "path-cubics" ~author
     let lgray = Color.gray 0.5 >> I.const in
     let mgray = Color.gray 0.3 >> I.const in
     let dgray = Color.gray 0.1 >> I.const in 
-    let blue =  Color.blue     >> I.const in
+    let blue  = Color.blue     >> I.const in
     let ctrl_pt pt = blue >> I.cut square >> I.move pt in 
     let end_pt pt = dgray >> I.cut square >> I.move pt in 
     let tangent p = lgray >> I.cut ~area:(`O { P.o with P.width = 0.01 }) p in 
     let cubic ~at p0 c0 c1 p1 =
       let t0 = P.empty >> P.sub p0 >> P.line c0 in 
       let t1 = P.empty >> P.sub p1 >> P.line c1 in
-      let p = P.empty >> P.sub p0 >> P.ccurve c0 c1 p1 in 
-      mgray >> 
-      I.cut ~area:(`O { P.o with P.width = 0.02 }) p >> 
+      let curve = P.empty >> P.sub p0 >> P.ccurve c0 c1 p1 in 
+      mgray >> I.cut ~area:(`O { P.o with P.width = 0.02 }) curve >> 
       I.blend (tangent t0) >> I.blend (tangent t1) >>
       I.blend (ctrl_pt c0) >> I.blend (ctrl_pt c1) >> 
       I.blend (end_pt p0)  >> I.blend (end_pt p1)  >> 
