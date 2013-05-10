@@ -55,6 +55,7 @@ type state =
     mutable s_stroke : js_primitive;               (* current stroke color. *)
     mutable s_fill : js_primitive; }                 (* current fill color. *)
 
+let partial = Vgr.Private.partial
 let limit s = Vgr.Private.limit s.r
 let warn s w = Vgr.Private.warn s.r w
 let image i = Vgr.Private.image i
@@ -176,59 +177,53 @@ let get_primitive s p =
       let js_prim = create p in 
       Hashtbl.add s.prims p js_prim; js_prim
     
-let rec r_cut s a = match s.todo with 
-| [] | Pop _ :: _ -> assert false 
-| (Draw i) :: todo -> 
-    match i with 
-    | Primitive (Raster _) -> 
-        begin match a with 
-        | `O _ -> warn s (`Unsupported_cut (a, image i)); s.todo <- todo;
-        | `Aeo | `Anz -> 
-            if a = `Aeo then warn s (`Unsupported_cut (a, image i)) else
-            s.ctx ## save (); 
-            s.ctx ## clip ();
-            warn s (`Other "TODO raster unimplemented");
-            s.ctx ## restore ();
-            s.todo <- todo;
-        end
-    | Primitive p ->
-        let p = get_primitive s p in
-        begin match a with 
-        | `O o -> 
-            set_outline s o;
-            if s.s_stroke != p then begin match p with 
-            | Color c -> s.ctx ## strokeStyle <- c; s.s_stroke <- p
-            | Grad g -> s.ctx ## strokeStyle_gradient <- g; s.s_stroke <- p
-            end;
-            s.ctx ## stroke ();
-            s.todo <- todo
-        | `Aeo | `Anz ->
-            if a = `Aeo then warn s (`Unsupported_cut (a, image i)); 
-            if s.s_fill != p then begin match p with 
-            | Color c -> s.ctx ## fillStyle <- c; s.s_fill <- p
-            | Grad g -> s.ctx ## fillStyle_gradient <- g; s.s_fill <- p
-            end;
-            s.ctx ## fill ();
-            s.todo <- todo
-        end
-    | Tr (tr, i) -> 
-        s.ctx ## save ();
-        s.todo <- (Draw i) :: (pop_gstate s) :: todo; 
-        push_transform s tr;
-        r_cut s a;
-    | Blend _ | Cut _ ->
-        begin match a with
-        | `O _ | `Aeo -> warn s (`Unsupported_cut (a, image i));
-        | `Anz -> () 
-        end;
-        s.ctx ## save ();
+let rec r_cut s a = function 
+| Primitive (Raster _) as i -> 
+    begin match a with 
+    | `O _ -> warn s (`Unsupported_cut (a, image i))
+    | `Aeo | `Anz -> 
+        if a = `Aeo then warn s (`Unsupported_cut (a, image i)) else
+        s.ctx ## save (); 
         s.ctx ## clip ();
-        s.todo <- (Draw i) :: (pop_gstate s) :: todo
-    | Meta _ -> s.todo <- todo; r_cut s a
+        warn s (`Other "TODO raster unimplemented");
+        s.ctx ## restore ()
+    end
+| Primitive p as i ->
+    let p = get_primitive s p in
+    begin match a with 
+    | `O o -> 
+        set_outline s o;
+        if s.s_stroke != p then begin match p with 
+        | Color c -> s.ctx ## strokeStyle <- c; s.s_stroke <- p
+        | Grad g -> s.ctx ## strokeStyle_gradient <- g; s.s_stroke <- p
+        end;
+        s.ctx ## stroke ()
+    | `Aeo | `Anz ->
+        if a = `Aeo then warn s (`Unsupported_cut (a, image i)); 
+        if s.s_fill != p then begin match p with 
+        | Color c -> s.ctx ## fillStyle <- c; s.s_fill <- p
+        | Grad g -> s.ctx ## fillStyle_gradient <- g; s.s_fill <- p
+        end;
+        s.ctx ## fill ()
+    end
+| Tr (tr, i) ->
+    s.ctx ## save ();
+    s.todo <- (pop_gstate s) :: s.todo;
+    push_transform s tr;
+    r_cut s a i
+| Blend _ | Cut _ as i ->
+    begin match a with
+    | `O _ | `Aeo -> warn s (`Unsupported_cut (a, image i));
+    | `Anz -> () 
+    end;
+    s.ctx ## save ();
+    s.ctx ## clip ();
+    s.todo <- (Draw i) :: (pop_gstate s) :: s.todo
+| Meta (_, i) -> r_cut s a i
 
 let rec r_image s k r =
-  if s.cost > limit s then (s.cost <- 0; Vgr.Private.partial (r_image s k) r) 
-  else match s.todo with
+  if s.cost > limit s then (s.cost <- 0; partial (r_image s k) r) else 
+  match s.todo with
   | [] -> Hashtbl.reset s.prims; k r
   | Pop gs :: todo -> 
       s.ctx ## restore ();
@@ -244,9 +239,9 @@ let rec r_image s k r =
           s.todo <- todo;
           r_image s k r
       | Cut (a, p, i) -> 
-          s.todo <- (Draw i) :: todo;
+          s.todo <- todo;
           set_path s p;
-          r_cut s a;
+          r_cut s a i;
           r_image s k r
       | Blend (blender, alpha, i, i') -> 
           (* TODO blender and alpha *)
@@ -283,11 +278,11 @@ let render s v k r = match v with
     s.todo <- [ Draw i ];
     r_image s k r
 
-let r300ppi = V2.v 11811. 11811.             (* 300 ppi in pixel per meters. *)
+let ppi_300 = V2.v 11811. 11811.             (* 300 ppi in pixel per meters. *)
 let target c =
   let target r _ = 
     let meta = Vgr.Private.meta r in
-    let resolution = Vgm.get ~absent:r300ppi meta Vgm.resolution in
+    let resolution = Vgm.get ~absent:ppi_300 meta Vgm.resolution in
     let ctx = c ## getContext (Dom_html._2d_) in
     true, render { r; c; ctx; 
                    dash_support = dash_support ctx; 
