@@ -23,7 +23,27 @@ Db.image "color-rgb-squares" ~author
     square ~at:P2.o Color.red >> 
     I.blend (square ~at:(P2.v 20. 0.0) Color.green) >>
     I.blend (square ~at:(P2.v 20. 20.) Color.blue)
+  end;
+
+
+Db.image "color-gray-ramp" ~author
+  ~title:"Gray at every 0.1 intensity"
+  ~tags:["color"]
+  ~size:(Size2.v 50. 50.) 
+  ~view:Box2.unit
+  begin fun _ -> 
+    let r = P.empty >> P.rect (Box2.v P2.o (Size2.v 0.15 1.0)) in 
+    let blot ~at c = I.const c >> I.cut r >> I.move at in
+    let rec scale i acc =
+      if i > 10 then acc else
+      let fi = float i in
+      let c = Color.gray (fi *. 0.1) in
+      let at = P2.v (fi *. 0.1) 0. in
+      scale (i + 1) (acc >> I.blend (blot ~at c))
+    in
+    scale 0 I.void
   end
+
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
