@@ -46,10 +46,6 @@
 ** allow to choose rendering intent.
 ** Generate PDF/A
 
-* HTML Canvas 
-** Check color space spec.
-
-
 * SVG
 ** Use dublin core for metadata ? Look into inkscape. 
 ** Check color space 

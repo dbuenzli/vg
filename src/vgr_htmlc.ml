@@ -69,10 +69,11 @@ let set_gstate s g =
   s.s_fill <- g.g_fill
 
 let css_color c =                               (* w3c bureaucrats are pigs. *)
-  let r = Float.int_of_round (Color.r c *. 255.) in 
-  let g = Float.int_of_round (Color.g c *. 255.) in 
-  let b = Float.int_of_round (Color.b c *. 255.) in
-  let a = Color.a c in
+  let srgba = Color.to_srgba c in
+  let r = Float.int_of_round (Color.r srgba *. 255.) in 
+  let g = Float.int_of_round (Color.g srgba *. 255.) in 
+  let b = Float.int_of_round (Color.b srgba *. 255.) in
+  let a = Color.a srgba in
   if a = 1.0 then Js.string (str "rgb(%d,%d,%d)" r g b) else
   Js.string (str "rgba(%d,%d,%d,%f)" r g b a)
 
