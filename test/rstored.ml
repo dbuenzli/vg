@@ -91,7 +91,7 @@ let render_with_buffer buf use_unix fn renderer imgs =
   with e -> close_out oc; raise e
 
 let render_with_unix s fn renderer imgs =
-  let fd = Unix.(openfile fn [O_RDONLY] 0) in
+  let fd = Unix.(openfile fn [O_WRONLY] 0) in
   let r = renderer `Manual imgs in 
   try
     Vgr.Manual.dst r s 0 (String.length s);
