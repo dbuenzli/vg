@@ -161,22 +161,21 @@ let set_path s p =
   s.ctx ## beginPath ();
   loop P2.o (List.rev p)
 
-let get_primitive s p = 
-  let add_stop g (t, c) = g ## addColorStop (t, css_color c) in 
-  let create = function 
-  | Const c -> Color (css_color c)
-  | Axial (stops, pt, pt') ->
-      let g = P2.(s.ctx ## createLinearGradient (x pt, y pt, x pt', y pt')) in
-      List.iter (add_stop g) stops; Grad g
-  | Radial (stops, f, c, r) ->
-      let g = P2.(s.ctx ## createRadialGradient (x c, y c, 0., x f, y f, r)) in
-      List.iter (add_stop g) stops; Grad g
-  | Raster _ -> assert false
-  in
-  try Hashtbl.find s.prims p with 
-  | Not_found ->
-      let js_prim = create p in 
-      Hashtbl.add s.prims p js_prim; js_prim
+let get_primitive s p = try Hashtbl.find s.prims p with 
+| Not_found -> 
+    let add_stop g (t, c) = g ## addColorStop (t, css_color c) in 
+    let create = function 
+    | Const c -> Color (css_color c)
+    | Axial (stops, pt, pt') ->
+        let g = P2.(s.ctx ## createLinearGradient(x pt, y pt, x pt', y pt')) in
+        List.iter (add_stop g) stops; Grad g
+    | Radial (stops, f, c, r) ->
+        let g = P2.(s.ctx ## createRadialGradient(x c, y c, 0., x f, y f, r)) in
+        List.iter (add_stop g) stops; Grad g
+    | Raster _ -> assert false
+    in
+    let js_prim = create p in 
+    Hashtbl.add s.prims p js_prim; js_prim
     
 let rec r_cut s a = function 
 | Primitive (Raster _) as i -> 
