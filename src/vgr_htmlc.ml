@@ -26,7 +26,7 @@ let dash_support ctx = Js.Optdef.test ((Js.Unsafe.coerce ctx) ## setLineDash)
 
 type js_primitive = 
   | Color of Js.js_string Js.t 
-  | Grad of Dom_html.canvasGradient Js.t
+  | Gradient of Dom_html.canvasGradient Js.t
 
 let dumb_prim = Color (Js.string "")
 
@@ -168,10 +168,10 @@ let get_primitive s p = try Hashtbl.find s.prims p with
     | Const c -> Color (css_color c)
     | Axial (stops, pt, pt') ->
         let g = P2.(s.ctx ## createLinearGradient(x pt, y pt, x pt', y pt')) in
-        List.iter (add_stop g) stops; Grad g
+        List.iter (add_stop g) stops; Gradient g
     | Radial (stops, f, c, r) ->
         let g = P2.(s.ctx ## createRadialGradient(x c, y c, 0., x f, y f, r)) in
-        List.iter (add_stop g) stops; Grad g
+        List.iter (add_stop g) stops; Gradient g
     | Raster _ -> assert false
     in
     let js_prim = create p in 
@@ -195,14 +195,14 @@ let rec r_cut s a = function
         set_outline s o;
         if s.s_stroke != p then begin match p with 
         | Color c -> s.ctx ## strokeStyle <- c; s.s_stroke <- p
-        | Grad g -> s.ctx ## strokeStyle_gradient <- g; s.s_stroke <- p
+        | Gradient g -> s.ctx ## strokeStyle_gradient <- g; s.s_stroke <- p
         end;
         s.ctx ## stroke ()
     | `Aeo | `Anz ->
         if a = `Aeo then warn s (`Unsupported_cut (a, image i)); 
         if s.s_fill != p then begin match p with 
         | Color c -> s.ctx ## fillStyle <- c; s.s_fill <- p
-        | Grad g -> s.ctx ## fillStyle_gradient <- g; s.s_fill <- p
+        | Gradient g -> s.ctx ## fillStyle_gradient <- g; s.s_fill <- p
         end;
         s.ctx ## fill ()
     end
