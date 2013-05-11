@@ -26,22 +26,25 @@ Db.image "color-rgb-squares" ~author
   end;
 
 
-Db.image "color-gray-ramp" ~author
-  ~title:"Gray at every 0.1 intensity"
+Db.image "color-grayscale-ramp" ~author
+  ~title:"Grayscale ramp"
   ~tags:["color"]
   ~size:(Size2.v 50. 50.) 
   ~view:Box2.unit
+  ~note:"From 0 to 1 by 0.1 increments in sRGB space."
   begin fun _ -> 
-    let r = P.empty >> P.rect (Box2.v P2.o (Size2.v 0.15 1.0)) in 
-    let blot ~at c = I.const c >> I.cut r >> I.move at in
-    let rec scale i acc =
-      if i > 10 then acc else
-      let fi = float i in
-      let c = Color.gray (fi *. 0.1) in
-      let at = P2.v (fi *. 0.1) 0. in
-      scale (i + 1) (acc >> I.blend (blot ~at c))
+    let dI = 0.1 in
+    let step_count = (1.0 /. dI) +. 1. in
+    let dx = 1. /. step_count in
+    let bar = P.empty >> P.rect (Box2.v P2.o (Size2.v (dx +. 0.005) 1.0)) in 
+    let level ~at i = I.const i >> I.cut bar >> I.move at in
+    let rec scale step acc =
+      if step >= step_count then acc else
+      let i = Color.gray (step *. dI)  in
+      let at = P2.v (step *. dx) 0. in
+      scale (step +. 1.) (acc >> I.blend (level ~at i))
     in
-    scale 0 I.void
+    scale 0. I.void
   end
 
 

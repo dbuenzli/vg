@@ -69,7 +69,7 @@ let set_gstate s g =
   s.s_fill <- g.g_fill
 
 let css_color c =                               (* w3c bureaucrats are pigs. *)
-  let srgba = c (* Color.to_srgba c *) in
+  let srgba = Color.to_srgba c in
   let r = Float.int_of_round (Color.r srgba *. 255.) in 
   let g = Float.int_of_round (Color.g srgba *. 255.) in 
   let b = Float.int_of_round (Color.b srgba *. 255.) in
