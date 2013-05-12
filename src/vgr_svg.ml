@@ -8,49 +8,6 @@ open Gg
 open Vg
 open Vgr.Private.Data
 
-(* Tag names. *) 
-
-let t_svg = "svg"
-let t_title = "title"
-let t_descr = "descr"
-let t_g = "g"
-let t_defs = "defs"
-let t_use = "use"
-let t_path = "path"
-
-(* Attribute names. *)
-
-let a_xmlns = "xmlns"
-let a_xmlns_xlink = "xmlns:l"
-let a_xlink_href = "l:href" 
-let a_id = "id" 
-let a_version = "version"
-let a_base_profile = "baseProfile" 
-let a_width = "width"
-let a_height = "height"
-let a_view_box = "viewBox"
-let a_preserve_aspect_ratio = "preserveAspectRatio"
-let a_color_interp = "color-interpolation"
-let a_color_interp_filters = "color-interpolation-filters"
-let a_transform = "transform"
-
-(* Attribute values. *)
-
-let av_svg_ns = "http://www.w3.org/2000/svg"
-let av_xlink_ns = "http://www.w3.org/1999/xlink"
-let av_svg_version = "1.1"
-let av_basic_profile = "basic"
-let av_linearRGB = "linearRGB"
-let av_none = "none"
-let av_linecap = function 
-| `Butt -> "butt" | `Round -> "round" | `Square -> "square"
-
-let av_linejoin = function 
-| `Miter -> "miter" | `Bevel -> "bevel" | `Round -> "round"
-
-let av_fill_rule = function 
-| `Aeo -> "evenodd" | `Anz -> "nonzero"
-
 (* Renderer *)
 
 type gstate = 
@@ -58,186 +15,278 @@ type gstate =
     g_blender : I.blender; 
     g_outline : P.outline; } 
     
-type svg_prim = Gradient of int | Color of string 
+type svg_prim = Gradient of int | Color of string * string
 
 type cmd = Pop of unit | Draw of Vgr.Private.Data.image
 type state = 
-  { r : Vgr.Private.renderer; 
-    xml_decl : bool; 
+  { r : Vgr.Private.renderer;                    (* corresponding renderer. *)
     buf : Buffer.t;                                   (* formatting buffer. *)
     mutable cost : int;                          (* cost counter for limit. *)
-    mutable view : Gg.box2;                              (* view rectangle. *)
+    mutable view : Gg.box2;           (* current renderable view rectangle. *)
     mutable todo : cmd list;                        (* commands to perform. *)
-    mutable tags : string list;                           (* tags to close. *) 
-    (* Cached primitives and paths *)
-    mutable id : int;
-    prims : (Vgr.Private.Data.primitive, svg_prim) Hashtbl.t; 
-    paths : (path, int) Hashtbl.t; 
-    (* Current graphics state. *)
-    mutable s_alpha : float; 
-    mutable s_blender : I.blender; 
-    mutable s_outline : P.outline; } 
-
+    mutable id : int;                                     (* uid generator. *)
+    prims :                                           (* cached primitives. *)
+      (Vgr.Private.Data.primitive, svg_prim) Hashtbl.t; 
+    paths : (path, int) Hashtbl.t;                         (* cached paths. *)
+    mutable s_alpha : float;                       (* current global alpha. *)
+    mutable s_blender : I.blender;                (* current blending mode. *)
+    mutable s_outline : P.outline; }       (* current outline stroke state. *)
+ 
+let partial = Vgr.Private.partial
 let limit s = Vgr.Private.limit s.r
 let warn s w = Vgr.Private.warn s.r w
 let image i = Vgr.Private.image i
-let save_gstate s = Pop ()
+let pop_gstate s = Pop ()
 let set_gstate s gs = () 
-
 let new_id s = s.id <- s.id + 1; s.id
 
-external ( & ) : ('a -> 'b) -> 'a -> 'b = "%apply"
+let cap_str = function 
+| `Butt -> "butt" | `Round -> "round" | `Square -> "square"
 
-let writeb = Vgr.Private.writeb
-let writes = Vgr.Private.writes 
-let writebuf = Vgr.Private.writebuf 
+let join_str = function 
+| `Miter -> "miter" | `Bevel -> "bevel" | `Round -> "round"
 
-let w_nop k r = k r
-let w_chr c k r = writeb (Char.code c) k r
-let w_str str k r = writes str 0 (String.length str) k r
-let w_fmt_str s k fmt = 
-  let flush_buf buf = 
-    Printf.eprintf "FLUSH:%d:%d:%s\n%!" 0 (Buffer.length buf) (Buffer.contents buf);
-    writebuf buf 0 (Buffer.length buf) k 
+let area_str = function 
+| `Aeo -> "evenodd" | `Anz -> "nonzero"
+
+let w_str str k r = Vgr.Private.writes str 0 (String.length str) k r
+let w_buf s k r = 
+  let clear k r = Buffer.clear s.buf; k r in
+  Vgr.Private.writebuf s.buf 0 (Buffer.length s.buf) (clear k) r
+
+let badd_fmt s fmt = Printf.bprintf s.buf fmt
+let badd_str s str = Buffer.add_string s.buf str 
+let badd_esc_str s str = 
+  let len = String.length str in
+  let start = ref 0 in 
+  let last = ref 0 in 
+  let escape e = 
+    Buffer.add_substring s.buf str !start (!last - !start);
+    Buffer.add_string s.buf e; 
+    incr last; 
+    start := !last
   in
-  Buffer.clear s.buf; Printf.kbprintf flush_buf s.buf fmt
+  while (!last < len) do match String.get str !last with 
+  | '<' -> escape "&lt;"         (* Escape markup delimiters. *)
+  | '>' -> escape "&gt;"
+  | '&' -> escape "&amp;"
+  (* | '\'' -> escape "&apos;" *) (* Not needed we use \x22 for attributes. *)
+  | '\x22' -> escape "&quot;"
+  | _ -> incr last
+  done;
+  Buffer.add_substring s.buf str !start (!last - !start)
+      
+let badd_title s = function
+| None -> () 
+| Some t -> badd_str s "<title>"; badd_esc_str s t; badd_str s "</title>"
 
-let w_int s i k = w_fmt_str s k "%d" i
-let w_mm s v k = w_fmt_str s k "%gmm" v
-let w_id_att s id k = w_fmt_str s k "id=\x22i%d\x22" id
-let w_id_ref s id k = w_fmt_str s k "#i%d" id
+let badd_descr s = function
+| None -> () 
+| Some d -> badd_str s "<descr>"; badd_esc_str s d; badd_str s "</descr>"
 
-let w_view_box s v k = 
-  w_fmt_str s k "%g %g %g %g" 0. 0. (Box2.w v) (Box2.h v)
+let badd_svg s xml_decl size =
+  badd_fmt s
+     "%s\
+     <svg xmlns=\"http://www.w3.org/2000/svg\" \
+        xmlns:l=\"http://www.w3.org/1999/xlink\" \
+        version=\"1.1\" \
+        width=\"%gmm\" \
+        height=\"%gmm\" \
+        viewBox=\"0 0 %g %g\" \
+        color-profile=\"auto\" \
+        color-interpolation=\"linearRGB\" \
+        color-interpolation-filters=\"linearRGB\" \
+    >"
+    (if xml_decl then "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" else "") 
+    (Size2.w size) (Size2.h size) (Size2.w size) (Size2.h size)
 
-let w_att a w_value k r = 
-  (w_chr ' ' & w_str a  & w_str "=\x22" & w_value & w_chr '\x22' & k) r
-    
-let w_tag s n w_atts k r = 
-  (w_chr '<' & w_str n & w_atts & w_str "/>" & k) r
+let badd_init s size view = 
+  let sx = Size2.w size /. Box2.w view in 
+  let sy = Size2.h size /. Box2.h view in 
+  let dx = -. Box2.ox view *. sx in 
+  let dy = Size2.h size +. Box2.oy view *. sy in
+   (* stroke-width is 1. initially, so is P.o *)
+   (* stroke-linecap is butt initially, so is P.o *) 
+   (* stroke-linejoin is miter initially, so is P.o *)
+   (* stroke-dasharray is none initially, so is P.o *)
+   (* stroke-miterlimit is 4 initially, TODO *)
+   (* fill is black initially, we set it to none *)
+  badd_fmt s "<g fill=\"none\" transform=\"matrix(%g %g %g %g %g %g)\">"
+    sx 0. 0. (-. sy) dx dy (* map view rect -> viewport *)
 
-let w_stag s n w_atts k r = 
-  s.tags <- n :: s.tags;
-  (w_chr '<' & w_str n & w_atts & w_chr '>' & k) r
-    
-let w_etag s k r = match s.tags with 
-| [] -> assert false 
-| n :: tags ->
-    s.tags <- tags; 
-    (w_str "</" & w_str n & w_chr '>' & k) r
-
-let w_ssvg s size view k r = 
-  w_stag s t_svg begin fun k ->
-    w_att a_xmlns (w_str av_svg_ns) &
-    w_att a_xmlns_xlink (w_str av_xlink_ns) &
-    w_att a_version (w_str av_svg_version) & 
-    w_att a_base_profile (w_str av_basic_profile) &
-    w_att a_width (w_mm s (Size2.w size)) &
-    w_att a_height (w_mm s (Size2.h size)) &
-    w_att a_view_box (w_view_box s view) & 
-    w_att a_preserve_aspect_ratio (w_str av_none) & 
-    w_att a_color_interp (w_str av_linearRGB) & 
-    w_att a_color_interp_filters (w_str av_linearRGB) &
-    k
-  end k r
-
-let w_title s title k r = match title with 
-| None -> w_nop k r
-| Some t -> (w_stag s t_title w_nop & w_str t & w_etag s & k) r 
-
-let w_descr s descr k r = match descr with 
-| None -> w_nop k r
-| Some d -> (w_stag s t_descr w_nop & w_str d & w_etag s & k) r 
-
-let w_transform s tr k = match tr with
-| Move v -> w_fmt_str s k "translate(%g,%g)" (V2.x v) (V2.y v)
-| Rot a -> w_fmt_str s k "rotate(%g)" a
-| Scale sv -> w_fmt_str s k "scale(%g,%g)" (V2.x sv) (V2.y sv)
+let badd_transform s = function 
+| Move v -> badd_fmt s "translate(%g %g)" (V2.x v) (V2.y v)
+| Rot a -> badd_fmt s "rotate(%g)" a
+| Scale sv -> badd_fmt s "scale(%g %g)" (V2.x sv) (V2.y sv)
 | Matrix m -> 
-    M3.(w_fmt_str s k "transform(%g,%g,%g,%g,%g,%g)"
-        (e00 m) (e10 m) (e01 m) (e11 m) (e02 m) (e12 m))
+    badd_fmt s "transform(%g %g %g %g %g %g)"
+      (M3.e00 m) (M3.e10 m) (M3.e01 m) (M3.e11 m) (M3.e02 m) (M3.e12 m)
 
-let rec w_path_data s p k r = failwith "TODO"
-(*
-match p with 
-| [] -> w_chr '\x22' k r
-| seg :: p -> 
-    match seg with 
-    | `Sub pt -> 
-        (w_fmt_str s & w_path_data s p k) "M%g %g" (V2.x pt) (V2.y pt)
-    | `Line pt -> 
-        (w_fmt_str s & w_path_data s p k) "L%g %g" (V2.x pt) (V2.y pt)
-    | `Qcurve (c, pt) -> 
-        (w_fmt_str s & w_path_data s p k)
-           "Q%g %g %g %g" (V2.x c) (V2.y c) (V2.x pt) (V2.y pt)) r
-    | `Ccurve (c, c', pt) ->
-        (w_fmt_str s & w_path_data s p k
-           "C%g %g %g %g %g %g" 
-           (V2.x c) (V2.y c) (V2.x c') (V2.y c') (V2.x pt) (V2.y pt)
-    | `Earc (large, cw, a, r, pt) -> 
-        let large = if large then 1 else 0 in
-        let sweep = if cw then 0 else 1 in
-        (w_fmt_str s & w_path_data s p k
-           "A %g %g %g %d %d %g %g" 
-           (V2.x r) (V2.y r) a large sweep (V2.x pt) (V2.y pt)) r
-    | `Close -> 
-        (w_chr 'Z' & w_path_data s p k) r
-  *)
 let w_path s p k r = try k (Hashtbl.find s.paths p) r with
 | Not_found -> 
     let id = new_id s in
-    begin 
-      w_stag s t_defs w_nop &
-      w_tag s t_path begin fun k -> 
-        w_id_att s id & 
-        w_str "path=\x22" & 
-        w_path_data s p &
-        k
-      end & 
-      w_etag s &  
-      w_etag s & 
-      (k id)    
-    end r
+    let rec w_data p k r = match p with
+    | [] -> w_str "\"/></defs>" (k id) r 
+    | seg :: p -> 
+        match seg with 
+        | `Sub pt -> 
+            badd_fmt s "M%g %g" (V2.x pt) (V2.y pt); 
+            w_buf s (w_data p k) r
+        | `Line pt -> 
+            badd_fmt s "L%g %g" (V2.x pt) (V2.y pt);
+            w_buf s (w_data p k) r
+        | `Qcurve (c, pt) -> 
+            badd_fmt s "Q%g %g %g %g" (V2.x c) (V2.y c) (V2.x pt) (V2.y pt); 
+            w_buf s (w_data p k) r               
+        | `Ccurve (c, c', pt) ->
+            badd_fmt s "C%g %g %g %g %g %g" 
+              (V2.x c) (V2.y c) (V2.x c') (V2.y c') (V2.x pt) (V2.y pt); 
+            w_buf s (w_data p k) r
+        | `Earc (large, cw, a, radii, pt) -> 
+            let large = if large then 1 else 0 in
+            let sweep = if cw then 0 else 1 in
+            badd_fmt s "A %g %g %g %d %d %g %g"  
+              (V2.x radii) (V2.y radii) a large sweep (V2.x pt) (V2.y pt);
+            w_buf s (w_data p k) r
+        | `Close -> 
+            w_str "Z" (w_data p k) r
+    in
+    Hashtbl.add s.paths p id;
+    badd_fmt s "<defs><path id=\"i%d\" d=\"" id; 
+    w_buf s (w_data (List.rev p) k) r
 
-let rec w_cut s a p k r = match s.todo with 
-| [] | Pop _ :: _ -> assert false 
-| (Draw i) :: todo -> 
-    match i with 
-    | Primitive (Raster _) -> 
-        begin match a with 
-        | `O _ -> warn s (`Unsupported_cut (a, image i)); s.todo <- todo; k r
-        | `Aeo | `Anz -> 
-            warn s (`Other "TODO raster unimplemented"); 
-            s.todo <- todo; k r
-        end
-    | Primitive pr -> 
-        s.todo <- todo; k r
-    | Meta _ -> s.todo <- todo; w_cut s a p k r
-    | Tr (tr, i) -> 
-        s.todo <- (Draw i) :: (save_gstate s) :: todo; 
-        k r
-    | i -> 
-        s.todo <- todo; k r
-        
+let badd_rgb_color s c = 
+  let srgba = Color.to_srgba c in
+  let r = Float.int_of_round (Color.r srgba *. 255.) in 
+  let g = Float.int_of_round (Color.g srgba *. 255.) in 
+  let b = Float.int_of_round (Color.b srgba *. 255.) in
+  badd_fmt s "#%02X%02X%02X" r g b
+
+let badd_svg_prim s op = function
+| Color (c, "") -> badd_fmt s " %s=\"%s\"/>" op c
+| Color (c, a) -> badd_fmt s " %s=\"%s\" %s-opacity=\"%s\"/>" op c op a
+| Gradient id -> badd_fmt s " %s=\"url(#i%d)\"/>" op id
+
+let badd_dashes s = function
+| None -> () 
+| Some (offset, dashes) -> 
+    let rec array = function
+    | [] -> badd_fmt s "\""
+    | d :: ds -> 
+        if ds = [] then badd_fmt s "%g\"" d else (badd_fmt s "%g," d; array ds)
+    in
+    if offset <> 0. then badd_fmt s " stroke-dashoffset=\"%g\"" offset;
+    badd_fmt s " stroke-dasharray=\""; 
+    array dashes
+
+let badd_stop s (t, c) =
+  badd_fmt s "<stop offset=\"%g\" stop-color=\"" t;
+  badd_rgb_color s c; 
+  badd_fmt s "\"/>"
+
+let w_primitive s p k r = try k (Hashtbl.find s.prims p) r with 
+| Not_found ->
+    let create = function 
+    | Const c -> 
+        let get () = let c = Buffer.contents s.buf in Buffer.clear s.buf; c in
+        let a = Color.a c in
+        let cstr = (badd_rgb_color s c; get ()) in
+        let astr = if a = 1.0 then "" else (badd_fmt s "%g" a; get ()) in 
+        Color (cstr, astr)
+    | Axial (stops, p1, p2) ->
+        let id = new_id s in
+        badd_fmt s "<defs><linearGradient gradientUnits=\"userSpaceOnUse\" \
+                    id=\"i%d\" x1=\"%g\" y1=\"%g\" x2=\"%g\" y2=\"%g\">" 
+          id (V2.x p1) (V2.y p1) (V2.x p2) (V2.y p2); 
+        List.iter (badd_stop s) stops; 
+        badd_fmt s "</linearGradient></defs>";
+        Gradient id
+    | Radial (stops, f, c, r) ->
+        let id = new_id s in 
+        badd_fmt s "<defs><radialGradient gradientUnits=\"userSpaceOnUse\" \
+                    id=\"i%d\" fx=\"%g\" fy=\"%g\" cx=\"%g\" cy=\"%g\" \
+                    r=\"%g\">"
+          id (V2.x f) (V2.y f) (V2.x c) (V2.y c) r;
+        List.iter (badd_stop s) stops; 
+        badd_fmt s "</radialGradient></defs>";
+        Gradient id
+    | Raster _ -> assert false 
+    in
+    let svg_prim = create p in 
+    Hashtbl.add s.prims p svg_prim; w_buf s (k svg_prim) r
+
+let w_primitive_cut s a path_id k svg_prim r = match a with 
+| `O o ->
+    let w = o.P.width in 
+    let c = o.P.cap in 
+    let j = o.P.join in
+    badd_fmt s "<use l:href=\"#i%d\"" path_id;
+    if w <> P.o.P.width then badd_fmt s " stroke-width=\"%g\"" w; 
+    if c <> P.o.P.cap then badd_fmt s " stroke-linecap=\"%s\"" (cap_str c); 
+    if j <> P.o.P.join then badd_fmt s " stroke-linejoin=\"%s\"" (join_str j);
+    badd_dashes s o.P.dashes;
+    (* TODO miter limit *)
+    badd_svg_prim s "stroke" svg_prim;
+    w_buf s k r
+| `Anz | `Aeo ->
+    let rule = if a = `Anz then "" else " fill-rule=\"evenodd\"" in 
+    badd_fmt s "<use l:href=\"#i%d\"%s" path_id rule; 
+    badd_svg_prim s "fill" svg_prim;
+    w_buf s k r
+
+let rec w_cut s a i k path_id r = match i with 
+| Primitive (Raster _) -> 
+    begin match a with 
+    | `O _ -> warn s (`Unsupported_cut (a, image i)); k r
+    | `Aeo | `Anz -> 
+        warn s (`Other "TODO raster unimplemented"); 
+        k r 
+    end
+| Primitive p -> w_primitive s p (w_primitive_cut s a path_id k) r
+| Tr (tr, i) -> (* TODO *) k r
+| Blend _ | Cut _ as i ->
+    let astr = match a with 
+    | `O _ -> warn s (`Unsupported_cut (a, image i)); area_str `Anz 
+    | a -> area_str `Anz 
+    in
+    s.todo <- (Draw i) :: (pop_gstate s) :: s.todo;
+    badd_fmt s "<g clip-path=\"url(#i%d)\" clip-rule=\"%s\">" path_id astr;
+    w_buf s k r
+| Meta (_, i) -> w_cut s a i k path_id r
+
+let rec w_transforms s tr i k r =     (* collapses nested Tr in single <g>. *)
+  if s.cost > limit s then (s.cost <- 0; partial (w_transforms s tr i k) r) else
+  begin
+    s.cost <- s.cost + 1;
+    match i with
+    | Tr (tr', i') -> badd_transform s tr; w_buf s (w_transforms s tr' i' k) r
+    | Meta (_, i) -> w_transforms s tr i k r
+    | i ->
+        badd_transform s tr;
+        badd_str s "\">"; 
+        s.todo <- (Draw i) :: pop_gstate s :: s.todo;
+        w_buf s k r
+  end
+
 let rec w_image s k r =
-  if s.cost > limit s then (s.cost <- 0; Vgr.Private.partial (w_image s k) r) 
-  else match s.todo with 
+  if s.cost > limit s then (s.cost <- 0; partial (w_image s k) r) else
+  match s.todo with 
   | [] -> Hashtbl.reset s.prims; Hashtbl.reset s.paths; k r
   | Pop gs :: todo -> 
       set_gstate s gs; 
       s.todo <- todo; 
-      (w_etag s & w_image s k) r
+      w_str "</g>" (w_image s k) r
   | (Draw i) :: todo -> 
       s.cost <- s.cost + 1; 
       match i with 
       | Primitive _ -> 
           (* Uncut primitive, just cut to view. Need CTM *) 
           warn s (`Other "TODO, uncut primitive not implemented");
-          s.todo <- todo; 
+          s.todo <- todo;
           w_image s k r
       | Cut (a, p, i) -> 
-          s.todo <- (Draw i) :: todo;
-          (w_path s p & (fun k id -> w_cut s a id k) & w_image s k) r 
+          s.todo <- todo;
+          w_path s p (w_cut s a i (w_image s k)) r
       | Blend (blender, alpha, i, i') -> 
           (* TODO blender and alpha *) 
           s.todo <- (Draw i') :: (Draw i) :: todo; 
@@ -247,65 +296,38 @@ let rec w_image s k r =
             w_image s k r
           end
       | Tr (tr, i) ->
-          s.todo <- (Draw i) :: save_gstate s :: todo; 
-          begin 
-            w_stag s t_g (w_att a_transform (w_transform s tr)) & 
-            w_image s k
-          end r
+          s.todo <- todo;
+          badd_str s "<g transform=\""; 
+          w_transforms s tr i (w_image s k) r
       | Meta (m, i) -> 
           s.todo <- (Draw i) :: todo; 
           w_image s k r
 
-let render s v k r = match v with 
-| `End -> Vgr.Private.flush k r
+let render xml_decl s v k r = match v with 
+| `End -> w_str "</g></svg>" (Vgr.Private.flush k) r
 | `Image (size, view, i) -> 
     let m = Vgr.Private.meta r in
-    let title = Vgm.find m Vgm.title in 
-    let descr = Vgm.find m Vgm.subject in
-    s.todo <- [ Draw i ];
-    begin
-      begin 
-        if s.xml_decl 
-        then w_str "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" 
-        else w_nop
-      end & 
-      w_ssvg s size view & 
-      w_title s title & 
-      w_descr s descr &
-      w_stag s t_g begin fun k ->
-        let m = M3.v     (* map top-left corner to bottom right of viewbox. *)
-            1. 0.       (-. Box2.ox view)
-            0. (-. 1.)  (Box2.h view +. Box2.oy view)
-            0. 0.       1. 
-        in           
-        w_att a_transform (w_transform s (Matrix m)) & k
-        (* stroke-width is 1. initially, so is P.o *)
-        (* stroke-linecap is butt initially, so is P.o *) 
-        (* stroke-linejoin is miter initially, so is P.o *)
-        (* stroke-dasharray is none initially, so is P.o *)
-        (* stroke-miterlimit is 4 initially, TODO *)
-      end &
-      w_image s &
-      w_etag s & 
-      w_etag s &
-      k 
-    end r
+    badd_svg s xml_decl size;
+    badd_title s (Vgm.find m Vgm.title); 
+    badd_descr s (Vgm.find m Vgm.description);
+    badd_init s size view;
+    s.todo <- [Draw i];
+    w_buf s (w_image s k) r
 
 let target ?(xml_decl = true) () = 
   let target r _ = 
-    false, render { r;
-                    xml_decl;
-                    buf = Buffer.create 241;
-                    cost = 0;
-                    view = Box2.empty; 
-                    todo = [];
-                    id = 0; 
-                    prims = Hashtbl.create 241; 
-                    paths = Hashtbl.create 241;
-                    s_alpha = 1.; 
-                    s_blender = `Over; 
-                    s_outline = P.o;
-                    tags = [] }
+    false, 
+    render xml_decl { r;
+                      buf = Buffer.create 2048;
+                      cost = 0;
+                      view = Box2.empty; 
+                      todo = [];
+                      id = 0; 
+                      prims = Hashtbl.create 241; 
+                      paths = Hashtbl.create 241;
+                      s_alpha = 1.; 
+                      s_blender = `Over; 
+                      s_outline = P.o; }
   in
   Vgr.Private.create_target target
   
