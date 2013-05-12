@@ -1206,9 +1206,7 @@ module Vgr = struct
     let rec writebuf buf j l k r = (* write [l] bytes from [buf] start at [j].*)
       let rem = o_rem r in
       if rem >= l 
-      then (
-        Printf.eprintf "HEY:%d:%d%!\n" j l;
-        Buffer.blit buf j r.o r.o_pos l; r.o_pos <- r.o_pos + l; k r)
+      then (Buffer.blit buf j r.o r.o_pos l; r.o_pos <- r.o_pos + l; k r)
       else begin 
         Buffer.blit buf j r.o r.o_pos rem; r.o_pos <- r.o_pos + rem; 
         flush (writebuf buf (j + rem) (l - rem) k) r

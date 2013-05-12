@@ -6,12 +6,11 @@
 
 open Gg
 open Vg
+;;
 
 (** Test images for path areas. *)
 
-let author = "Daniel C. Bünzli <daniel.buenzl i@erratique.ch>";;
-
-Db.image "path-square-outline" ~author
+Db.image "path-sq-outline" ~author:Db.dbuenzli
   ~title:"Square outline in gray"
   ~tags:["path"; "area" ]
   ~note:"Line width is 0.1 as we are on the surface edge."
@@ -23,7 +22,19 @@ Db.image "path-square-outline" ~author
     I.const (Color.gray 0.3) >> I.cut ~area square 
   end;
 
-Db.image "path-cap-styles" ~author
+Db.image "path-sq-outline-dashed" ~author:Db.dbuenzli 
+  ~title:"Dashed square outline in gray"
+  ~tags:["path"; "area"; "dashes";]
+  ~note:"Line width is 0.1 as we are on the surface edge."  
+  ~size:(Size2.v 50. 50.)
+  ~view:Box2.unit
+  begin fun _ ->
+    let square = P.empty >> P.rect (Box2.v P2.o (P2.v 1. 1.)) in
+    let area = `O { P.o with P.width = 0.2; dashes = Some (0., [0.05]); } in
+    I.const (Color.gray 0.3) >> I.cut ~area square
+  end;
+
+Db.image "path-cap-styles" ~author:Db.dbuenzli
   ~title:"Lines with different cap styles"
   ~tags:["path"; "area" ]
   ~size:(Size2.v 50. 50.)
@@ -41,7 +52,7 @@ Db.image "path-cap-styles" ~author
     (line 3. `Square) >> I.blend (line 7. `Round) >> I.blend (line 11. `Butt)
   end;
 
-Db.image "path-join-styles" ~author
+Db.image "path-join-styles" ~author:Db.dbuenzli
   ~title:"Lines with different join styles" 
   ~tags:["path"; "area" ]
   ~size:(Size2.v 50. 100.)
@@ -62,19 +73,7 @@ Db.image "path-join-styles" ~author
     (path 2. `Bevel) >> I.blend (path 13. `Round) >> I.blend (path 25. `Miter)
   end;
 
-Db.image "path-square-outline-dashed" ~author 
-  ~title:"Dashed square outline in gray"
-  ~tags:["path"; "area"; "dashes";]
-  ~note:"Line width is 0.1 as we are on the surface edge."  
-  ~size:(Size2.v 50. 50.)
-  ~view:Box2.unit
-  begin fun _ ->
-    let square = P.empty >> P.rect (Box2.v P2.o (P2.v 1. 1.)) in
-    let area = `O { P.o with P.width = 0.2; dashes = Some (0., [0.05]); } in
-    I.const (Color.gray 0.3) >> I.cut ~area square
-  end;
-
-Db.image "path-earcs" ~author
+Db.image "path-earcs" ~author:Db.dbuenzli
   ~title:"Elliptical arcs"
   ~tags:["path"]
   ~note:"In red, elliptical arc from left point to right point. Top row \
@@ -110,7 +109,7 @@ Db.image "path-earcs" ~author
     (arc ~large:true  ~cw:true  >> solution r b)
   end;
 
-Db.image "path-cubics" ~author
+Db.image "path-cubics" ~author:Db.dbuenzli
   ~title:"Cubic paths cases" 
   ~tags:["path"]
   ~note:"Geometric cases for cubic curves. Except in the bottom row, only \
@@ -125,15 +124,16 @@ Db.image "path-cubics" ~author
     let blue  = Color.blue     >> I.const in
     let ctrl_pt pt = blue >> I.cut square >> I.move pt in 
     let end_pt pt = dgray >> I.cut square >> I.move pt in 
-    let tangent p = lgray >> I.cut ~area:(`O { P.o with P.width = 0.01 }) p in 
+    let tangent p0 p1 = 
+      let t = P.empty >> P.sub p0 >> P.line p1 in
+      lgray >> I.cut ~area:(`O { P.o with P.width = 0.01 }) t
+    in 
     let cubic ~at p0 c0 c1 p1 =
-      let t0 = P.empty >> P.sub p0 >> P.line c0 in 
-      let t1 = P.empty >> P.sub p1 >> P.line c1 in
       let curve = P.empty >> P.sub p0 >> P.ccurve c0 c1 p1 in 
       mgray >> I.cut ~area:(`O { P.o with P.width = 0.02 }) curve >> 
-      I.blend (tangent t0) >> I.blend (tangent t1) >>
-      I.blend (ctrl_pt c0) >> I.blend (ctrl_pt c1) >> 
-      I.blend (end_pt p0)  >> I.blend (end_pt p1)  >> 
+      I.blend (tangent p0 c0) >> I.blend (tangent p1 c1) >>
+      I.blend (ctrl_pt c0)    >> I.blend (ctrl_pt c1)    >> 
+      I.blend (end_pt p0)     >> I.blend (end_pt p1)     >> 
       I.move at
     in
     let p0 = P2.v 0.0 0.5 in 
@@ -160,10 +160,10 @@ Db.image "path-cubics" ~author
     b20 >> I.blend b21 
   end;
 
-Db.image "path-dashes" ~author
+Db.image "path-dashes" ~author:Db.dbuenzli
   ~title:"Dash patterns"
   ~tags:["path";]
-  ~note:"Miscelleneous dash patterns and offsets. "
+  ~note:"Miscellaneous dash patterns and offsets. "
   ~size:(Size2.v 100. 100.)
   ~view:(Box2.v P2.o (Size2.v 26. 26.))
   begin fun _ -> 
@@ -187,7 +187,7 @@ Db.image "path-dashes" ~author
     I.blend (line 1. (0., [5.; 1.]))
   end;
 
-Db.image "path-cantor-dashes" ~author
+Db.image "path-cantor-dashes" ~author:Db.dbuenzli
   ~title:"Cantor set with dashes" 
   ~tags:["path"; "fractal"]
   ~note:"The Cantor set is drawn with dashes to represent its elements. \
@@ -222,7 +222,7 @@ Db.image "path-cantor-dashes" ~author
     cantor 6 >> I.move (P2.v 0.1 0.15)
   end;
   
-Db.image "path-derived" ~author
+Db.image "path-derived" ~author:Db.dbuenzli
   ~title:"Derived subpath of Vg.P"
   ~tags:["path";]
   ~note:"From inward to outward, ellipse, circle, rectangle, rectangle \ 

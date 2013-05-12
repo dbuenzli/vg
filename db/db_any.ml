@@ -13,10 +13,9 @@ include Gradients
 include Uncut
 include Escapes
 
-include Arrowhead
-include Graph
+include Sarrowhead
 include Rmark
-include Doc_images
+include Doc
 
 
 (*---------------------------------------------------------------------------

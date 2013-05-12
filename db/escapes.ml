@@ -6,22 +6,19 @@
 
 open Gg
 open Vg
+;;
 
 (** Test images for data escapes *)
 
-let author = "Daniel C. Bünzli <daniel.buenzl i@erratique.ch>"
-;;
-
-Db.image "escape-svg" ~author
+Db.image "escape-svg" ~author:Db.dbuenzli
   ~title:"SVG metadata escape </g> & \"bla\""
   ~tags:["escape"; ]
-  ~note:"These </g> markup \"delimiters\" should be & escaped."
+  ~note:"These </g> markup \"delimiters\" should be & escaped. The image 
+         is just a gray square."
   ~size:(Size2.v 50. 50.)
   ~view:Box2.unit
   begin fun _ -> 
-    let square = P.empty >> P.rect (Box2.v P2.o (Size2.v 1. 1.)) in
-    let area = `O { P.o with P.width = 0.2 } in
-    I.const (Color.gray 0.3) >> I.cut ~area square 
+    I.const (Color.gray 0.3) >> I.cut (P.empty >> P.rect Box2.unit)
   end;
 
 

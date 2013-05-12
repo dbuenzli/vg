@@ -6,12 +6,11 @@
 
 open Gg
 open Vg
+;;
 
 (** Images from the documentation. *)
 
-let author = "Daniel C. Bünzli <daniel.buenzl i@erratique.ch>";;
-
-Db.image "doc-gray-square" ~author
+Db.image "doc-gray-square" ~author:Db.dbuenzli
   ~title:"Unit square area in gray"
   ~tags:["doc";]
   ~size:(Size2.v 30. 30.)
@@ -22,8 +21,8 @@ Db.image "doc-gray-square" ~author
     gray >> I.cut (P.empty >> P.rect Box2.unit) (* TODO remove cut *)
   end;
 
-Db.image "doc-gray-circle" ~author
-  ~title:"Gray circle centered in the unit square."
+Db.image "doc-gray-circle" ~author:Db.dbuenzli
+  ~title:"Gray circle centered in the unit square"
   ~tags:["doc";]
   ~size:(Size2.v 30. 30.)
   ~view:Box2.unit
@@ -35,8 +34,8 @@ Db.image "doc-gray-circle" ~author
     gray_circle
   end;
 
-Db.image "doc-circle-outline" ~author
-  ~title:"Black circle outline centered in the unit square."
+Db.image "doc-circle-outline" ~author:Db.dbuenzli
+  ~title:"Black circle outline centered in the unit square"
   ~tags:["doc";]
   ~size:(Size2.v 30. 30.)
   ~view:Box2.unit
@@ -50,9 +49,8 @@ Db.image "doc-circle-outline" ~author
     circle_outline
   end;
 
-
-Db.image "doc-dot" ~author
-  ~title:"Outlined gray circle centered in the unit square."
+Db.image "doc-dot" ~author:Db.dbuenzli
+  ~title:"Outlined gray circle centered in the unit square"
   ~tags:["doc";]
   ~size:(Size2.v 30. 30.)
   ~view:Box2.unit

@@ -127,7 +127,7 @@ let dump dir ftype i = try
   let ppf = Format.formatter_of_out_channel oc in
   try 
     log "Writing %s @?" fn;
-    let dur = duration (I.pp ppf) (i.Db.image i.Db.view) in
+    let dur = duration (fun () -> (I.pp ppf) (i.Db.image i.Db.view)) () in
     log "(%a) [DONE]@." pp_dur dur;
     close_out oc
   with e -> log "[FAIL]@."; close_out oc; raise e
@@ -147,7 +147,7 @@ let pp_image_info ppf i =
   in
   pp ppf "* @[<v>%s%a@,@," i.Db.id pp_tags i.Db.tags; 
   pp ppf "@[%a@]@," pp_text i.Db.title;
-  pp ppf "@[%a@]@," pp_text i.Db.author;
+  pp ppf "@[%a, %s@]@," pp_text (fst i.Db.author) (snd i.Db.author);
   pp_opt_text_field "subj" ppf i.Db.subject; 
   pp_opt_text_field "note" ppf i.Db.note;
   pp ppf "@]"
@@ -157,7 +157,7 @@ let pp_image_info ppf i =
 let main ?(no_pack = false) rname ftype renderer = 
   let usage = Printf.sprintf 
       "Usage: %s [OPTION]... [ID1] [ID2]...\n\
-      \ Renders images of the Vg image database to %s.\n\
+      \ Renders images of the Vg image database to %s files.\n\
       \ Without any selector and ID specified renders all images.\n\
       Options:" exec rname
   in
@@ -179,7 +179,7 @@ let main ?(no_pack = false) rname ftype renderer =
     "-p", Arg.String add_prefix,
     "<prefix> Selects any image whose id matches <prefix>, repeatable";
     "-t", Arg.String add_tag,
-    "<tag> Selects only images tagged by <tag>, repeatable";
+    "<tag> Selects any images tagged by <tag>, repeatable";
     "-ids", Arg.Unit (set_cmd `List_ids),
     " Output the selected image ids on stdout";
     "-tags", Arg.Unit (set_cmd `List_tags), 
@@ -201,8 +201,8 @@ let main ?(no_pack = false) rname ftype renderer =
   in
   Arg.parse (Arg.align options) add_id usage; 
   let imgs = match !ids, !prefixes, !tags with
-  | [], [], [] -> Db.find ~prefixes:[""] () (* all images *)
-  | ids, prefixes, tags -> Db.find ~ids ~prefixes ~tags ()
+  | [], [], [] -> Db.search ~prefixes:[""] () (* all images *)
+  | ids, prefixes, tags -> Db.search ~ids ~prefixes ~tags ()
   in
   match !cmd with 
   | `Image_render -> 
@@ -213,7 +213,7 @@ let main ?(no_pack = false) rname ftype renderer =
       let dur = duration (List.iter (dump !dir ftype)) imgs in
       log "Wrote %d images in %a.@." (List.length imgs) pp_dur dur
   | `Image_info -> 
-      pp Format.std_formatter "@[<v>%a@]@?" (pp_list pp_image_info) imgs 
+      pp Format.std_formatter "@[<v>%a@]@." (pp_list pp_image_info) imgs 
   | `List_ids -> 
       List.iter (fun i -> print_endline i.Db.id) imgs
   | `List_tags ->

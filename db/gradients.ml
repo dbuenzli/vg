@@ -6,13 +6,11 @@
 
 open Gg
 open Vg
+;;
 
 (** Test images for gradients. *)
 
-let author = "Daniel C. Bünzli <daniel.buenzl i@erratique.ch>"
-;;
-
-Db.image "gradient-axial" ~author 
+Db.image "gradient-axial" ~author:Db.dbuenzli
   ~title:"Black to red, red to white, axial gradient"
   ~tags:["gradient"]
   ~size:(Size2.v 60. 20.)
@@ -23,7 +21,7 @@ Db.image "gradient-axial" ~author
     I.cut r (I.axial stops P2.o (P2.v 2. 0.))
   end;
 
-Db.image "gradient-scaling" ~author
+Db.image "gradient-scaling" ~author:Db.dbuenzli
   ~title:"Gradients and scaled ones side-by-side"
   ~tags:["gradient"]
   ~note:"In the right column the gradient on the left is scaled by 
@@ -43,7 +41,7 @@ Db.image "gradient-scaling" ~author
     I.blend (square ~at:(P2.v 0.55 0.0) (scaled radial))
   end;
 
-Db.image "gradient-rgb-squares" ~author
+Db.image "gradient-rgb-squares" ~author:Db.dbuenzli
   ~title:"Shaded red, green and blue squares"
   ~tags:["gradient"]
   ~size:(Size2.v 50. 50.)

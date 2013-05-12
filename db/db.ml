@@ -10,10 +10,11 @@ open Vg;;
 let str = Printf.sprintf 
 let err_id id = str "An image with id `%s' already exists" id
 
+type author = string * string
 type image = 
   { id : string;
     title : string;
-    author : string; 
+    author : author; 
     tags : string list;
     subject : string option; 
     note : string option; 
@@ -32,6 +33,7 @@ let image id ~title ~author ?(tags = []) ?subject ?note ?(meta = Vgm.empty)
         { id; author; title; subject; note; tags; meta; size; view; image; }
 
 let mem id = Hashtbl.mem images id
+let find id = try Some (Hashtbl.find images id) with Not_found -> None
 let prefixed s p =
   let ls = String.length s in 
   let lp = String.length p in 
@@ -40,16 +42,17 @@ let prefixed s p =
     for i = 0 to lp - 1 do if s.[i] <> p.[i] then raise Exit; done;
     true
   with Exit -> false
-    
-let find ?(ids = []) ?(prefixes = []) ?tags () = 
+
+let search ?(ids = []) ?(prefixes = []) ?(tags = []) () = 
   let matches i = 
-    (List.mem i.id ids || List.exists (prefixed i.id) prefixes) ||
-    (match tags with None -> false | Some ts -> 
-     List.for_all (fun t -> List.mem t i.tags) ts)
+    List.mem i.id ids || List.exists (prefixed i.id) prefixes ||
+    List.exists (fun t -> List.mem t tags) i.tags
   in
   let select _ i acc = if matches i then i :: acc else acc in
   let compare i i' = compare i.id i'.id in 
   List.sort compare (Hashtbl.fold select images [])
+
+let all () = search ~prefixes:[""] ()
 
 let indexes () = 
   let add _ i (ids, tags) = 
@@ -64,7 +67,7 @@ let indexes () =
 let render_meta i =
   let m = Vgm.empty in 
   let m = Vgm.add m Vgm.title i.title in
-  let m = Vgm.add m Vgm.authors [i.author] in 
+  let m = Vgm.add m Vgm.authors [fst i.author] in 
   let m = Vgm.add m Vgm.keywords i.tags in 
   let m = match i.subject with None -> m | Some s -> Vgm.add m Vgm.subject s in
   let m = match i.note with None -> m | Some n -> Vgm.add m Vgm.description n in
@@ -80,6 +83,10 @@ let find_loc id locs =
       loop found locs
   in
   loop None locs
+
+(* Authors *)
+
+let dbuenzli = "Daniel Bünzli", "http://erratique.ch"
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

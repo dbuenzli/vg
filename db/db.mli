@@ -8,10 +8,13 @@
 
 (** {1 Images} *)
 
+type author = string * string 
+(** The type for authors. Author name and link. *) 
+
 type image = 
   { id : string;                              (** unique image identifier. *)
     title : string;                                       (** image title. *)
-    author : string;                                     (** image author. *)
+    author : author;                                     (** image author. *)
     tags : string list;                          (** descriptive tag list. *)
     subject : string option;                            (** image subject. *)
     note : string option;                        (** note about the image. *)
@@ -21,23 +24,31 @@ type image =
     image : Gg.box2 -> Vg.image; }    (** image definition, arg is [view]. *) 
 (** The type for database images. *)
 
-val image : string -> title:string -> author:string -> ?tags:string list -> 
+
+val image : string -> title:string -> author:author -> ?tags:string list -> 
   ?subject:string -> ?note:string -> ?meta:Vg.meta -> size:Gg.size2 -> 
   view:Gg.box2 -> (Gg.box2 -> Vg.image) -> unit
 (** [image id authors title subject note tags meta size view fimg]
     adds an image to the database. *)
 
+val all : unit -> image list 
+(** [all ()] is the list of all images in the db lexicographically
+    sorted by id. *)
+
 val mem : string -> bool
 (** [mem id] is [true] if there an image with id [id]. *)
 
-val find : ?ids:string list -> ?prefixes:string list -> ?tags:string list -> 
+val find : string -> image option
+(** [find id] is the image with id [id], if any. *)
+
+val search : ?ids:string list -> ?prefixes:string list -> ?tags:string list -> 
   unit -> image list
-(** [find ids prefixes tags ()] is a list of images lexicographically
+(** [search ids prefixes tags ()] is a list of images lexicographically
     sorted by id that satisfy at least one of these conditions:
     {ul 
     {- The image id is in [ids].}
     {- The image id is prefixed by an element of [prefixes].}
-    {- The image has all the tags in [tags].}} *)
+    {- The image has a tag in [tags].}} *)
 
 val indexes : unit -> string list * string list
 (** [indexes ()] is the lexicographically sorted lists of ids and
@@ -48,8 +59,17 @@ val render_meta : image -> Vg.meta
     added followed by those of [i.meta]. *)
 
 val renderable : image -> Vg.Vgr.renderable
+(** [renderable i] is a renderable for [i]. *)
 
 val find_loc : string -> (string * (string * int)) list -> (string * int) option
+(** [find_loc id locs] looks up in locs the filename and line of of [id]. *)
+
+(** {1 Authors} 
+    
+    Authors used in many files. *)
+
+val dbuenzli : author
+
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

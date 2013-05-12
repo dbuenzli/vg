@@ -26,22 +26,19 @@ at the toplevel of the file:
 
 ```ocaml
 Db.image "a-unique-string-id"                                
-  ~author:"Author <author@example.org>"
+  ~author:("Author name", "uri to author")
   ~title:"Title for the image"
   ~tags:["a"; "list"; "of"; "relevant"; "tags";]
-  ~subject:"Optional subject for the image"
-  ~note:"Optional note for particular things to look for in the result"
-  ~meta:Vgm.(add empty quality `Best)           (* optional render metadata. *)
+  ~note:"Note about the image and things to look for."
   ~size:(Size2.v 200 400)                          (* renderer surface size. *)
-  ~view:(Box2.v P2.o (Size2.v 100 200)              (* image view rectangle. *)
-  begin fun () ->
+  ~view:(Box2.v P2.o (Size2.v 100 200))             (* image view rectangle. *)
+  begin fun view ->                 (* view is the preceding view parameter. *)
    (* Define a value of type Vg.image here *)
     I.void
   end;
 ```
 
-The thunked image value *should* be self-contained. While this may
-imply code redundancy between similar test images, it turns them into
-example code that be simply copy-pasted to play around.
+It's better if the thunked image value is self-contained, so that I
+can be copy-pasted to play around.
 
 

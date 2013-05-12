@@ -7,39 +7,37 @@
 open Gg
 open Vg
 
-(** Sierpiński Arrowhead curve images 
-    http://mathworld.wolfram.com/SierpinskiArrowheadCurve.html *)
 
-let str = Format.sprintf 
 let author = "Daniel C. Bünzli <daniel.buenzl i@erratique.ch>"
-
-let arrowhead_path i len = 
-  let angle = Float.pi /. 3. in
-  let rec loop i len sign turn p = 
-    if i = 0 then p >> P.line ~rel:true V2.(len * polar_unit turn) else
-    p >>
-    loop (i - 1) (len /. 2.) (-. sign) (turn +. sign *. angle) >>
-    loop (i - 1) (len /. 2.) sign turn >> 
-    loop (i - 1) (len /. 2.) (-. sign) (turn -. sign *. angle)
-  in
-  P.empty >> loop i len 1. 0.
+type node = Vg.image * Gg.p2
 ;;
 
-for i = 0 to 8 do 
-  let id = str "arrowhead-%d" i in
-  let title = str "Sierpiński Arrowhead curve level %d" i in
-  let s = (if i = 0 then "" else "s") in
-  let note = str "Curve made of %g segment%s." (3. ** (float i)) s in
-  Db.image id ~author ~title
-    ~tags:["fractal"; "image"]
-    ~size:(Size2.v 60. 52.5)
-    ~view:(Box2.v (P2.v ~-.0.1 ~-.0.1) (Size2.v 1.2 1.05))
-    ~note
+Db.image "graph" ~author 
+  ~title:"Graph drawing with combinators"
+  ~tags:["graph"; "image"; ]
+  ~size:(Size2.v 120. 60.)
+  ~view:(Box2.v P2.o (Size2.v 120. 60.))
     begin fun _ ->
-      let area = `O { P.o with P.width = 0.005 } in
-      I.const (Color.gray 0.2) >> I.cut ~area (arrowhead_path i 1.0) 
-    end
-done
+      let r = Random.State.make [|1557|] in
+      let rpt () = P2.v 
+          (Float.srandom ~min:6. ~len:108. r ()) 
+          (Float.srandom ~min:6. ~len:48.  r ()) 
+      in
+      let rec rpts n acc = if n = 0 then acc else rpts (n-1) (rpt ():: acc) in
+      let ( ++ ) = I.blend in
+      let node_shape = P.empty >> P.circle P2.o 2.0 in
+      let node pt = 
+        let area = `O { P.o with P.width = 0.5 } in
+        let i = 
+          (I.const (Color.gray 0.9) >> I.cut node_shape) ++ 
+          (I.const (Color.gray 0.3) >> I.cut ~area node_shape) >>
+          I.move pt
+        in
+        i, pt
+      in
+      let nodes = List.map node (rpts 1500 []) in 
+      List.fold_left (fun acc n -> I.blend acc (fst n)) I.void nodes
+    end;
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

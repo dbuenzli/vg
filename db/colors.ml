@@ -6,17 +6,16 @@
 
 open Gg
 open Vg
+;;
 
 (** Test image for colors. *)
 
-let author = "Daniel C. Bünzli <daniel.buenzl i@erratique.ch>"
-;;
-
-Db.image "color-rgb-squares" ~author
+Db.image "color-rgb-squares" ~author:Db.dbuenzli
   ~title:"Red green and blue squares"
   ~tags:["color"]
   ~size:(Size2.v 50. 50.) 
   ~view:(Box2.v P2.o (Size2.v 40. 40.))
+  ~note:"Red, green, blue from bottom left counter-clockwise."
   begin fun _ -> 
     let r = P.empty >> P.rect (Box2.v P2.o (Size2.v 20. 20.)) in
     let square ~at c = I.const c >> I.cut r >> I.move at in 
@@ -25,8 +24,7 @@ Db.image "color-rgb-squares" ~author
     I.blend (square ~at:(P2.v 20. 20.) Color.blue)
   end;
 
-
-Db.image "color-grayscale-ramp" ~author
+Db.image "color-grayscale-ramp" ~author:Db.dbuenzli
   ~title:"Grayscale ramp"
   ~tags:["color"]
   ~size:(Size2.v 50. 50.) 

@@ -1,9 +1,5 @@
-
 * rhtmlc
-** PDF and SVG
 ** Bug when reload and tag filter has not the id.
-** Use that to save files, data-uri is limited
-   https://github.com/eligrey/FileSaver.js
 
 * Renderer API
 ** Try to reverse the creation function 
@@ -48,7 +44,8 @@
 
 * SVG
 ** Use dublin core for metadata ? Look into inkscape. 
-** Check color space 
+** Outlines should be output to a <defs><g id="id" /></defs> for reuse. 
+   Or is that impossible ? 
 
 * Samples
 ** Cubic paths.

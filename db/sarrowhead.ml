@@ -6,63 +6,37 @@
 
 open Gg
 open Vg
-;;
 
-(* Images with random marks. *)
+(** Sierpiński Arrowhead curve 
+    http://mathworld.wolfram.com/SierpinskiArrowheadCurve.html *)
 
-let mark_count = 1500
-let note = Printf.sprintf "%d marks." mark_count
-let size = Size2.v 120. 60.
-let view = Box2.v P2.o (Size2.v 120. 60.) 
-let tags = ["random"; "image"] 
-
-let random_marks m =
-  let r = Random.State.make [|1557|] in
-  let rx = Float.srandom ~min:6. ~len:108. r in
-  let ry = Float.srandom ~min:6. ~len:48.  r in
-  let rpt () = V2.v (rx ()) (ry ()) in
-  let rec rpts n acc = if n = 0 then acc else rpts (n-1) (rpt ():: acc) in
-  let mark pt = 
-    let area = `O { P.o with P.width = 0.25 } in
-    (I.const (Color.gray 0.9) >> I.cut m) >> I.blend
-    (I.const (Color.gray 0.3) >> I.cut ~area m) >>
-    I.move pt
+let arrowhead_path i len = 
+  let angle = Float.pi /. 3. in
+  let rec loop i len sign turn p = 
+    if i = 0 then p >> P.line ~rel:true V2.(len * polar_unit turn) else
+    p >>
+    loop (i - 1) (len /. 2.) (-. sign) (turn +. sign *. angle) >>
+    loop (i - 1) (len /. 2.) sign turn >> 
+    loop (i - 1) (len /. 2.) (-. sign) (turn -. sign *. angle)
   in
-  let nodes = List.map mark (rpts mark_count []) in 
-  List.fold_left I.blend I.void nodes
+  P.empty >> loop i len 1. 0.
 ;;
 
-Db.image "rmark-dots" ~author:Db.dbuenzli
-  ~title:"Random dot mark"
-  ~tags ~note ~size ~view
-  begin fun _ -> 
-    random_marks (P.empty >> P.circle P2.o 2.1)
-  end;
-
-Db.image "rmark-ticks" ~author:Db.dbuenzli 
-  ~title:"Random line mark"
-  ~tags ~note ~size ~view
-  begin fun _ -> 
-    random_marks (P.empty >> P.line (P2.v 0.5 1.1))
-  end;
-
-Db.image "rmark-qcurve" ~author:Db.dbuenzli 
-  ~title:"Random quadratic mark"
-  ~tags ~note ~size ~view
-  begin fun _ -> 
-    random_marks 
-      (P.empty >> P.qcurve (P2.v 1.0 1.5) (P2.v 1.0 0.0))
-  end;
-
-Db.image "rmark-ccurve" ~author:Db.dbuenzli 
-  ~title:"Random cubic mark"
-  ~tags ~note ~size ~view
-  begin fun _ -> 
-    random_marks 
-      (P.empty >> P.ccurve (P2.v 0.5 1.0) (P2.v 1.0 1.5) (P2.v 1.0 0.0))
-  end;
-
-
+for i = 0 to 8 do 
+  let id = Printf.sprintf "sarrowhead-%d" i in
+  let title = Printf.sprintf "Sierpiński Arrowhead curve level %d" i in
+  let s = (if i = 0 then "" else "s") in
+  let note = Printf.sprintf "Curve made of %g segment%s." (3. ** (float i)) s in
+  Db.image id ~author:Db.dbuenzli ~title
+    ~tags:["fractal"; "image"]
+    ~size:(Size2.v 60. 52.5)
+    ~view:(Box2.v (P2.v ~-.0.1 ~-.0.1) (Size2.v 1.2 1.05))
+    ~note
+    begin fun _ ->
+      let area = `O { P.o with P.width = 0.005 } in
+      I.const (Color.gray 0.2) >> I.cut ~area (arrowhead_path i 1.0) 
+    end
+done
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
