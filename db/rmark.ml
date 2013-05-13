@@ -14,7 +14,7 @@ let mark_count = 1500
 let note = Printf.sprintf "%d marks." mark_count
 let size = Size2.v 120. 60.
 let view = Box2.v P2.o (Size2.v 120. 60.) 
-let tags = ["random"; "image"] 
+let tags = ["image"] 
 
 let random_marks m =
   let r = Random.State.make [|1557|] in

@@ -226,7 +226,7 @@ Db.image "path-derived" ~author:Db.dbuenzli
   ~title:"Derived subpath of Vg.P"
   ~tags:["path";]
   ~note:"From inward to outward, ellipse, circle, rectangle, rectangle \ 
-          with round corners."
+          with elliptic corners."
   ~size:(Size2.v 50. 50.)
   ~view:(Box2.v P2.o (Size2.v 1. 1.)) 
   begin fun _ -> 

@@ -105,7 +105,7 @@ module Ui = struct
 
   let c_text = Js.string "mu-text"
   let text ?id str = 
-    let p = el ?id Dom_html.createP [c_text] <*> txt str in
+    let p = el ?id Dom_html.createSpan [c_text] <*> txt str in
     let ui = { n = p; on_change = nop } in
     let set str = match Js.Opt.to_option (p ## firstChild) with 
     | Some t -> ignore (p ## replaceChild (((txt str) :> Dom.node Js.t), t))
@@ -310,7 +310,9 @@ module Ui = struct
     ui.n ## innerHTML <- Js.string "";
     ignore (ui.n ## appendChild (svg ## documentElement))
 
-
+  let client_size ui = ui.n ## clientWidth, ui.n ## clientHeight
+  let set_height ui h = ui.n ## style ## height <- Js.string h 
+  let set_width ui w = ui.n ## style ## width <- Js.string w
   let hash () = 
     let h = Js.to_string (window ## location ## hash) in 
     let len = String.length h in 
@@ -410,7 +412,7 @@ module Time = struct
     let r = f v in 
     now () -. start, r
 
-  let delay f s = 
+  let delay s f = 
     let ms = s *. 1000. in 
     ignore (Dom_html.window ## setTimeout (Js.wrap_callback f, ms))
 end

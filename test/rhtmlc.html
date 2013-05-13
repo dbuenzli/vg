@@ -85,14 +85,10 @@
            text-size-adjust: none;
            font-size: 0.75em; 
            line-height: 1.5em;
-           font-size: 12px; 
-           line-height: 18px;
            font-family: 'Open Sans', sans-serif;
            font-weight: 300; 
            min-width: 54em;
-           margin-right: 3em; 
-           margin-left: 3em; 
-           margin-top: 3em; }
+           margin: 3em; }
 
     #r-app h1 { font-weight: 400; }
     
@@ -107,21 +103,23 @@
     
     #r-ui { width: 12em; display:inline-block; vertical-align: top }
     #r-ui div { margin-top: 1.5em }
+    #r-ui div h1 { display: inline }
+
     /* Image ids */
-    #r-ids h1 { display: inline }
-    #r-ids p { display: inline; font-size:0.75em; margin-left: 1ex; 
-               line-height: 0;}
-    #r-ids ul { overflow-y: scroll; height:18em; }
+    #r-ids div > span { display: inline; font-size:0.75em; margin-left: 1ex; 
+                        line-height: 0;}
+    #r-ids ul { overflow-y: scroll; height:15em; }
     #r-ids ul li { display: block; }
     
     /* Tags */
-    #r-tags h1 { display: inline; }
-    #r-tags p { display: inline; font-size:0.75em; margin-left: 1ex; 
-                line-height:0; }
-    #r-tags ul { overflow-y:scroll; height: 9em }
+    #r-tags div > span { display: inline; font-size:0.75em; margin-left: 1ex; 
+                         line-height:0; }
+    #r-tags ul { overflow-y:scroll; max-height: 9em }
     #r-tags ul li { display: inline-block; width:50%; }
 
     /* Renderers */
+    #r-rendering { margin-left: 1ex; font-weight:400}
+    .r-activity:after { content:"..." }
     #r-rends li { display: inline-block;}
 
     /* Render settings */
@@ -132,35 +130,30 @@
  
     #r-image { margin-left: 3em; margin-top: 1.5em;
                display: inline-block; vertical-align: top;}
-    
-    #r-targets a { vertical-align: top; display: inline-block; 
-    }
-    #r-targets .mu-invisible-relayout { display: none }
-
-    #r-targets #r-txt 
-    { font-family: "Inconsolata", monospace;
-      white-space: pre; }
-    #r-targets canvas,
-    #r-targets svg
-    { background: transparent;
-      border-color: rgb(50,50,50); 
-      border-style: solid;
-      border-width: 1px; }
-    
-    #r-targets.white canvas,
-    #r-targets.white svg
-    { background: white; } 
-    
+             
     #r-targets a:hover { text-decoration: none; vertical-align: top; }
-    #r-targets a:after { content:"" }
+    #r-targets a:after { content:"" }    
+    #r-targets a { vertical-align: top; display: inline-block; 
+                   background: transparent;
+                   border-color: rgb(50,50,50); 
+                   border-style: solid;
+                   border-width: 1px; }
+
+    #r-targets.white a { background: white; } 
+    #r-targets .mu-invisible-relayout { display: none }
+    #r-targets canvas, 
+    #r-targets svg { display:block; border:none; }
+    #r-targets #r-txt { font-family: "Inconsolata", monospace;
+                        white-space: pre; }
    
     #r-info { margin-top:1.5em }
     #r-author { padding-left: 1.5ex; font-size: 0.75em; font-weight: 300;
                 line-height: 0; }
     #r-note { max-width: 70ex; font-size: 0.75em; font-weight: 300; 
-              line-height:2em; }
-    #r-time { margin-top: 2em; font-size: 0.75em; font-weight: 300; 
-              line-height:2em; }
+              line-height:2em; display:block; }
+    #r-stats { margin-top: 2em; font-size: 0.75em; font-weight: 300; 
+               line-height:2em; display:block; }
+    #r-time { border-bottom: 1px solid #900 }
     #r-log { line-height:2em; font-size: 0.75em; font-weight: 300;
              margin-left:0; }
     #r-log * { background: transparent; color: gray; margin:0em; 

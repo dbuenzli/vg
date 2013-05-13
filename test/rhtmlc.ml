@@ -15,7 +15,6 @@ include Db_htmlc
 let str = Format.sprintf
 let pp = Format.fprintf
 let pp_str = Format.pp_print_string 
-let pp_dur ppf dur = pp ppf "%dms" (Float.int_of_round (dur *. 1000.))
 let pp_renderer ppf = function 
 | `CNV -> pp ppf "CNV" 
 | `SVG -> pp ppf "SVG" 
@@ -45,13 +44,13 @@ module S = struct
   type t = 
     { id : string;                                     (* selected image id. *)
       tags : string list;                                  (* selected tags. *)
-      renderer : [ `CNV | `SVG | `PDF | `TXT ];
+      renderer : [ `CNV | `SVG | `PDF | `TXT ];        (* selected renderer. *)
       white_bg : bool;                                  (* white background. *)
       resolution : float; }                            (* render resolution. *)
 
   let state : t Store.key = Store.key () 
   let default = 
-    { id = "arrowhead-5";
+    { id = "rmark-ticks";
       tags = [];
       renderer = `CNV;
       white_bg = true; 
@@ -95,55 +94,174 @@ let render ?limit ?warn ?(meta = Vgm.empty) target dst i finish =
       | `Ok -> finish (Time.now () -. start) steps 
       in
       flush steps `End
-  | `Partial -> Time.delay (fun () -> ignore (loop (steps + 1) `Await)) 0. 
+  | `Partial -> Time.delay 0. (fun () -> ignore (loop (steps + 1) `Await))
   in
   loop 1 (`Image (Db.renderable i))
 
 (* User interface *)
 
-let ui () = 
-  let s = S.get () in
-  let db_ids, db_tags = Db.indexes () in
-  let white, set_white = Ui.bool s.S.white_bg in
-  let res, conf_res = Ui.menu ~id:"r-res" pp_res s.S.resolution res_ppcm in
-  let ids, conf_ids = Ui.select 
-      ~title:"Select an image to render" 
-      pp_str (Some s.S.id) db_ids 
+(* Does this have to be so ugly ? *)
+
+let ui_activity () : 'a Ui.t * (bool -> unit) = 
+  let active, set_active = Ui.text ~id:"r-rendering" "" in 
+  let started = ref false in
+  let state = ref false in
+  let rec animate () = 
+    let toggle () = Ui.classify active "r-activity" !state; in
+    if not !started 
+    then (state := false; toggle ())
+    else (state := not !state; toggle (); Time.delay 0.4 animate)
   in
-  let id_count, set_id_count = Ui.text ~id:"id-count" "" in
-  let tags, set_tags = Ui.mselect 
-      ~title:"Filter images matching selected tags"
-      pp_str s.S.tags db_tags in 
-  let tag_count, set_tag_count = Ui.text ~id:"tag-count" "" in
-  let title, title_conf = Ui.link ~id:"r-title"
-      ~title:"See the image's source code" ~href:"#" ""
+  let activate start = 
+    if (!started == start) then () else 
+    (started := start; if (!started) then animate ())
   in
-  let author, author_conf = Ui.link ~id:"r-author" 
-      ~title:"See the author's website" ~href:"#" "" 
+  active, activate 
+  
+let ui_render_stats () : 'a Ui.t * (float -> int -> unit) = 
+  let g = Ui.group ~id:"r-stats" () in 
+  let time, set_time = Ui.text ~id:"r-time" "" in
+  let steps, set_steps = Ui.text ~id:"r-steps" "" in
+  let set_stats dur steps =
+    let dur = str "%dms" (Float.int_of_round (dur *. 1000.)) in
+    let steps = if steps = 1 then "" else str " and %d steps" steps in 
+    set_time dur; set_steps steps
+  in
+  g *> (fst (Ui.text "Rendered in ")) *> time *> steps *> (fst (Ui.text ".")), 
+  set_stats
+
+let ui_image_info () : 'a Ui.t * (S.t -> unit) = 
+  let g = Ui.group ~id:"r-image-info" () in
+  let title, title_conf =
+    Ui.link ~id:"r-title" ~title:"See the image's source code" ~href:"#" ""
+  in
+  let author, author_conf = 
+    Ui.link ~id:"r-author" ~title:"See the author's website" ~href:"#" "" 
   in
   let note, set_note = Ui.text ~id:"r-note" "" in
+  let set_image_info s =
+    let i = S.image s in
+    let src_url = match Db.find_loc i.Db.id Db_locs.values with
+    | None -> "" | Some (fn, loc) -> str src_link fn loc
+    in
+    title_conf (`Text i.Db.title);
+    title_conf (`Href src_url);
+    author_conf (`Text (fst i.Db.author));
+    author_conf (`Href (snd i.Db.author));
+    begin match i.Db.note with
+    | None ->  Ui.visible ~relayout:true note false
+    | Some n -> set_note n; Ui.visible note true
+    end;
+  in
+  g *> (Ui.group () *> title *> author) *> note, 
+  set_image_info
+
+let ui_log ppf : 'a Ui.t * ('b -> unit) * (unit -> unit) =
+  let log, conf_log = Ui.select ppf None ~id:"r-log" [] in 
+  let warns = ref [] in
+  let add_log w = warns := w :: !warns; conf_log (`List !warns) in
+  let clear_log () = warns := []; conf_log (`List []) in
+  log, add_log, clear_log
+
+let ui_render_targets () = 
   let targets = Ui.group ~id:"r-targets" () in
-  let t_cnv, canvas = Ui.canvas ~id:"r-canvas" () in
-  let t_txt = Ui.group ~id:"r-txt" () in 
-  let t_cnv_link, conf_t_cnv_link = Ui.link 
-      ~id:"cnv-link" ~title:"Download PNG file"~href:"#" "" 
+  let activity, activate = ui_activity () in 
+  let cnv, canvas = Ui.canvas ~id:"r-canvas" () in
+  let txt = Ui.group ~id:"r-txt" () in 
+  let cnv_link, conf_cnv_link = 
+    Ui.link ~id:"cnv-link" ~title:"Download PNG file" ~href:"#" "" 
   in
-  let t_svg_link, conf_t_svg_link = Ui.link 
-      ~id:"svg-link" ~title:"Download SVG file"~href:"#" "" 
+  let svg_link, conf_svg_link = 
+    Ui.link ~id:"svg-link" ~title:"Download SVG file" ~href:"#" "" 
   in
-  let rends, conf_rends = Ui.select 
-      ~id:"r-rends" ~title:"Select the image renderer"
-      pp_renderer (Some s.S.renderer) renderers 
-  in 
-  let t_uis = [`CNV, t_cnv_link; `SVG, t_svg_link; `TXT, t_txt ] in
-  let time, set_time = Ui.text ~id:"r-time" "" in
-  let log, conf_log = Ui.select Vgr.pp_warning None ~id:"r-log" [] in 
-  let warn, clear_log = 
-    let warns = ref [] in
-    (fun w -> warns := w :: !warns; conf_log (`List !warns)), 
-    (fun () -> warns := []; conf_log (`List []))
+  let uis = [`CNV, cnv_link; `SVG, svg_link; `TXT, txt ] in
+  let show_target i t = 
+    let set (t', ui) = Ui.visible ~relayout:true ui (t = t') in
+    List.iter set uis;
+    let height = match t with  (* adjust height to baseline *)
+    | `CNV | `SVG -> 
+        let baseline = 18 (* from the style sheet..., getting dynamically
+                             problem at init time. If you delay, flickers. *) 
+        in
+        let height = (Size2.h i.Db.size) /. 0.2646 in 
+        let adjust = Float.int_of_round (height /. (float baseline)) in
+        str "%dpx" (adjust * baseline)
+    | _ -> "auto" 
+    in
+    Ui.set_height targets height;        
   in
-  let set_white_bg s = Ui.classify targets "white" s.S.white_bg in
+  let render s ~warn ~start ~finish =
+    let valid s = 
+      let current = S.get () in 
+      S.image s == S.image current && s.S.renderer = current.S.renderer 
+    in
+    let i = S.image s in
+    start ();
+    activate true;
+    match s.S.renderer with 
+    | `CNV -> 
+        let finish dur steps =
+          if not (valid s) then () (* user moved on *) else
+          let url = Ui.canvas_data canvas in 
+          conf_cnv_link (`Href url);
+          conf_cnv_link (`Download (str "%s.png" i.Db.id));
+          activate false;
+          finish dur steps; 
+          show_target i `CNV;
+        in
+        let res = s.S.resolution in 
+        let meta = Vgm.add Vgm.empty Vgm.resolution (V2.v res res) in
+        render ~warn ~meta (Vgr_htmlc.target canvas) `Other i finish
+    | `SVG -> 
+        let b = Buffer.create 2048 in
+        let finish dur steps = 
+          if not (valid s) then () (* user moved on *) else
+          let svg = Buffer.contents b in
+          let u = "data:image/svg+xml," ^ 
+                    (Ui.escape_binary (Buffer.contents b))          
+          in
+          conf_svg_link (`Href u);
+          conf_svg_link (`Download (str "%s.svg" i.Db.id));
+          Ui.set_svg_child svg_link svg;
+          activate false;
+          finish dur steps; 
+          show_target i `SVG
+        in
+        let t = Vgr_svg.target ~xml_decl:true () in
+        render ~limit:20 ~warn t (`Buffer b) i finish;
+    | `TXT -> 
+        let b = Buffer.create 2048 in
+        let ppf = Format.formatter_of_buffer b in
+        let _, _, img = Db.renderable i in
+        let start = Time.now () in
+        activate true;
+        Time.delay 0. begin fun () -> 
+          if not (valid s) then () else
+          begin 
+            pp ppf "%a" I.pp img;
+            let dur = Time.now () -. start in 
+            Ui.set_txt_child txt (Buffer.contents b);
+            activate false;
+            finish dur 0;
+            show_target i `TXT
+          end
+        end
+    | `PDF -> assert false
+  in
+  List.iter (fun (_, ui) -> Ui.visible ~relayout:true ui false) uis;
+  (targets *> (cnv_link *> cnv) *> svg_link *> txt), render, activity
+
+let ui_ids s = 
+  let db_ids, db_tags = Db.indexes () in
+  let ids, conf_ids = 
+    Ui.select ~title:"Select an image to render" pp_str (Some s.S.id) db_ids 
+  in
+  let tags, set_tags = 
+    Ui.mselect ~title:"Filter images matching selected tags"
+      pp_str s.S.tags db_tags 
+  in
+  let id_count, set_id_count = Ui.text ~id:"id-count" "" in 
+  let tag_count, set_tag_count = Ui.text ~id:"tag-count" "" in
   let set_tags s = 
     let ids = S.ids s in
     let ts = s.S.tags in
@@ -154,87 +272,39 @@ let ui () =
     set_id_count id_count;
     conf_ids (`List ids); conf_ids (`Select sel)
   in
-  let set_author (a, url) = 
-    author_conf (`Text a);
-    author_conf (`Href url); 
+  let ids_group = 
+    Ui.group ~id:"r-ids" () *>
+      (Ui.group () *> Ui.label "Images" *> id_count) *> ids
   in
-  let set_title i = 
-    let url = match Db.find_loc i.Db.id Db_locs.values with
-    | None -> "" | Some (fn, loc) -> str src_link fn loc
-    in
-    title_conf (`Text i.Db.title);
-    title_conf (`Href url)
+  let tags_group = 
+    Ui.group ~id:"r-tags" () *> 
+      (Ui.group () *> Ui.label "Tag filter" *> tag_count) *> tags
   in
-  let set_image_meta s = 
-    let i = S.image s in
-    set_title i; 
-    set_author i.Db.author;
-    begin match i.Db.note with 
-    | None ->  Ui.visible ~relayout:true note false
-    | Some n -> set_note n; Ui.visible note true
-    end;
-  in
-  let show_target t = 
-    let set (t', ui) = Ui.visible ~relayout:true ui (t = t') in
-    List.iter set t_uis
-  in
-  let render s =
-    let i = S.image s in
-    clear_log ();
-    match s.S.renderer with 
-    | `CNV -> 
-        let set_stats dur steps =
-          let steps = if steps = 1 then "." else str " and %d steps." steps in 
-          let dur = Float.int_of_round (dur *. 1000.) in
-          set_time (str "Rendered in %dms%s" dur steps); 
-          let durl = Ui.canvas_data canvas in 
-          conf_t_cnv_link (`Href durl);
-          conf_t_cnv_link (`Download (str "%s.png" i.Db.id));
-          show_target `CNV;
-        in
-        let res = s.S.resolution in 
-        let meta = Vgm.add Vgm.empty Vgm.resolution (V2.v res res) in
-        render ~warn ~meta (Vgr_htmlc.target canvas) `Other i set_stats
-    | `SVG -> 
-        let b = Buffer.create 2048 in
-        let finish dur steps = 
-          let svg = Buffer.contents b in
-          let steps = if steps = 1 then "." else str " and %d steps." steps in 
-          let dur = Float.int_of_round (dur *. 1000.) in
-          set_time (str "Rendered in %dms%s" dur steps); 
-          let u = "data:image/svg+xml," ^ 
-                    (Ui.escape_binary (Buffer.contents b))          
-          in
-          conf_t_svg_link (`Href u);
-          conf_t_svg_link (`Download (str "%s.svg" i.Db.id));
-          Ui.set_svg_child t_svg_link svg;
-          show_target `SVG;
-        in
-        let t = Vgr_svg.target ~xml_decl:true () in
-        render ~limit:20 ~warn t (`Buffer b) i finish;
-    | `TXT -> 
-        let b = Buffer.create 2048 in 
-        let ppf = Format.formatter_of_buffer b in
-        let _, _, i = Db.renderable i in
-        let start = Time.now () in
-        pp ppf "%a" I.pp i;
-        let dur = Time.now () -. start in 
-        let dur = Float.int_of_round (dur *. 1000.) in
-        set_time (str "Rendered in %dms" dur); 
-        Ui.set_txt_child t_txt (Buffer.contents b);
-        show_target `TXT;
-          
-    | `PDF -> assert false
-  in
+  ids, ids_group, tags, tags_group, set_tags
+
+let ui () = 
+  let s = S.get () in
+  let ids, ids_group, tags, tags_group, set_tags = ui_ids s in
+  let rends, _ = 
+    Ui.select ~id:"r-rends" ~title:"Select the image renderer"
+      pp_renderer (Some s.S.renderer) renderers 
+  in 
+  let white, _ = Ui.bool s.S.white_bg in
+  let res, _ = Ui.menu ~id:"r-res" pp_res s.S.resolution res_ppcm in
+  let targets, render, activity = ui_render_targets () in
+  let image_info, set_image_info = ui_image_info () in
+  let stats, set_stats = ui_render_stats () in
+  let log, add_log, clear_log = ui_log Vgr.pp_warning in 
+  let set_white_bg s = Ui.classify targets "white" s.S.white_bg in
   let update ~force o n = 
     let f = force in
     let redraw = ref false in
-    if f || o.S.id <> n.S.id then (set_image_meta n; redraw := true); 
+    if f || o.S.id <> n.S.id then (set_image_info n; redraw := true); 
     if f || o.S.tags <> n.S.tags then set_tags n;
     if f || o.S.renderer <> n.S.renderer then redraw := true;
     if f || o.S.white_bg <> n.S.white_bg then set_white_bg n;
     if f || o.S.resolution <> n.S.resolution then redraw := true; 
-    if !redraw then render n;
+    if !redraw then render ~warn:add_log ~start:clear_log ~finish:set_stats n;
     Ui.set_hash (S.to_hash n);
   in
   let on_change ui f = 
@@ -271,19 +341,17 @@ let ui () =
     hash_change ~force:true (Ui.hash ())
   in
   let layout () = 
-    let header = 
+    let header =
       Ui.group () ~id:"r-header" *>
         Ui.label "Vg Image database" *>
         (fst (Ui.text ~id:"r-version" "v0.0.0")) (* TODO %%VERSION%% *)
     in
     let ui = 
       Ui.group ~id:"r-ui" () *> 
-        (Ui.group ~id:"r-ids" () *>
-           (Ui.group () *> Ui.label "Images" *> id_count) *> ids) *>
-        (Ui.group ~id:"r-tags" () *> 
-           (Ui.group () *> Ui.label "Tag filter" *> tag_count) *> tags) *>
+        ids_group *> 
+        tags_group *>
         (Ui.group ~id:"r-rs" () *> 
-           Ui.label "Renderer" *> rends) *>                      
+           (Ui.group () *> Ui.label "Renderer" *> activity) *> rends) *>
         (Ui.group ~id:"r-set" () *>
            Ui.label "Settings" *>
            (Ui.label 
@@ -294,15 +362,8 @@ let ui () =
               ~ctrl:true "Resolution" *> res))
     in
     let image = 
-      Ui.group ~id:"r-image" () *>
-        (targets *>
-           (t_cnv_link *> t_cnv) *>
-           (t_svg_link) *>
-           (t_txt))
-      *>
-        (Ui.group ~id:"r-info" () *> 
-           (Ui.group () *> title *> author) *> note) *>           
-        time *> log
+      Ui.group ~id:"r-image" () *> targets *>
+        (Ui.group ~id:"r-info" () *> image_info *> stats *> log)
     in
     Ui.group ~id:"r-app" () *> header *> ui *> image 
   in

@@ -69,6 +69,9 @@ module Ui : sig
   val set_raw_child : 'a t -> string -> unit
   val set_svg_child : 'a t -> string -> unit 
   val set_txt_child : 'a t -> string -> unit
+  val client_size : 'a t -> int * int 
+  val set_height : 'a t -> string -> unit 
+  val set_width : 'a t -> string -> unit
 
   val hash : unit -> string
   val set_hash : string -> unit
@@ -157,8 +160,8 @@ module Time : sig
   (** [duration f v] is [(t, f v)] with [t] the time taken by the call in 
       seconds. *)
 
-  val delay : (unit -> unit) -> float -> unit
-  (** [delay f s] executes [f] in [s] seconds. *)
+  val delay : float -> (unit -> unit) -> unit
+  (** [delay s f] executes [f] in [s] seconds. *)
 end
 
 (** Logging functions. *)
