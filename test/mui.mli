@@ -11,38 +11,6 @@
     Open the module to use it. It defines only modules in your scope
     and a single composition value. *)
 
-(**/**)
-module D : sig  
-  (** {1 Constants} *)
-
-  val window : Dom_html.window Js.t
-  val document : Dom_html.document Js.t 
-
-  (** {1 DOM nodes} *)
-
-  val el : ?id:string -> string -> Dom_html.element Js.t
-  (** [el n] is an element [m]. *)
-
-  val txt : string -> Dom.text Js.t
-  (** [txt s] is [s] as a text node. *)
-
-  val canvas : ?id:string -> unit -> Dom_html.canvasElement Js.t
-
-  (** {1 Events } *)
-end
-
-module Ev : sig
-  val make : string -> 'a Dom.Event.typ 
-  val load : Dom_html.event Js.t Dom.Event.typ
-  include module type of Dom_html.Event
-    
-  val cb : (< .. > as 'a) Js.t -> ('c #Dom.event as 'b) Js.t Dom.Event.typ -> 
-    ('a Js.t -> 'b Js.t -> bool) -> unit
-    (** [cb n e f] invokes [f n event] whenever event [e] occurs. If [f]
-          returns [false] prevents the default action. *)
-end
-
-(**/**)
 
 (** {1 UI elements} *)
 
@@ -70,19 +38,22 @@ module Ui : sig
   (** {1 UI elements} *)
 
   val group : ?id:string -> unit -> unit t
-  val label : ?id:string -> ?ctrl:bool -> string -> string t
-  val label_mut : ?id:string -> ?ctrl:bool -> string -> (string, string) conf
+  val label : ?id:string -> ?title:string -> ?ctrl:bool -> string -> string t
+  val label_mut : ?id:string -> ?title:string -> ?ctrl:bool -> string -> 
+    (string, string) conf
   val text : ?id:string -> string -> (string, string) conf
   val bool : ?id:string -> bool -> (bool, bool) conf
 
-  type link_conf = [ `Text of string | `Href of string ]
-  val link : ?id:string -> href:string -> string -> (unit, link_conf) conf
+  type link_conf = [ `Text of string | `Href of string | `Download of string ]
+  val link : ?id:string -> ?title:string -> 
+    href:string -> string -> (unit, link_conf) conf
 
   type 'a select_conf = [ `Select of 'a option | `List of 'a list ]
-  val select : ?id:string -> 'a printer -> 'a option -> 'a list -> 
-    ('a option, 'a select_conf) conf
+  val select : ?id:string -> ?title:string -> 'a printer -> 'a option -> 
+    'a list -> ('a option, 'a select_conf) conf
 
-  val mselect : ?id:string -> 'a printer -> 'a list -> 'a list -> 
+  val mselect : ?id:string -> ?title:string -> 'a printer -> 'a list -> 
+    'a list -> 
     ('a list, 'a list) conf
 
   val canvas : ?id:string -> unit -> unit t * Dom_html.canvasElement Js.t
@@ -95,6 +66,9 @@ module Ui : sig
 
   val classify : 'a t -> string -> bool -> unit
   val visible : ?relayout:bool -> 'a t -> bool -> unit
+  val set_raw_child : 'a t -> string -> unit
+  val set_svg_child : 'a t -> string -> unit 
+  val set_txt_child : 'a t -> string -> unit
 
   val hash : unit -> string
   val set_hash : string -> unit
@@ -102,8 +76,6 @@ module Ui : sig
 
   val escape_binary : string -> string 
   (** [escape data] escapes the binary data [data]. *)
-
-(*  val save_as : File.blob Js.t -> Js.js_string Js.t -> unit *)
 end
 
 val ( *> ) : 'a Ui.t -> 'b Ui.t -> 'a Ui.t

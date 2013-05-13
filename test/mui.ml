@@ -18,28 +18,6 @@ module Log = struct
     Format.kfprintf flush Format.str_formatter fmt
 end
 
-module D = struct    
-  
-  (* Constants *)
-  
-  let window = Dom_html.window
-  let document = Dom_html.document
-
-  (* DOM nodes *)
-
-  let el ?id n = 
-    let e = document ## createElement (Js.string n) in 
-    (match id with None -> () | Some id -> e ## id <- Js.string id); 
-    e
-
-  let txt s = document ## createTextNode (Js.string s) 
-  let canvas ?id _ = 
-    let e : Dom_html.canvasElement Js.t = Js.Unsafe.coerce (el ?id "canvas") in 
-    let err = "Sorry, the HTML canvas is unsupported by this browser." in
-    Dom.appendChild e (txt err);
-    e
-end
-
 (* Events *)      
 
 module Ev = struct
@@ -56,14 +34,30 @@ module Ui = struct
 
   (* Dom constructors. *)
 
+  let window = Dom_html.window
+  let document = Dom_html.document
+
   let (<*>) p c = Dom.appendChild p c; p
-  let txt s = D.document ## createTextNode (Js.string s) 
-  let el ?id f cs = 
-    let e = f D.document in
+  let txt s = document ## createTextNode (Js.string s) 
+
+  let a_title = Js.string "title"
+  let el ?id ?title f cs = 
+    let e = f document in
     List.iter (fun c -> e ## classList ## add (c)) cs; 
-    match id with 
-    | None -> e 
-    | Some id -> e ## id <- Js.string id; e
+    begin match id with 
+    | None -> () | Some id -> e ## id <- Js.string id
+    end;
+    begin match title with 
+    | None -> () | Some t -> e ## setAttribute (a_title, Js.string t)
+    end;
+    e
+
+  let canvas ?id _ = 
+    let canvas d = d ## createElement (Js.string "canvas") in
+    let e : Dom_html.canvasElement Js.t = Js.Unsafe.coerce (el ?id canvas [])in 
+    let err = "Sorry, the HTML canvas is unsupported by this browser." in
+    Dom.appendChild e (document ## createTextNode (Js.string err));
+    e
 
   let rec rem_childs e = match Js.Opt.to_option (e ## firstChild) with
   | None -> () | Some c -> e ## removeChild (c); rem_childs e
@@ -90,10 +84,10 @@ module Ui = struct
     
   let c_label_text = Js.string "mu-label-text"
   let c_label = Js.string "mu-label" 
-  let label_mut ?id ?(ctrl = false) str =
+  let label_mut ?id ?title ?(ctrl = false) str =
     if ctrl then 
       let s = el Dom_html.createSpan [c_label_text] <*> txt str in
-      let l = el ?id Dom_html.createLabel [c_label] <*> s in
+      let l = el ?id ?title Dom_html.createLabel [c_label] <*> s in
       let ui = { n = (l :> Dom_html.element Js.t); on_change = nop } in
       let set _ = failwith "TODO" in 
       let cb _ _ = Log.msg "TODO"; false in 
@@ -107,7 +101,7 @@ module Ui = struct
       Ev.cb l Ev.change cb;
       ui, set
 
-  let label ?id ?ctrl str = fst (label_mut ?id ?ctrl str)
+  let label ?id ?title ?ctrl str = fst (label_mut ?id ?title ?ctrl str)
 
   let c_text = Js.string "mu-text"
   let text ?id str = 
@@ -135,13 +129,17 @@ module Ui = struct
     (e ## setAttribute(Js.string "tabindex", Js.string "0")); e
 
   let c_link = Js.string "mu-link"
-  type link_conf = [ `Text of string | `Href of string ]
-  let link ?id ~href text = 
-    let a = el ?id Dom_html.createA [c_link; c_text] <*> txt text in 
+  let a_download = Js.string "download"
+  type link_conf = [ `Text of string | `Href of string | `Download of string ]
+  let link ?id ?title ~href text = 
+    let a = el ?id ?title Dom_html.createA [c_link; c_text] <*> txt text in 
     let ui = { n = (a :> Dom_html.element Js.t); on_change = nop } in 
     let conf = function 
     | `Href h -> a ## href <- Js.string h 
     | `Text text -> rem_childs a; ignore (a <*> txt text)
+    | `Download d -> 
+        if d = "" then a ## removeAttribute (a_download) else 
+        a ## setAttribute (a_download, Js.string d)
     in
     let cb _ _ = ui.on_change (); true in
     a ## href <- Js.string href;
@@ -151,8 +149,8 @@ module Ui = struct
   type 'a select_conf = [ `Select of 'a option | `List of 'a list ]
   let c_select = Js.string "mu-select"
   let c_selected = Js.string "mu-selected"
-  let select ?id pp s l = 
-    let ul = make_focusable (el ?id Dom_html.createUl [c_select]) in 
+  let select ?id ?title pp s l = 
+    let ul = make_focusable (el ?id ?title Dom_html.createUl [c_select]) in 
     let ui = { n = ul; on_change = nop } in
     let selected = ref None in
     let els = ref [||] in
@@ -185,7 +183,7 @@ module Ui = struct
         let max = Array.length !els - 1 in
         let i = if i < 0 then 0 else (if i > max then max else i) in
         begin match !selected with
-        | Some j when i = j -> () 
+        | Some j when i = j -> ()
         | _ -> 
             deselect (); selected := Some i; select ();
             ui.on_change (Some !els_v.(i))
@@ -212,11 +210,11 @@ module Ui = struct
         els := Array.mapi li !els_v
     in
     let on_keydown _ e = match (e ## keyCode) with 
-    | 38 (* Up *) -> begin match !selected with 
+    | 38 (* Up *) | 37 (* Left *) -> begin match !selected with 
       | None -> set_selected (Some 0); false
       | Some i -> set_selected (Some (i - 1)); false
       end
-    | 40 (* Down *) -> begin match !selected with 
+    | 40 (* Down *) | 39 (* Right *) -> begin match !selected with 
       | None -> set_selected (Some 0); false
       | Some i -> set_selected (Some (i + 1)); false
       end      
@@ -228,8 +226,8 @@ module Ui = struct
 
 
   let c_mselect = Js.string "mu-mselect" 
-  let mselect ?id pp sels l = 
-    let ul = el ?id Dom_html.createUl [c_select; c_mselect] in 
+  let mselect ?id ?title pp sels l = 
+    let ul = el ?id ?title Dom_html.createUl [c_select; c_mselect] in 
     let ui = { n = ul; on_change = nop } in
     let selected = ref [] in
     let li v = 
@@ -281,7 +279,7 @@ module Ui = struct
   let c_canvas = Js.string "mu-canvas" 
   let canvas_data c = Js.to_string (c ## toDataURL ())
   let canvas ?id () =  (* TODO don't use createCanvas because of exn. *)
-    let c = el ?id D.canvas [c_canvas] in 
+    let c = el ?id canvas [c_canvas] in 
     let ui = { n = (c :> Dom_html.element Js.t); on_change = nop } in 
     ui, c
 
@@ -301,27 +299,39 @@ module Ui = struct
       classify_js ui c_invisible true 
     end
 
+  let set_raw_child ui raw = ui.n ## innerHTML <- Js.string raw 
+  let set_txt_child ui str = 
+    ui.n ## innerHTML <- Js.string "";
+    ignore (ui.n <*> (txt str))
+
+  let set_svg_child ui svg = 
+    let p = jsnew (Js.Unsafe.variable "DOMParser") () in 
+    let svg = p ## parseFromString(Js.string svg, Js.string "image/svg+xml") in
+    ui.n ## innerHTML <- Js.string "";
+    ignore (ui.n ## appendChild (svg ## documentElement))
+
+
   let hash () = 
-    let h = Js.to_string (D.window ## location ## hash) in 
+    let h = Js.to_string (window ## location ## hash) in 
     let len = String.length h in 
     if len > 0 && h.[0] = '#' then String.sub h 1 (len - 1) else 
     h
 
   let set_hash h = 
     let h = if h <> "" then "#" ^ h else h in
-    D.window ## location ## hash <- Js.string h
+    window ## location ## hash <- Js.string h
 
   let on_hash_change cb = 
     let on_change _ _ = cb (hash ()); false in
-    Ev.cb D.window Ev.hashchange on_change
+    Ev.cb window Ev.hashchange on_change
 
   let escape_binary d = Js.to_string (Js.escape (Js.bytestring d))
-      
+    
   let ( *> ) p c = Dom.appendChild p.n c.n; p
-  let show ui = ignore (D.document ## body <*> ui.n)
+  let show ui = ignore (document ## body <*> ui.n)
   let main m = 
     let main _ _ = m (); false in
-    Ev.cb D.window Ev.load main
+    Ev.cb window Ev.load main
 end
 
 let ( *> ) = Ui.( *> )
@@ -330,10 +340,10 @@ let ( *> ) = Ui.( *> )
 
 module Store = struct
   type scope = [ `Session | `Persist ]
-               
+
   let scope_store = function
-  | `Session -> Js.Optdef.to_option (D.window ## sessionStorage)
-  | `Persist -> Js.Optdef.to_option (D.window ## localStorage) 
+  | `Session -> Js.Optdef.to_option (Dom_html.window ## sessionStorage)
+  | `Persist -> Js.Optdef.to_option (Dom_html.window ## localStorage) 
 
   let support scope = scope_store scope <> None
 
@@ -402,7 +412,7 @@ module Time = struct
 
   let delay f s = 
     let ms = s *. 1000. in 
-    ignore (D.window ## setTimeout (Js.wrap_callback f, ms))
+    ignore (Dom_html.window ## setTimeout (Js.wrap_callback f, ms))
 end
 
 (*---------------------------------------------------------------------------
