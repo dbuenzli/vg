@@ -5,7 +5,10 @@
   ---------------------------------------------------------------------------*)
 
 (** Vg HTML canvas renderer.
-    
+
+    {b Note.} The even-odd area rule is supported according to the
+    latest whatwg spec. This may not work in all browsers.
+
     {b References.} 
     {ul {- Rik Cabanier et al. {e {{:http://www.w3.org/TR/2dcontext/}HTML 
      Canvas 2D Context}}, 2012-12-17.}}
@@ -31,8 +34,6 @@ val target : Dom_html.canvasElement Js.t -> [`Other] Vg.Vgr.target
     
     The following render warnings are reported:
     {ul
-    {- [`Unsupported_cut `Aeo], even-odd area cuts are not unsupported by
-       the standard.}
     {- [`Unsupported_cut (`O o)], outline cuts can be performed only on 
        {!I.const}, {!I.axial} and {!I.radial} primitive images.}} *)
 

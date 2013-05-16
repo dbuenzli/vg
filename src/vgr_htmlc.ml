@@ -15,9 +15,11 @@ let warn_dash = "Outline dashes unsupported in this browser"
 
 (* JS bindings, those are not in js_of_ocaml *)
 
-class type ctx_dashes = object 
+class type ctx_ext = object 
   method lineDashOffset : Js.float_prop
   method setLineDash : float Js.js_array Js.t -> unit Js.meth
+  method fill : Js.js_string Js.t -> unit Js.meth
+  method clip : Js.js_string Js.t -> unit Js.meth
 end
 
 let dash_support ctx = Js.Optdef.test ((Js.Unsafe.coerce ctx) ## setLineDash)
@@ -89,9 +91,14 @@ let join_str =
   let miter = Js.string "miter" in
   function `Bevel -> bevel | `Round -> round | `Miter -> miter 
 
+let area_str = 
+  let nz = Js.string "nonzero" in 
+  let eo = Js.string "evenodd" in 
+  function `Anz -> nz | `Aeo -> eo | `O _ -> assert false
+
 let set_dashes ?(warning = true) s dashes = 
   if not s.dash_support then (if warning then warn s (`Other warn_dash)) else
-  let ctx : ctx_dashes Js.t = Js.Unsafe.coerce s.ctx in 
+  let ctx : ctx_ext Js.t = Js.Unsafe.coerce s.ctx in 
   match dashes with 
   | None -> ctx ## setLineDash(jsnew Js.array_empty ())
   | Some (offset, dashes) ->  
@@ -182,13 +189,12 @@ let rec r_cut s a = function
     begin match a with 
     | `O _ -> warn s (`Unsupported_cut (a, image i))
     | `Aeo | `Anz -> 
-        if a = `Aeo then warn s (`Unsupported_cut (a, image i)) else
-        s.ctx ## save (); 
-        s.ctx ## clip ();
+        s.ctx ## save ();
+        (Js.Unsafe.coerce s.ctx : ctx_ext Js.t) ## clip (area_str a); 
         warn s (`Other "TODO raster unimplemented");
         s.ctx ## restore ()
     end
-| Primitive p as i ->
+| Primitive p ->
     let p = get_primitive s p in
     begin match a with 
     | `O o -> 
@@ -199,12 +205,11 @@ let rec r_cut s a = function
         end;
         s.ctx ## stroke ()
     | `Aeo | `Anz ->
-        if a = `Aeo then warn s (`Unsupported_cut (a, image i)); 
         if s.s_fill != p then begin match p with 
         | Color c -> s.ctx ## fillStyle <- c; s.s_fill <- p
         | Gradient g -> s.ctx ## fillStyle_gradient <- g; s.s_fill <- p
         end;
-        s.ctx ## fill ()
+        (Js.Unsafe.coerce s.ctx : ctx_ext Js.t) ## fill (area_str a)
     end
 | Tr (tr, i) ->
     s.ctx ## save ();
@@ -212,12 +217,12 @@ let rec r_cut s a = function
     push_transform s tr;
     r_cut s a i
 | Blend _ | Cut _ as i ->
-    begin match a with
-    | `O _ | `Aeo -> warn s (`Unsupported_cut (a, image i));
-    | `Anz -> () 
-    end;
+    let a = match a with
+    | `O _ -> warn s (`Unsupported_cut (a, image i)); `Anz
+    | a -> a
+    in
     s.ctx ## save ();
-    s.ctx ## clip ();
+    (Js.Unsafe.coerce s.ctx : ctx_ext Js.t) ## clip (area_str a);
     s.todo <- (Draw i) :: (pop_gstate s) :: s.todo
 | Meta (_, i) -> r_cut s a i
 
