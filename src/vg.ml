@@ -746,19 +746,19 @@ module P = struct
 
   let pp_seg pp_f pp_v2 ppf = function
   | `Sub pt -> 
-      pp ppf "@ s@ %a" pp_v2 pt 
+      pp ppf "@ S@ %a" pp_v2 pt 
   | `Line pt -> 
-      pp ppf "@ l@ %a" pp_v2 pt
+      pp ppf "@ L@ %a" pp_v2 pt
   | `Qcurve (c, pt) -> 
-      pp ppf "@ qc@ %a@ %a" pp_v2 c pp_v2 pt
+      pp ppf "@ Qc@ %a@ %a" pp_v2 c pp_v2 pt
   | `Ccurve (c, c', pt) -> 
-      pp ppf "@ cc@ %a@ %a@ %a" pp_v2 c pp_v2 c' pp_v2 pt
+      pp ppf "@ Cc@ %a@ %a@ %a" pp_v2 c pp_v2 c' pp_v2 pt
   | `Earc (l, ccw, a, r, pt) -> 
       let l = if l then "large" else "small" in 
       let ccw = if ccw then "ccw" else "cw" in
-      pp ppf "@ e@ %s@ %s@ %a@ %a@ %a" l ccw pp_f a pp_v2 r pp_v2 pt
+      pp ppf "@ E@ %s@ %s@ %a@ %a@ %a" l ccw pp_f a pp_v2 r pp_v2 pt
   | `Close ->
-      pp ppf "@ c"
+      pp ppf "@ Z"
         
   let pp_path pp_f ppf p = 
     let pp_v2 = V2.pp_f pp_f in
