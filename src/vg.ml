@@ -516,23 +516,27 @@ module P = struct
       Box2.v (P2.v !xmin !ymin) (Size2.v (!xmax -. !xmin) (!ymax -. !ymin))
 
   let tr m p = 
+    let det = lazy (M3.det m) in
     let tr_seg m = function 
     | `Sub pt -> `Sub (P2.tr m pt)
     | `Line pt -> `Line (P2.tr m pt) 
     | `Qcurve (c, pt) -> `Qcurve (P2.tr m c, P2.tr m pt) 
     | `Ccurve (c, c', pt) -> `Ccurve (P2.tr m c, P2.tr m c', P2.tr m pt)
-    | `Earc (l, cw, a, r, pt) -> (* TODO recheck that *)
+    | `Earc (l, cw, a, r, pt) -> 
 	let sina = sin a in
         let cosa = cos a in
         let rx = V2.x r in
         let ry = V2.y r in
         let ax = V2.v (cosa *. rx) (sina *. rx) in 
         let ay = V2.v (-. sina *. ry) (cosa *. ry) in 
-	let ax' = V2.tr m ax in
+        (* TODO this won't work, ax' and ay' may no longer be orthnormal
+           with m shears or doesn't scale uniformly. *)
+	let ax' = V2.tr m ax in    
 	let ay' = V2.tr m ay in
 	let a' = atan2 (V2.y ax') (V2.x ax') in 
 	let rx' = V2.norm ax' in
 	let ry' = V2.norm ay' in
+        let cw = if Lazy.force det < 0. then not cw else cw in
         `Earc (l, cw, a', (V2.v rx' ry'), (P2.tr m pt))
     | `Close -> `Close 
     in

@@ -295,7 +295,10 @@ module P : sig
 
   val tr : Gg.m3 -> path -> path 
   (** [tr m p] is the affine transform in homogenous 2D space of the path
-      [p] by [m]. *)
+      [p] by [m]. 
+
+      {b Bug.} Elliptical arcs transformation is currently broken if
+      [m] doesn't scale uniformely or shears. *)
 
   (** {1 Traversal} *)
 
