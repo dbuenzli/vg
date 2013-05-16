@@ -109,13 +109,34 @@ Db.image "path-earcs" ~author:Db.dbuenzli
     (arc ~large:true  ~cw:true  >> solution r b)
   end;
 
+Db.image "path-earcs-tr" ~author:Db.dbuenzli
+  ~title:"Elliptical arcs"
+  ~tags:["path"]
+  ~note:"In red, elliptical arc from left point to right point. Top row \
+         is ~large:false. Left column is ~cw:false."
+  ~size:(Size2.v 75. 75.)
+  ~view:(Box2.v (P2.v (-2.) (-2.)) (Size2.v 4. 4.))
+  begin fun _ ->
+    let m = M3.scale2 (V2.v (-1.) 1.) in
+    let e = P.empty >> 
+      P.sub (P2.v 1. 0.) >> P.earc (P2.v 1.0 0.5) (P2.v (-1.) 0.)
+    in
+    let et = P.tr m e in 
+    let et' = P.empty >> 
+      P.sub (P2.v (-1.) 0.) >> P.earc ~cw:true 
+               ~angle:Float.pi (P2.v 1.0 0.5) (P2.v (1.) 0.)
+    in
+    Mui.Log.msg "%a" P.pp et;
+    I.const Color.black >> I.cut et';
+  end;
+
 Db.image "path-cubics" ~author:Db.dbuenzli
   ~title:"Cubic paths cases" 
   ~tags:["path"]
   ~note:"Geometric cases for cubic curves. Except in the bottom row, only \
          the end point moves."
   ~size:(Size2.v 115. 105.) 
-  ~view:(Box2.v (P2.v (-. 0.75) (0.625)) (Size2.v 5.75 5.25))
+  ~view:(Box2.v (P2.v (-0.75) (0.625)) (Size2.v 5.75 5.25))
   begin fun _ ->
     let square = P.empty >> P.rect (Box2.v_mid P2.o (Size2.v 0.06 0.06)) in
     let lgray = Color.gray 0.5 >> I.const in
@@ -141,8 +162,8 @@ Db.image "path-cubics" ~author:Db.dbuenzli
     let c2 = P2.v 1.1 0.9 in 
     let pa = P2.v 1.5 0.0 in
     let pb = P2.v (0.8) 1.8 in
-    let pc = P2.v (-. 0.7) 0.7 in
-    let pd = P2.v (-. 0.4) 1.2 in
+    let pc = P2.v (-0.7) 0.7 in
+    let pd = P2.v (-0.4) 1.2 in
     let b00 = cubic ~at:(P2.v 0.00 4.00) p0 c1 c2 pa in 
     let b01 = cubic ~at:(P2.v 2.85 3.60) p0 c1 c2 pb in
     let b10 = cubic ~at:(P2.v 0.50 1.75) p0 c1 c2 pc in
@@ -151,7 +172,7 @@ Db.image "path-cubics" ~author:Db.dbuenzli
     let c1 = P2.v 0.3 0.0 in 
     let c2 = P2.v 1.2 0.0 in 
     let p1 = P2.v 1.5 0.0 in
-    let b20 = cubic ~at:(P2.v (-. 0.1) 1.25) p0 c1 c2 p1 in
+    let b20 = cubic ~at:(P2.v (-0.1) 1.25) p0 c1 c2 p1 in
     let c1 = P2.v (-. 0.3) 0.0 in 
     let c2 = P2.v 1.8 0.0 in
     let b21 = cubic ~at:(P2.v 2.7 1.25) p0 c1 c2 p1 in

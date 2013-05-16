@@ -18,8 +18,8 @@ let tags = ["image"]
 
 let random_marks m =
   let r = Random.State.make [|1557|] in
-  let rx = Float.srandom ~min:6. ~len:108. r in
-  let ry = Float.srandom ~min:6. ~len:48.  r in
+  let rx = Float.srandom r ~min:6. ~len:108. in
+  let ry = Float.srandom r ~min:6. ~len:48.  in
   let rpt () = V2.v (rx ()) (ry ()) in
   let rec rpts n acc = if n = 0 then acc else rpts (n-1) (rpt ():: acc) in
   let mark pt = 

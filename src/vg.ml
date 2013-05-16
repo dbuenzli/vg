@@ -1003,7 +1003,7 @@ module I = struct
         | Primitive prim ->
             pp ppf "%a" (pp_primitive pp_f) prim; 
             loop todo
-        | Cut (a, p, i) -> 
+        | Cut (a, p, i) ->
             pp ppf "@[<1>(i-cut@ %a@ %a@ "(P.pp_area_f pp_f) a (P.pp_f pp_f) p; 
             loop (`I i :: `Pop :: todo)
         | Blend (b, a, i, i') -> 

@@ -13,7 +13,7 @@ open Vg
 let arrowhead_path i len = 
   let angle = Float.pi /. 3. in
   let rec loop i len sign turn p = 
-    if i = 0 then p >> P.line ~rel:true V2.(len * polar_unit turn) else
+    if i = 0 then p >> P.line ~rel:true V2.(polar len turn) else
     p >>
     loop (i - 1) (len /. 2.) (-. sign) (turn +. sign *. angle) >>
     loop (i - 1) (len /. 2.) sign turn >> 

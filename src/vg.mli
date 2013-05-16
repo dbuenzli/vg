@@ -15,7 +15,7 @@
     
     Consult the {{!basics}basics} and the {{!semantics}semantics}. 
     Open the module to use it, this defines only modules and types in 
-    your scope and a single {{!(>>)}sequencing operator}.
+    your scope and a single {{!(>>)}composition operator}.
 
     {e Release %%VERSION%% - %%AUTHORS%% } *)
 
@@ -580,8 +580,7 @@ module Vgr : sig
   (** The type for render warnings. *)
 
   val pp_warning : Format.formatter -> warning -> unit
-  (** [pp_warning ppf w] prints a textual representation of [w] on
-      [ppf]. *)
+  (** [pp_warning ppf w] prints a textual representation of [w] on [ppf]. *)
 
   type warn = warning -> unit 
   (** The type for warning callbacks. *)
@@ -856,20 +855,24 @@ open Vg
 
     Usual vector graphics libraries follow a {e painter model} in
     which paths are filled, stroked and blended on top of each other
-    to produce a final image. [Vg] departs from that. In a nutshell,
-    it follows a {e collage model} in which paths define 2D areas in
-    infinite images that are {e cut} to define new infinite images to
-    be blended on top of each other.
+    to produce a final image. [Vg] departs from that by following a {e
+    collage model} in which paths define 2D areas in infinite images
+    that are {e cut} to define new infinite images to be blended on
+    top of each other.
 
     The collage model maps very well to a declarative imaging model.
     It is also very clear from a specification point of view, both
-    mathematically and metaphorically. This contrasts with the painter
-    model where the result of an operation like stroking a
-    self-interesting translucent path (which usually applies the paint
-    only once) doesn't map to the underlying paint stroke metaphor.
+    mathematically and metaphorically. This cannot be said from the
+    painter model where the semantics of an operation like stroking a
+    self-interesting translucent path —  which usually applies the
+    paint only once —  doesn't directly map to the underlying paint
+    stroke metaphor. The collage model is also more economical from a
+    conceptual point view since image cuts naturally unify the
+    distinct concepts of clipping paths, path strokes and path fills
+    of the painter model.
 
-    It should be mentioned that the collage model introduced in the
-    following sections was stolen from the following works.
+    The collage model introduced in the following sections was stolen
+    and adapted from the following works.
     {ul 
     {- Conal Elliott. 
     {e {{:http://conal.net/papers/bridges2001/}Functional Image
@@ -882,9 +885,9 @@ open Vg
 
     {2 Infinite images}
 
-    [Vg]'s images are immutable and abstract value of type {!image}. {e
-    Conceptually}, images are seen as functions mapping points of the
-    infinite 2D plane to colors:
+    Images in [Vg] are immutable and abstract value of type
+    {!image}. {e Conceptually}, images are seen as functions mapping
+    points of the infinite 2D plane to colors:
 
     [type Vg.image ] ≈  [Gg.p2 -> Gg.color]
 
@@ -900,8 +903,8 @@ fun _ -> Color.gray 0.5
 let gray = I.const (Color.gray 0.5)
 ]}
     The module {!I} contains all the combinators to define and compose
-    infinite images, we will explore some of them later. Now we would
-    like to actually see that [gray] image.
+    infinite images, we will explore some of them later. But for now 
+    let's just render that fascinating image. 
 
     {2 Rendering}
 
@@ -913,16 +916,15 @@ let gray = I.const (Color.gray 0.5)
     Renderables can be given to a renderer for display via the
     function {!Vgr.render}.  Renderers are created with {!Vgr.create}
     and need a {{!Vgr.target}render target} value that defines the
-    concrete renderer implementation used (e.g. PDF or
-    interactive renderer).
+    concrete renderer implementation used (PDF, SVG, HTML canvas etc.).
 
     The following function outputs the unit square of [gray] on a
-    30x30 millimiters PDF target in the file [/tmp/vg-tutorial.pdf]:
+    30x30 millimiters PDF target in the file [/tmp/vg-basics.pdf]:
 {[let pdf_of_usquare i = 
   let size = Size2.v 30. 30. in
   let view = Box2.unit in
   try
-    let oc = open_out "/tmp/vg-tutorial.pdf" in
+    let oc = open_out "/tmp/vg-basics.pdf" in
     let r = Vgr.create (Vgr_pdf.target ()) (`Channel oc) in
     try 
       ignore (Vgr.render r (`Image (size, view, i)));
@@ -936,16 +938,15 @@ let () = pdf_of_usquare gray]}
     like this:
 {%html: <img src="doc-gray-square.png" style="width:30mm; height:30mm;"/> %}
 
-    {2:coordinates Coordinate spaces} 
+    {2:coordinates Coordinate space} 
 
-    [Vg]'s cartesian coordinate space has the x-axis pointing right
-    and the y-axis pointing up. It has no units, you define what they
-    mean to you.
-
-    However a {{!Vgr.renderable}renderable} implicitely defines a
-    physical unit for [Vg]'s coordinate space: the corners of the
-    specified view rectangle are mapped on a rectangular area of the
-    given physical size on the target.
+    [Vg]'s cartesian coordinate space has its origin at the bottom
+    left with the x-axis pointing right, the y-axis pointing up. It
+    has no units, you define what they mean to you. However a
+    {{!Vgr.renderable}renderable} implicitely defines a physical unit
+    for [Vg]'s coordinate space: the corners of the specified view
+    rectangle are mapped on a rectangular area of the given physical
+    size on the target.
 
     {2 Scissors and glue}
 
@@ -953,7 +954,7 @@ let () = pdf_of_usquare gray]}
     [Vg] gives you scissors: the {!I.cut} combinator. 
 
     This combinator takes a finite area of the plane defined by a path
-    [path] (more on path later) and a source image [img] to define the
+    [path] (more on paths later) and a source image [img] to define the
     image [I.cut path img] that has the color of the source image in the
     area defined by the path and the invisible transparent black color
     ({!Gg.Color.void}) everywhere else. In other words [I.cut path img]
@@ -971,10 +972,10 @@ let gray_circle = I.cut gray circle
 
 {%html: <img src="doc-gray-circle.png" style="width:30mm; height:30mm;"/> %}
 
-    Note that the background color surrounding the circle does not 
-    belong to the image itself, it is the color of the webpage background 
-    against which the image is composited. Your eyes require a wavelength 
-    there and {!Gg.Color.void} cannot provide it.
+    Note that the background white color surrounding the circle does
+    not belong to the image itself, it is the color of the webpage
+    background against which the image is composited. Your eyes
+    require a wavelength there and {!Gg.Color.void} cannot provide it.
 
     {!I.cut} has an optional [area] argument of type {!P.area} that
     determines how a path should be interpreted as an area of the
@@ -983,7 +984,7 @@ let gray_circle = I.cut gray circle
     interior.
 
     But the [circle] path can also be seen as defining a thin outline
-    area around the mathematical path of [circle]. This can be
+    area around the ideal mathematical circle of [circle]. This can be
     specified by using an outline area `O o. The value [o] defines
     various parameters that define the outline area; for example its
     width. The following code cuts the [circle] outline area of width [0.04] 
@@ -1008,7 +1009,7 @@ let circle_outline =
     on top of those of [back]. [I.blend front back] represents
     this function: 
 {[
-fun pt -> Color.blend (front pt) (back pt) 
+let i' = fun pt -> Color.blend (front pt) (back pt) 
 ]}
     If we blend [circle_outline] on top of [gray_circle]:
 {[
@@ -1028,51 +1029,96 @@ let dot = gray_circle >> I.blend circle_outline
     This means that with {!Vg.(>>)} and {!I.blend} left to right order in 
     code maps to back to front image blending.
 
-    {2 Transforming images}
-    
-    It can be useful to transform an image, for example to rescale or
-    rotate it. The combinators {!I.move}, {!I.rot}, {!I.scale},
-    and {!I.tr} allow to perform arbitrary affine
-    transformations on an image.
+    {2 Transforming images} 
 
-    The following example moves [dot]'s center to the origin.
-{[let odot = I.move (V2.v (-0.5) (-0.5)) dot]}
-    {{:TODObasics-odot.png}Result}. Here [odot] is an infinite image 
-    whose color at [p] is given by the color at [p + (0.5, 0.5)]
-    in [dot]
+    The combinators {!I.move}, {!I.rot}, {!I.scale}, and {!I.tr} allow
+    to perform arbitrary
+    {{:http://mathworld.wolfram.com/AffineTransformation.html}affine
+    transformations} on an image. For example the image [I.move v i]
+    is [i] but translated by the vector [v], that is the following
+    function:
+{[
+fun pt -> img (V2.(pt - v)) 
+]}
+    The following example uses [I.move]. The function [scatter_plot]
+    takes a list of points and returns a scatter plot of the
+    points. First we define a [dot] around the origin, just a black
+    circle of diameter [pt_width].  Second we define the function [mark]
+    that given a point returns an image with [dot] at that
+    point and [blend_mark] that blends a [mark] at a point on an image. 
+    Finally we blend all the marks toghether.
+{[
+let scatter_plot pts pt_width = 
+  let dot = 
+    let circle = P.empty >> P.circle P2.o (0.5 *. pt_width) in
+    I.const Color.black >> I.cut circle
+  in
+  let mark pt = dot >> I.move pt in 
+  let blend_mark acc pt = acc >> I.blend (mark pt) in
+  List.fold_left blend_mark I.void pts
+]}
+    Note that [dot] is defined outside [mark], this means that all [mark]s
+    share the same [dot], doing so allows renderers to perform space 
+    and time optimizations. For example the PDF renderer will output a single
+    [circle] path shared by all marks. 
+   
+    Here's the result of [scatter_point] on 800 points with coordinates
+    on independent normal distributions. 
+{%html: <img src="doc-scatter-plot.png" style="width:30mm; height:30mm;"/> %}
 
     {2 Paths} 
 
-    As we already said path are used to define areas of the
-    plane. Paths are immutable value of type {!path}. A path is made
-    of disconnected subpaths.  A subpath is a sequence of points
-    defining segments that define an interpolation
-    scheme. Interpolation between two points can be.
+    Paths are used to define areas of the plane. A path is an
+    immutable value of type {!path} which is a list of disconnected
+    subpaths. A {e subpath} is a list of directed and connected curved
+    segments.
 
-    {2 Gradients}
+    To build a path you start with the empty path {!P.empty}, give it
+    to {!P.sub} to start a new subpath and give the result to
+    {!P.line}, {!P.qcurve}, {!P.ccurve}, {!P.earc} or {!P.close} to
+    add a new segment and so forth.
 
+    Path combinators take the path they act upon as the last argument
+    so that the left-associative operator {!Vg.(>>)} can be used to
+    construct paths. 
 
+    The image below is made by cutting the outline of the single path [p]
+    defined hereafter.
+{%html: <img src="doc-subpaths.png" style="width:30mm; height:30mm;"/> %}
+{[
+let p =
+  let rel = true in
+  P.empty >> 
+  P.sub (P2.v 0.1 0.5) >> P.line (P2.v 0.3 0.5) >> 
+    P.qcurve ~rel (P2.v 0.2 0.5) (P2.v 0.2 0.0) >> 
+    P.ccurve ~rel (P2.v 0.0 (-. 0.5)) (P2.v 0.1 (-. 0.5)) (P2.v 0.3 0.0) >> 
+    P.earc ~rel (Size2.v 0.1 0.2) (P2.v 0.15 0.0) >> 
+  P.sub (P2.v 0.18 0.26) >> 
+    P.qcurve ~rel (P2.v (0.01) (-0.1)) (P2.v 0.1 (-. 0.05)) >> P.close >> 
+  P.sub (P2.v 0.65 0.8) >> P.line ~rel (P2.v 0.1 (-. 0.05))
+in
+let area = `O { P.o with P.width = 0.01 } in
+I.const Color.black >> I.cut ~area p
+]}
 
+    Except for {!P.close} which has no other argument but a path, the
+    last point argument before the path argument is always the concrete end
+    point of the segment. When [true] the optional [rel] argument
+    indicates that the coordinates given to the constructor are
+    expressed relative to end point of the last segment (or [P2.o] if
+    there is no such segment).
 
-    {2 Raster images}
+    Note that after a [P.close] or on the [P.empty] path, the 
+    call to {!P.sub} can be omitted. In that case an implicit 
+    [P.sub P2.o] is introduced.
 
-    
+    For more information about how paths are intepreted as 
+    areas, consult their {{!sempaths}semantics}. 
 
-{[let i = 
-  let circle r = P.empty & P.circle (V2.t 0.5 0.5) r in
-  let o = `Ol { I.ol with width = 5. } in
-  let black = I.const Color.black in 
-  let red = I.const Color.red in 
-  I.cut o black (circle 0.15) +++
-  I.cut o black circle
-  I.blend (I.cut o black (circle 0.5)) &
-  I.blend (I.cut o red (circle))]}
-
-    
     {2:remarkstips Remarks and tips}
     {ul
     {- Angles follow [Gg]'s {{!Gg.mathconv}conventions}.}
-    {- Matrices given to {P.tr} and {I.tr} are supposed to 
+    {- Matrices given to {!P.tr} and {!I.tr} are supposed to 
        be affine and as such ignore the last row of the matrix.} 
     {- [to_string] functions are not thread-safe. Thread-safety
        can be achieved with [print] functions.}
@@ -1080,28 +1126,17 @@ let dot = gray_circle >> I.blend circle_outline
        are subject to change.}
     {- Rendering results are undefined if path
        or image data contains NaNs or infinite floats.}
-    {- The modules assumes any string value to be UTF-8 encoded.}
+    {- Any string is assumed to be UTF-8 encoded.}
     {- Sharing (sub)images, paths and outlines
        values in the definition of an image results in more
        efficient rendering in space and time.}
-    {- Sometimes favourite feature not present. Just a matter
-       of transforming. E.g. elliptic gradient. Others 
-       are not possible e.g. canvas radial gradients. 
-       Design choices are a tension between supporting 
-       rendering to many renderers in a least surprising way.}
     {- Images are said to be immutable. This is only true if you 
        don't change the samples of raster images given o {!I.raster}.}
-    {- The renderers support [Vg]'s imaging model which is
-       oriented towards diagram and gui rendering. If you need to access
-       features of a file format that are beyond this scope use a dedicated 
-       library. }
-    {- TODO The essence of [Gg] is the {e collage} model : an image is a
-       superposition of image cuts. This contrasts with the classical 
-      {e painter}'s model where an image is a superposition of path fills and
-      strokes. The models are equivalent but the collage model make some
-      operations clearer. An example of an unclear operation in the
-      painter's model is stroking a self-intersecting path with a
-      translucent color.}}
+    {- Some rendering target provide features that are not accessible 
+       from Vg. They were left out so that rendering to different 
+       targets doesn't result in too many discrepancies. If you need
+       these features, use a library dedicated to the target 
+       (e.g. {{:http://www.coherentpdf.com/ocaml-libraries.html}camlpdf}).}}
 *)
 
 (** {1:semantics Semantics} 
@@ -1170,32 +1205,37 @@ let dot = gray_circle >> I.blend circle_outline
     of {e directed} and connected curved {e segments}. Subpaths can be
     disconnected from each other and may (self-)intersect.
 
-    A path and a value of type {!P.area} defines a finite area of
-    the 2D euclidian space. Given a rule [a], a path [pa] and a point
-    [p], the semantic function \[\]: [P.area -> path -> p2 ->
-    bool] maps them to a boolean value written \[[a], [p]\]{_[pt]}
-    that indicates whether [p] belongs to the area or not. The
-    semantics of area rules is as follows :
+    A path and a value of type {!P.area} defines a finite area of the
+    2D euclidian space. Given an area specification [a], a path [p]
+    and a point [pt], the semantic function:
+
+    \[\]: [P.area -> path -> Gg.p2 -> bool] 
+
+    maps them to a boolean value written \[[a], [p]\]{_[pt]}
+    that indicates whether [pt] belongs to the area or not. 
+
+    The semantics of area rules is as follows:
     {ul
-    {- \[[`Aeo], [p]\]{_[pt]} is determined by the even-odd rule.
-       Cast a ray from [pt] to infinity in any direction (just make 
-       sure it doesn't intersect [p] tangently or at a singularity).
-       Count the number of [p]'s segments the ray crosses. [pt] belongs to
-       the area iff this number is odd.
-       {{:http://www.w3.org/TR/SVG/images/painting/fillrule-evenodd.png}
-       Illustration}.}
-    {- \[[`Anz], [p]\]{_[pt]} is determined by the non-zero winding number 
-       rule. Cast a ray from [pt] to infinity in any direction (just make 
-       sure it doesn't intersect [pa] tangently or at a singularity). 
-       Starting with a count of zero examine each intersection of the 
-       ray with [p]'s segments. If the segment crosses the ray from left to
-       right add one to the count, otherwise, from right to left, subtract
-       one. [pt] belongs to the area iff the final count is not zero.
-       {{:http://www.w3.org/TR/SVG/images/painting/fillrule-nonzero.png}
-       Illustration}.}
-    {- \[[`O o], [p]\]{_[pt]} is determined by the outline
-        area of [p] as defined by the value [o] of type 
-        {!type:P.outline}. See below.}}
+
+    {- \[[`Anz], [p]\]{_[pt]} is [true] iff the winding number of [p]
+        around [pt] is non zero. To determine the winding number cast
+        a ray from [pt] to infinity in any direction (just make sure
+        the ray doesn't intersect [p] tangently or at a
+        singularity). Starting with zero add one for each intersection
+        with a counter-clockwise oriented segment of [p] and substract
+        one for each clockwise ones. The resulting sum is the
+        winding number. This is usually refered to as the {e non-zero winding 
+        rule} and is the default for {!I.cut}.
+{%html: <img src="doc-anz.png" style="width:90mm; height:30mm;"/> %}}
+    {- \[[`Aeo], [p]\]{_[pt]} is [true] iff the number of
+        intersections of [p] with a ray cast from [pt] to infinity in
+        any direction is odd (just make sure the ray doesn't intersect
+        [p] tangently or at a singularity). This is usually refered
+        to as the {e even-odd rule}.
+{%html: <img src="doc-aeo.png" style="width:90mm; height:30mm;"/> %}}
+    {- \[[`O o], [p]\]{_[pt]} is [true] iff [pt] is in the outline 
+        area of [p] as defined by the value [o] of type {!type:P.outline}. 
+        See the next section.}}
 
     {3:semoutlines Outlines}
 
