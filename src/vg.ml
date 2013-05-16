@@ -700,8 +700,8 @@ module P = struct
         V2.equal_f eq c0 c0' && V2.equal_f eq pt pt'
     | `Ccurve (c0, c1, pt), `Ccurve (c0', c1', pt') -> 
         V2.equal_f eq c0 c0' && V2.equal_f eq c1 c1' && V2.equal_f eq pt pt'
-    | `Earc (l, ccw, a, r, pt), `Earc (l', ccw', a', r', pt') ->
-        l = l' && ccw = ccw' && eq a a' && V2.equal_f eq r r' &&  
+    | `Earc (l, cw, a, r, pt), `Earc (l', cw', a', r', pt') ->
+        l = l' && cw = cw' && eq a a' && V2.equal_f eq r r' &&  
         V2.equal_f eq pt pt'
     | `Close, `Close -> true
     | _, _ -> false 
@@ -725,10 +725,10 @@ module P = struct
         if c <> 0 then c else 
         let c = V2.compare_f cmp c1 c1' in 
         if c <> 0 then c else V2.compare_f cmp pt pt'
-    | `Earc (l, ccw, a, r, pt), `Earc (l', ccw', a', r', pt') ->
+    | `Earc (l, cw, a, r, pt), `Earc (l', cw', a', r', pt') ->
         let c = Pervasives.compare l l' in 
         if c <> 0 then c else
-        let c = Pervasives.compare ccw ccw' in 
+        let c = Pervasives.compare cw cw' in 
         if c <> 0 then c else 
         let c = cmp a a' in 
         if c <> 0 then c else 
@@ -753,10 +753,10 @@ module P = struct
       pp ppf "@ Qc@ %a@ %a" pp_v2 c pp_v2 pt
   | `Ccurve (c, c', pt) -> 
       pp ppf "@ Cc@ %a@ %a@ %a" pp_v2 c pp_v2 c' pp_v2 pt
-  | `Earc (l, ccw, a, r, pt) -> 
+  | `Earc (l, cw, a, r, pt) -> 
       let l = if l then "large" else "small" in 
-      let ccw = if ccw then "ccw" else "cw" in
-      pp ppf "@ E@ %s@ %s@ %a@ %a@ %a" l ccw pp_f a pp_v2 r pp_v2 pt
+      let cw = if cw then "cw" else "ccw" in
+      pp ppf "@ E@ %s@ %s@ %a@ %a@ %a" l cw pp_f a pp_v2 r pp_v2 pt
   | `Close ->
       pp ppf "@ Z"
         
