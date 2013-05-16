@@ -69,7 +69,7 @@ Db.image "doc-scatter-plot" ~author:Db.dbuenzli
   ~title:"Scatter plot" 
   ~tags:["doc"]
   ~note:"800 points with coordinates on independent normal distributions."
-  ~size:(Size2.v 30. 30.) 
+  ~size:(Size2.v 40. 40.) 
   ~view:Box2.unit 
   begin fun _ -> 
     let scatter_plot pts pt_width = 
@@ -153,7 +153,7 @@ let directed_annulus arrow ~rev area r =
     I.const Color.black >> I.cut arrow >> I.rot angle >> I.move loc
   in
   let arrows ?(rev = false) r =
-    arrow r 0. >> 
+    arrow ~rev r 0. >> 
     I.blend (arrow ~rev r (Float.pi_div_2)) >> 
     I.blend (arrow ~rev r (2. *. Float.pi_div_2)) >>
     I.blend (arrow ~rev r (-. Float.pi_div_2))

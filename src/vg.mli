@@ -855,7 +855,7 @@ open Vg
 
     Usual vector graphics libraries follow a {e painter model} in
     which paths are filled, stroked and blended on top of each other
-    to produce a final image. [Vg] departs from that by following a {e
+    to produce a final image. [Vg] departs from that, it has a {e
     collage model} in which paths define 2D areas in infinite images
     that are {e cut} to define new infinite images to be blended on
     top of each other.
@@ -1064,7 +1064,7 @@ let scatter_plot pts pt_width =
    
     Here's the result of [scatter_point] on 800 points with coordinates
     on independent normal distributions. 
-{%html: <img src="doc-scatter-plot.png" style="width:30mm; height:30mm;"/> %}
+{%html: <img src="doc-scatter-plot.png" style="width:40mm; height:40mm;"/> %}
 
     {2 Paths} 
 
