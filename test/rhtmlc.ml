@@ -38,7 +38,7 @@ let pp_res ppf d = pp ppf "%3d ppi" (Float.int_of_round ((d *. 2.54) /. 100.))
 
 module S = struct
   
-  let store_version = "%%VERSION%%-003"
+  let store_version = "%%VERSION%%-004"
   let () = Store.force_version store_version 
 
   type t = 
@@ -86,17 +86,27 @@ let render ?limit ?warn ?(meta = Vgm.empty) target dst i finish =
   Log.msg "Render: %s" i.Db.id;
   let meta = Vgm.add_meta (Db.render_meta i) meta in
   let r = Vgr.create ?limit ?warn ~meta target dst in 
+  let warn w = match warn with None -> () | Some warn -> warn w in
   let start = Time.now () in
   let rec loop steps v = match Vgr.render r v with 
   | `Ok ->
       let rec flush steps v = match Vgr.render r v with 
       | `Partial -> flush (steps + 1) v 
-      | `Ok -> finish (Time.now () -. start) steps 
+      | `Ok -> finish ~exn:false (Time.now () -. start) steps 
       in
       flush steps `End
-  | `Partial -> Time.delay 0. (fun () -> ignore (loop (steps + 1) `Await))
+  | `Partial -> 
+      Time.delay 0. begin fun () -> 
+        try (loop (steps + 1) `Await) with 
+        | e -> 
+            warn (`Other "Sorry, a stack overflow occured."); 
+            finish ~exn:true (Time.now () -. start) steps 
+      end
   in
-  loop 1 (`Image (Db.renderable i))
+  try loop 1 (`Image (Db.renderable i)) with 
+  | e -> 
+      warn (`Other "Sorry, a stack overflow occured."); 
+      finish ~exn:true (Time.now () -. start) 0
 
 (* User interface *)
 
@@ -200,8 +210,9 @@ let ui_render_targets () =
     activate true;
     match s.S.renderer with 
     | `CNV -> 
-        let finish dur steps =
+        let finish ~exn dur steps =
           if not (valid s) then () (* user moved on *) else
+          if exn then (activate false; finish dur steps; show_target i `N) else
           let url = Ui.canvas_data canvas in 
           conf_cnv_link (`Href url);
           conf_cnv_link (`Download (str "%s.png" i.Db.id));
@@ -214,8 +225,9 @@ let ui_render_targets () =
         render ~warn ~meta (Vgr_htmlc.target canvas) `Other i finish
     | `SVG -> 
         let b = Buffer.create 2048 in
-        let finish dur steps = 
+        let finish ~exn dur steps = 
           if not (valid s) then () (* user moved on *) else
+          if exn then (activate false; finish dur steps; show_target i `N) else
           let svg = Buffer.contents b in
           let u = "data:image/svg+xml," ^ 
                     (Ui.escape_binary (Buffer.contents b))          

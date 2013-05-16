@@ -12,7 +12,7 @@
                                  initial-scale=1.0">
   <script type="text/javascript" defer="defer" src="rhtmlc.js"></script>
   <style type="text/css">
-    @import url(http://fonts.googleapis.com/css?family=Inconsolata);
+    @import url("http://fonts.googleapis.com/css?family=Inconsolata");
     @import url("http://fonts.googleapis.com/css?family=Open+Sans:400,300&subset=latin,latin-ext");
 
     /* Reset a few things */
@@ -71,7 +71,8 @@
     .mu-select li span:hover  { background: gray; color: black; }
 
     .mu-link { color: gray; text-decoration: none; }
-    .mu-link:after { content: "\2009»"; font-weight: 400; font-size: 1em;
+    .mu-link:after { content: "\2009»"; font-weight: 400; font-size:1.3em;
+                     color: #909090;
                      line-height: 0; }
     .mu-link:hover { text-decoration: underline; }
 
@@ -132,7 +133,7 @@
                display: inline-block; vertical-align: top;}
              
     #r-targets a:hover { text-decoration: none; vertical-align: top; }
-    #r-targets a:after { content:"" }    
+    #r-targets a:after { content:""; padding: 0em; }    
     #r-targets a { vertical-align: top; display: inline-block; 
                    background: transparent;
                    border-color: rgb(50,50,50); 
@@ -144,11 +145,11 @@
     #r-targets canvas, 
     #r-targets svg { display:block; border:none; }
     #r-targets #r-txt { font-family: "Inconsolata", monospace;
-                        white-space: pre; }
+                        white-space: pre; max-width:80ex; }
    
     #r-info { margin-top:1.5em }
     #r-author { padding-left: 1.5ex; font-size: 0.75em; font-weight: 300;
-                line-height: 0; }
+                line-height: 0; max-width:80ex; }
     #r-note { max-width: 70ex; font-size: 0.75em; font-weight: 300; 
               line-height:2em; display:block; }
     #r-stats { margin-top: 2em; font-size: 0.75em; font-weight: 300; 
