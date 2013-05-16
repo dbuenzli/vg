@@ -754,7 +754,9 @@ module P = struct
   | `Ccurve (c, c', pt) -> 
       pp ppf "@ cc@ %a@ %a@ %a" pp_v2 c pp_v2 c' pp_v2 pt
   | `Earc (l, ccw, a, r, pt) -> 
-      pp ppf "@ e@ %B@ %B@ %a@ %a@ %a" l ccw pp_f a pp_v2 r pp_v2 pt
+      let l = if l then "large" else "small" in 
+      let ccw = if ccw then "ccw" else "cw" in
+      pp ppf "@ e@ %s@ %s@ %a@ %a@ %a" l ccw pp_f a pp_v2 r pp_v2 pt
   | `Close ->
       pp ppf "@ c"
         
