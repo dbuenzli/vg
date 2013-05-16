@@ -116,7 +116,7 @@ let badd_init s size view =
 
 let badd_transform s = function 
 | Move v -> badd_fmt s "translate(%g %g)" (V2.x v) (V2.y v)
-| Rot a -> badd_fmt s "rotate(%g)" a
+| Rot a -> badd_fmt s "rotate(%g)" (Float.deg_of_rad a)
 | Scale sv -> badd_fmt s "scale(%g %g)" (V2.x sv) (V2.y sv)
 | Matrix m -> 
     badd_fmt s "transform(%g %g %g %g %g %g)"
