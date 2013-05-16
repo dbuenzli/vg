@@ -146,7 +146,8 @@ let w_path s p k r = try k (Hashtbl.find s.paths p) r with
             let large = if large then 1 else 0 in
             let sweep = if cw then 0 else 1 in
             badd_fmt s "A %g %g %g %d %d %g %g"  
-              (V2.x radii) (V2.y radii) a large sweep (V2.x pt) (V2.y pt);
+              (V2.x radii) (V2.y radii) (Float.deg_of_rad a) large sweep 
+              (V2.x pt) (V2.y pt);
             w_buf s (w_data p k) r
         | `Close -> 
             w_str "Z" (w_data p k) r
