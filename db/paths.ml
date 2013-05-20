@@ -222,7 +222,42 @@ Db.image "path-derived" ~author:Db.dbuenzli
     in
     let area = `O { P.o with P.width = 0.01 } in 
     I.const (Color.gray 0.3) >> I.cut ~area p
-  end
+  end;
+
+
+Db.image "path-miter-angle" ~author:Db.dbuenzli
+  ~title:"Miter angle limit"
+  ~tags:["path";]
+  ~note:"In the left column the miter angle is set below the angle made by \
+         the path, all joins should be pointy. In the right column the miter \
+         angle is set above the angle made by the path, all joins should be \
+         bevelled."
+  ~size:(Size2.v 120. 570.) 
+  ~view:(Box2.v P2.o (Size2.v 4.0 19.0))
+  begin fun _ ->
+    let gray = I.const (Color.gray 0.3) in 
+    let white = I.const Color.white in
+    let wedge a = 
+      P.empty >> P.sub (V2.polar 0.6 a)  >> P.line P2.o >> P.line (V2.v 0.6 0.)
+    in
+    let path x y miter_angle a = 
+      let area = (`O { P.o with P.width = 0.1; miter_angle }) in
+      let wedge = wedge a in
+      let outline = I.cut ~area wedge gray in
+      let data = I.cut ~area:(`O { P.o with P.width = 0.01 }) wedge white in 
+      outline >> I.blend data >> I.move (P2.v x (y +. 0.2))
+    in
+    let acc = ref I.void in
+    for i = 0 to 18 do 
+      let y = float i in
+      let base = y *. 10. in
+      let a = Float.rad_of_deg base in
+      let less = Float.rad_of_deg (base -. 1.) in
+      let more = Float.rad_of_deg (base +. 1.) in
+      acc := !acc >> I.blend (path 1. y less a) >> I.blend (path 3. y more a)
+    done; 
+    !acc
+  end;
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

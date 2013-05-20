@@ -114,7 +114,7 @@ let init_ctx s =
   s.ctx ## lineWidth <- o.P.width; 
   s.ctx ## lineCap <- cap_str o.P.cap; 
   s.ctx ## lineJoin <- join_str o.P.join; 
-  s.ctx ## miterLimit <- o.P.miter_angle;
+  s.ctx ## miterLimit <- (Vgr.Private.P.miter_limit o);
   set_dashes ~warning:false s o.P.dashes
 
 let set_outline s o =       
@@ -125,7 +125,7 @@ let set_outline s o =
   if old.P.cap <> o.P.cap then (s.ctx ## lineCap <- cap_str o.P.cap);
   if old.P.join <> o.P.join then (s.ctx ## lineJoin <- join_str o.P.join);
   if old.P.miter_angle <> o.P.miter_angle then 
-    (s.ctx ## miterLimit <- o.P.miter_angle);
+    (s.ctx ## miterLimit <- Vgr.Private.P.miter_limit o);
   if old.P.dashes <> o.P.dashes then set_dashes s o.P.dashes; 
   ()
 

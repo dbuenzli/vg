@@ -171,7 +171,8 @@ module P : sig
 	cap : cap;              (** Shape at the end points of open subpaths
 				    and dashes. *)
 	join : join;            (** Shape at segment jointures. *)
-	miter_angle : float;    (** Limit {e angle} for miter joins.*)
+	miter_angle : float;    (** Limit {e angle} for miter joins 
+                                    (in \[0;pi\]).*)
 	dashes : dashes option; (** Outline dashes. *) }
   (** The type for path outline area specifications. 
       {{!semoutlines}Semantics}.*)
@@ -179,7 +180,7 @@ module P : sig
   val o : outline 
   (** [o] holds a default set of values. [width] is [1.],
       [cap] is [`Butt], [join] is [`Miter], [miter_angle] is 
-      [0.] and [dashes] is [None]. *)
+      [11.5] degrees in radians and [dashes] is [None]. *)
       
   val pp_outline : Format.formatter -> outline -> unit 
   (** [pp_outline ppf o] prints a textual representation of [o] on [ppf]. *)
@@ -775,6 +776,10 @@ module Vgr : sig
             angle on the unit circle corresponding to the first and last
             point of the arc. [None] is returned if the parameters do not
             define a valid arc. *)
+
+      val miter_limit : P.outline -> float 
+      (** [miter_limit o] is the miter limit corresponding to 
+          [o.miter_angle]. *)
     end
 
     (** {1 Renderers } *)

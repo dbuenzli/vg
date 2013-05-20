@@ -1,10 +1,3 @@
-* rhtmlc
-** Bug when reload and tag filter has not the id.
-
-* Renderer API
-** Try to reverse the creation function 
-   type 'a impl contraint 'a [< dst ] 
-
 * Image
 ** ? Is I.blend order the right thing to do, YES but review semant. order
    of c [] c' 
@@ -27,8 +20,6 @@
 ** ? expose cubic ellipse and ellipse parametrization. 
 ** Review bounds of ellipse
 ** Sort out the tolerance stuff
-** Sort out miter angle / limit and set default value.
-** let miter_angle_to_miter_limit a = 1. /. (sin (0.5 *. a))
 ** ? P.map_pts : (p2 -> p2) -> path -> path 
 ** P.mem : area -> path -> p2 -> bool
 ** P.length : path -> float (* arc length *)

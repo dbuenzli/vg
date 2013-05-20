@@ -109,9 +109,10 @@ let badd_init s size view =
    (* stroke-linecap is butt initially, so is P.o *) 
    (* stroke-linejoin is miter initially, so is P.o *)
    (* stroke-dasharray is none initially, so is P.o *)
-   (* stroke-miterlimit is 4 initially, TODO *)
    (* fill is black initially, we set it to none *)
-  badd_fmt s "<g fill=\"none\" transform=\"matrix(%g %g %g %g %g %g)\">"
+  badd_fmt s "<g fill=\"none\" stroke-miterlimit=\"%g\" \
+                 transform=\"matrix(%g %g %g %g %g %g)\">"
+    (Vgr.Private.P.miter_limit P.o)
     sx 0. 0. (-. sy) dx dy (* map view rect -> viewport *)
 
 let badd_transform s = function 
@@ -221,12 +222,14 @@ let w_primitive_cut s a path_id k svg_prim r = match a with
     let w = o.P.width in 
     let c = o.P.cap in 
     let j = o.P.join in
+    let ma = o.P.miter_angle in
     badd_fmt s "<use l:href=\"#i%d\"" path_id;
     if w <> P.o.P.width then badd_fmt s " stroke-width=\"%g\"" w; 
     if c <> P.o.P.cap then badd_fmt s " stroke-linecap=\"%s\"" (cap_str c); 
     if j <> P.o.P.join then badd_fmt s " stroke-linejoin=\"%s\"" (join_str j);
+    if ma <> P.o.P.miter_angle then 
+      badd_fmt s " stroke-miterlimit=\"%g\"" (Vgr.Private.P.miter_limit o);
     badd_dashes s o.P.dashes;
-    (* TODO miter limit *)
     badd_svg_prim s "stroke" svg_prim;
     w_buf s k r
 | `Anz | `Aeo ->

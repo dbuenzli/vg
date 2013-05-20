@@ -197,7 +197,8 @@ module P = struct
     { width : float; cap : cap; join : join; miter_angle : float; 
       dashes : dashes option }
 
-  let o = { width = 1.; cap = `Butt; join = `Miter; miter_angle = 0.; 
+  let o = { width = 1.; cap = `Butt; join = `Miter; 
+            miter_angle = Float.rad_of_deg 11.5; 
             dashes = None }
 
   let pp_outline_f pp_f ppf o =
@@ -1171,6 +1172,9 @@ module Vgr = struct
 
     module P = struct
       let earc_params = P.earc_params
+      let miter_limit o = 
+        let l = 1. /. sin (o.P.miter_angle /. 2.) in 
+        if l = infinity then max_float else l
     end
 
     (* Renderers *)
