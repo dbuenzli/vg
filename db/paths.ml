@@ -34,45 +34,6 @@ Db.image "path-sq-outline-dashed" ~author:Db.dbuenzli
     I.const (Color.gray 0.3) >> I.cut ~area square
   end;
 
-Db.image "path-cap-styles" ~author:Db.dbuenzli
-  ~title:"Lines with different cap styles"
-  ~tags:["path"; "area" ]
-  ~size:(Size2.v 50. 50.)
-  ~view:(Box2.v P2.o (Size2.v 14. 14.))
-  ~note:"From top to bottom, `Butt, `Round, `Square."
-  begin fun _ ->
-    let gray = I.const (Color.gray 0.3) in 
-    let white = I.const Color.white in 
-    let line = P.(empty >> sub (P2.v 3. 0.) >> line (P2.v 11. 0.)) in 
-    let line y cap = 
-      let outline = I.cut ~area:(`O { P.o with P.width = 2.; cap }) line gray in
-      let data = I.cut ~area:(`O { P.o with P.width = 0.1 }) line white in 
-      outline >> I.blend data >> I.move (P2.v 0. y)
-    in
-    (line 3. `Square) >> I.blend (line 7. `Round) >> I.blend (line 11. `Butt)
-  end;
-
-Db.image "path-join-styles" ~author:Db.dbuenzli
-  ~title:"Lines with different join styles" 
-  ~tags:["path"; "area" ]
-  ~size:(Size2.v 50. 100.)
-  ~view:(Box2.v P2.o (Size2.v 18. 36.))
-  ~note:"From top to bottom `Miter, `Round, `Bevel."
-  begin fun _ ->
-    let gray = I.const (Color.gray 0.3) in 
-    let white = I.const Color.white in
-    let wedge = 
-      P.(empty >> sub (P2.v 3. 0.) >> line (P2.v 9. 8.) >> line (P2.v 15. 0.))
-    in
-    let path y join = 
-      let area = `O { P.o with P.width = 2.; join } in
-      let outline = I.cut ~area wedge gray in
-      let data = I.cut ~area:(`O { P.o with P.width = 0.1 }) wedge white in 
-      outline >> I.blend data >> I.move (P2.v 0. y)
-    in
-    (path 2. `Bevel) >> I.blend (path 13. `Round) >> I.blend (path 25. `Miter)
-  end;
-
 Db.image "path-earcs" ~author:Db.dbuenzli
   ~title:"Elliptical arcs"
   ~tags:["path"]

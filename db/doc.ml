@@ -110,13 +110,16 @@ Db.image "doc-subpaths" ~author:Db.dbuenzli
     let p =
       let rel = true in
       P.empty >> 
-      P.sub (P2.v 0.1 0.5) >> P.line (P2.v 0.3 0.5) >> 
+      P.sub (P2.v 0.1 0.5) >> 
+        P.line (P2.v 0.3 0.5) >> 
         P.qcurve ~rel (P2.v 0.2 0.5) (P2.v 0.2 0.0) >> 
         P.ccurve ~rel (P2.v 0.0 (-. 0.5)) (P2.v 0.1 (-. 0.5)) (P2.v 0.3 0.0) >> 
         P.earc ~rel (Size2.v 0.1 0.2) (P2.v 0.15 0.0) >> 
       P.sub (P2.v 0.18 0.26) >> 
-        P.qcurve ~rel (P2.v (0.01) (-0.1)) (P2.v 0.1 (-. 0.05)) >> P.close >> 
-      P.sub (P2.v 0.65 0.8) >> P.line ~rel (P2.v 0.1 (-. 0.05))
+        P.qcurve ~rel (P2.v (0.01) (-0.1)) (P2.v 0.1 (-. 0.05)) >> 
+        P.close >> 
+      P.sub (P2.v 0.65 0.8) >> 
+        P.line ~rel (P2.v 0.1 (-. 0.05))
     in
     let area = `O { P.o with P.width = 0.01 } in
     I.const Color.black >> I.cut ~area p
@@ -201,6 +204,49 @@ Db.image "doc-aeo" ~author:Db.dbuenzli
   ~size:(Size2.v 90. 30.) 
   ~view:(Box2.v P2.o (Size2.v 3.0 1.0))
   begin fun _ -> area_rule_examples `Aeo end;
+
+Db.image "doc-caps" ~author:Db.dbuenzli
+  ~title:"Path caps" 
+  ~tags:["doc"]
+  ~note:"Illustrates path cap styles. From left to right: \
+         `Butt, `Round and `Square."
+  ~size:(Size2.v 90. 20.) 
+  ~view:(Box2.v P2.o (Size2.v 3.0 (3.0 /. 4.5)))
+  begin fun _ ->
+    let gray = I.const (Color.gray 0.3) in 
+    let white = I.const Color.white in 
+    let line = P.(empty >> sub (P2.v 0.25 0.333) >> line (P2.v 0.75 0.333)) in 
+    let line x cap = 
+      let outline = I.cut ~area:(`O { P.o with P.width = 0.2; cap}) line gray in
+      let data = I.cut ~area:(`O { P.o with P.width = 0.01 }) line white in 
+      outline >> I.blend data >> I.move (P2.v x 0.)
+    in
+    (line 0. `Butt) >> I.blend (line 1.0 `Round) >> I.blend (line 2. `Square)
+  end;
+
+Db.image "doc-joins" ~author:Db.dbuenzli
+  ~title:"Path joins" 
+  ~tags:["doc"]
+  ~note:"Illustrates path join styles. From left to right: \
+         `Miter, `Round and `Bevel."
+  ~size:(Size2.v 90. 30.) 
+  ~view:(Box2.v P2.o (Size2.v 3.0 1.0))
+  begin fun _ ->
+    let gray = I.const (Color.gray 0.3) in 
+    let white = I.const Color.white in
+    let wedge = 
+      P.empty >> 
+      P.sub (P2.v 0.2 0.) >> P.line (P2.v 0.5 0.5) >> P.line (P2.v 0.8 0.)
+    in
+    let path x join = 
+      let area = (`O { P.o with P.width = 0.2; join }) in
+      let outline = I.cut ~area wedge gray in
+      let data = I.cut ~area:(`O { P.o with P.width = 0.01 }) wedge white in 
+      outline >> I.blend data >> I.move (P2.v x 0.2)
+    in
+    (path 0. `Miter) >> I.blend (path 1. `Round) >> I.blend (path 2. `Bevel)
+  end;
+
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

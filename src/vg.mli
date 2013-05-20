@@ -1089,13 +1089,16 @@ let scatter_plot pts pt_width =
 let p =
   let rel = true in
   P.empty >> 
-  P.sub (P2.v 0.1 0.5) >> P.line (P2.v 0.3 0.5) >> 
+  P.sub (P2.v 0.1 0.5) >> 
+    P.line (P2.v 0.3 0.5) >> 
     P.qcurve ~rel (P2.v 0.2 0.5) (P2.v 0.2 0.0) >> 
     P.ccurve ~rel (P2.v 0.0 (-. 0.5)) (P2.v 0.1 (-. 0.5)) (P2.v 0.3 0.0) >> 
     P.earc ~rel (Size2.v 0.1 0.2) (P2.v 0.15 0.0) >> 
   P.sub (P2.v 0.18 0.26) >> 
-    P.qcurve ~rel (P2.v (0.01) (-0.1)) (P2.v 0.1 (-. 0.05)) >> P.close >> 
-  P.sub (P2.v 0.65 0.8) >> P.line ~rel (P2.v 0.1 (-. 0.05))
+    P.qcurve ~rel (P2.v (0.01) (-0.1)) (P2.v 0.1 (-. 0.05)) >> 
+    P.close >> 
+  P.sub (P2.v 0.65 0.8) >> 
+    P.line ~rel (P2.v 0.1 (-. 0.05))
 in
 let area = `O { P.o with P.width = 0.01 } in
 I.const Color.black >> I.cut ~area p
@@ -1195,9 +1198,12 @@ I.const Color.black >> I.cut ~area p
     An image is a mapping from the infinite 2D euclidian space to
     {{!semcolors}colors}. Values of type {!image} represent infinite
     images. Given an image [i] and a point [pt] of the plane the
-    semantic function \[\][: image -> p2 -> Gg.color] maps them to a
-    color value written \[[i]\]{_[pt]} representing the image's color
-    at this point.
+    semantic function 
+
+    \[\][: image -> p2 -> Gg.color] 
+
+    maps them to a color value written \[[i]\]{_[pt]} representing the
+    image's color at this point.
 
     {2:sempaths Paths and areas}
     
@@ -1235,68 +1241,54 @@ I.const Color.black >> I.cut ~area p
 {%html: <img src="doc-aeo.png" style="width:90mm; height:30mm;"/> %}}
     {- \[[`O o], [p]\]{_[pt]} is [true] iff [pt] is in the outline 
         area of [p] as defined by the value [o] of type {!type:P.outline}. 
-        See the next section.}}
 
-    {3:semoutlines Outlines}
+        {4:semoutlines Outline areas}
 
-    The outline area of a path is the union of its subpaths outline
-    areas.  A subpath outline area is defined by the parallel
-    curves of its segments connected according to the
-    {{:http://www.w3.org/TR/SVG11/images/painting/linejoin.png}joins}
-    specified [o.join] and closed at the subpath end points (if
-    any) with a
-    {{:http://www.w3.org/TR/SVG11/images/painting/linecap.png}cap}
-    specified by [o.cap]. The parallel curves of a segment are its
-    parallels on each side at a distance [o.width / 2]. The area of
-    a subpath may also can also be chopped at regular interval 
-    according to the [o.dashes] parameter.
-    
-    {4:semcaps Path caps} 
-    
-    For path outlines, specifies the
-    {{:http://www.w3.org/TR/SVG11/images/painting/linecap.png}shape}
-    at the end points of open subpaths and dashes.
-    {ul 
-    {- [`Butt]. A line with a squared-off end. draws the line to
-       extend only to the exact endpoint of the path `Round.}
-    {- [`Round]. A line with a rounded end. Quartz draws the line to
-       extend beyond the endpoint of the path. The line ends with a
-       semicircular arc with a radius of 1/2 the line’s width,
-       centered on the endpoint.}  
-    {- [`Square]. A line with a squared-off end. Quartz extends the
-       line beyond the endpoint of the path for a distance equal to
-       half the line width}}
+        The outline area of a path is the union of its subpaths
+        outline areas. A subpath outline area is inside the parallel
+        curves at a distance [o.width / 2] of its path segments that
+        are joined accoring to the join style [o.join] (see below) and
+        closed at the subpath end points with a cap style [o.cap] (see
+        below). The outline area of a subpath can also be chopped at
+        regular intervals according to the [o.dashes] parameter (see
+        below).
 
+        {4:semjoins Segment jointures}
 
-    {4:semjoins Segment jointures}
-    
-    For path outlines, specifies the
-    {{:http://www.w3.org/TR/SVG11/images/painting/linejoin.png}shape}
-    at segment jointures.
-    {ul
-    {- [`Miter]. Outer parallel curves of the joining segments are
-       extended until they meet, unless the joining angle is smaller
-       than [miter_angle] in which case, the join is converted to a
-       bevel.}  
-    {- [`Bevel]. A join with a squared-off end. Quartz draws the line
-       to extend beyond the endpoint of the path, for a distance of
-       1/2 the line’s width.}
-    {- [`Round]. Quartz draws the line to extend beyond the endpoint
-       of the path. The line ends with a semicircular arc with a
-       radius of 1/2 the line’s width, centered on the endpoint.}}
+        The shape of subpath segment jointures is specified in 
+        [o.join] by a value of type {!P.join}. From left to right:
+{%html: <img src="doc-joins.png" style="width:90mm; height:30mm;"/> %}
+        {ul
+        {- [`Miter], the outer parallel curves are extended until they
+           meet unless the joining angle is smaller than
+           [o.miter_angle] in which case the join is converted to a
+           bevel.}
+        {- [`Round], joins the outer parallel curves by a semicircle 
+           centered at the end point with a diameter equal to [o.width].}
+        {- [`Bevel], joins the outer parallel curves by a segment.}}
 
-      The [miter_angle] parameter is used when [join] is [`Miter] : if
-      the join angle of two segments is below [miter_angle] the jointure
-      shape is converted to a [`Bevel]. 
+        {4:semcaps Path caps} 
 
-    {4:semdashes Path dashes}
+        The shape of subpath (or dashes) end points is specified in
+        [o.cap] by a value of type {!P.cap}. From left to right:
+{%html: <img src="doc-caps.png" style="width:90mm; height:20mm;"/> %}
+        {ul 
+        {- [`Butt], end points are square and extend only to the 
+           exact end point of the path.}
+        {- [`Round], end points are rounded by a semicircle at 
+           the end point with a diameter equal to [o.width].}
+        {- [`Square], end points are square and extend by a distance 
+           equal to half [o.width].}}
 
-      The {e dash pattern} is
-      a list of lengths that specify the length of alternating dashes
-      and gaps (starting with dashes). The {e dash offset} indicates
-      where to start in the dash pattern at the beginning of a
-      subpath. 
-*)
+        {4:semdashes Path dashes} 
+
+        The path outline area can be chopped at regular intervals by
+        spefiying a value [(off, pat)] of type {!P.dashes} in [o.dashes].
+
+        The {e dash pattern} [pat] is a list of lengths that specify
+        the length of alternating dashes and gaps (starting with
+        dashes). The {e dash offset} [off] indicates where to start in
+        the dash pattern at the beginning of a subpath.}}  *)
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
