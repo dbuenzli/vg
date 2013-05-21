@@ -177,7 +177,7 @@ let get_primitive s p = try Hashtbl.find s.prims p with
         let g = P2.(s.ctx ## createLinearGradient(x pt, y pt, x pt', y pt')) in
         List.iter (add_stop g) stops; Gradient g
     | Radial (stops, f, c, r) ->
-        let g = P2.(s.ctx ## createRadialGradient(x c, y c, 0., x f, y f, r)) in
+        let g = P2.(s.ctx ## createRadialGradient(x f, y f, 0., x c, y c, r)) in
         List.iter (add_stop g) stops; Gradient g
     | Raster _ -> assert false
     in

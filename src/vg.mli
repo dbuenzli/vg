@@ -424,11 +424,9 @@ module I : sig
       respectively, from [0] to [r]. The focus [f] defaults to [c], it
       must be inside the circle [(c, r)]. 
 
-      {b TODO} Semantics is wrong.
-
-      {ul {- \[[radial stops ~f c r]\]{_[p]} [=] \[[stops]\]{_[t]} if [p] is
-      on the circle defined by radius [t * r] and center [f + t * (c - f)].}} 
-  *)
+      {ul {- \[[radial stops ~f c r]\]{_[p]} [=] \[[stops]\]{_[t]} if 
+      [t] is the smallest value such that [p] is
+      on the circle defined by radius [t * r] and center [f + t * (c - f)].}} *)
 
   val raster : box2 -> Raster.t -> image 
   (** [raster r ri] is an image with [ri] framed in the rectangle

@@ -21,6 +21,33 @@ Db.image "gradient-axial" ~author:Db.dbuenzli
     I.cut r (I.axial stops P2.o (P2.v 2. 0.))
   end;
 
+Db.image "gradient-radial" ~author:Db.dbuenzli
+  ~title:"White to red, red to black, radial gradients"
+  ~tags:["gradient"]
+  ~note:"Focus is clockwise from top left: at the center, at 45° half way to \
+         the circle edge, 45° just inside the circle, 120° half way to the \
+         circle edge."
+  ~size:(Size2.v 60. 60.)
+  ~view:(Box2.v P2.o (Size2.v 2. 2.))
+  begin fun _ -> 
+    let radial x y f  = 
+      let r = P.empty >> P.rect (Box2.v P2.o (Size2.v 1. 1.)) in 
+      let stops = [0.0, Color.white; 0.5, Color.red; 1.0, Color.black] in 
+      let c = P2.v 0.5 0.5 in
+      I.cut r (I.radial stops ~f c 0.5) >> I.move (P2.v x y) 
+    in
+    let d45 = Float.pi_div_4 in 
+    let d120 = 2. *. Float.pi /. 3. in
+    let f0 = P2.v 0.5 0.5 in
+    let f1 = V2.(f0 + 0.25 * P2.v (cos d45) (sin d45)) in
+    let f2 = V2.(f0 + 0.499 * P2.v (cos d45) (sin d45)) in
+    let f3 = V2.(f0 + 0.25 * P2.v (cos d120) (sin d120)) in
+    radial 0. 1. f0 >> 
+    I.blend (radial 1. 1. f1) >>
+    I.blend (radial 1. 0. f2) >>
+    I.blend (radial 0. 0. f3)
+  end;
+
 Db.image "gradient-scaling" ~author:Db.dbuenzli
   ~title:"Gradients and scaled ones side-by-side"
   ~tags:["gradient"]

@@ -247,8 +247,7 @@ let rec w_cut s a i k path_id r = match i with
         k r 
     end
 | Primitive p -> w_primitive s p (w_primitive_cut s a path_id k) r
-| Tr (tr, i) -> (* TODO *) k r
-| Blend _ | Cut _ as i ->
+| Tr _ | Blend _ | Cut _ as i ->
     let astr = match a with 
     | `O _ -> warn s (`Unsupported_cut (a, image i)); area_str `Anz 
     | a -> area_str `Anz 
