@@ -1,53 +1,38 @@
 * Image
-** ? Is I.blend order the right thing to do, YES but review semant. order
-   of c [] c' 
-** ? gradient add spread mode, or not.
-** TODO semantics of radial is wrong. 
-** TODO semantics of rimage. Provide rendering intent attribute or part of 
-   rimage.
+** Finish I.blend. 
 ** Image.raster. Accept any raster value, renderer does its
    best, but it also accepts a 
    raster:Gg.raster -> [`Await | `Ok of Gg.raster ] function that the
    renderer user can plug to use "external" tools to improve normalisation.
 ** Make combinators more smart so that renders render more images. 
-   E.g. collapse Tr nodes on primitives. 
+   E.g. collapse Tr nodes on primitives. Maybe not.
 ** Do we actually have a renderer that supports arbitrary outline cut ? 
-
+   
 * Path
-** Maybe, Boolean operations, minkowski.
-** Subdivision http://www.antigrain.com/research/adaptive_bezier/index.html
-** Check P. for tail recursion and numerical stability.
-** ? expose cubic ellipse and ellipse parametrization. 
-** Review bounds of ellipse
+** Review ellipse things. There are a few TODOs and wrong things in there.
 ** Sort out the tolerance stuff
-** ? P.map_pts : (p2 -> p2) -> path -> path 
-** P.mem : area -> path -> p2 -> bool
-** P.length : path -> float (* arc length *)
-** P.split : path -> float -> path * path (* split at given distance on path *)
-** ? P.cubic_fold
-** ? P.square 
 
 * Renderers
 ** Primitive images careful when a transform immediatly follows add it
    e.g. to the gradient transform. Test.
 ** allow to choose rendering intent.
-** Generate PDF/A
+
+
 
 * SVG
 ** Use dublin core for metadata ? Look into inkscape. 
 ** Outlines should be output to a <defs><g id="id" /></defs> for reuse. 
    Or is that impossible ? 
 
+
 * Samples
-** Cubic paths.
+** Quadratic paths.
 ** vgrender that takes a cmxs and outputs svg or pdf.
 ** Test degenerate color stops discarding.
 ** Test degenerate subpaths rendering. 
 ** Dash offset is for start of each subpath, negative dashoffsets. 
 ** Primitives, special cases axial with p = p', radial with c = c'. 
-** join + cap styles add white spots.
-** base.ml only base images (the renderer needs to crop). 
-** Cantor draw the unit line.
+** prim.ml only base images (the renderer needs to crop). 
 ** Test geometric primitives, quadric and ellipse for pdf renderer.
 ** fill rules.
 ** gradient stops as premultiplied color value cannot blend red to blue
@@ -61,8 +46,7 @@
    http://en.wikipedia.org/wiki/File:Piecharts.svg 
 ** Rectangle, area cut of w = 0 or s = 0 is nothing but outline cut
    is segment. 
-** Scatter plot.
-** Redo all the image references in the docs with Vg.
+
 
 * Glyph api,
 ** Glyph. 
@@ -93,14 +77,9 @@
 ** Test miànjï 面积 (area, surface area), vector.
 ** Test font http://www.twardoch.com/fonts/ Nadeyezhda 
 
-* Misc pointers
-** http://www.fontconfig.org/fontconfig-user.html
-** http://processingjs.nihongoresources.com/bezierinfo/
-** http://www.codeproject.com/Articles/226569/Drawing-polylines-by-tessellation
-** http://portal.acm.org/citation.cfm?id=129906 
-** http://books.google.com/books?q=vatti+clipping+agoston
 
 * PDF renderer old notes
+** Generate PDF/A
 ** Rewrite to use Form XObjects. 
 ** Rewrite to use Gs dictionaries.
 ** Ellipse output. [done ?]
@@ -127,3 +106,27 @@
    to get data and call the first one to output. Hard to integrate
    I think (input).
 ** %F or %f ?
+
+* Post first release
+** Path
+*** Quite a few convience operations on path could be added. This would 
+    be only at the Vg level renderers wouldn't need to be
+    extended. But does it really belong here.
+*** P.mem : area -> path -> p2 -> bool
+*** P.length : path -> float (* arc length *)
+*** P.split : path -> float -> path * path (* split at given distance on path *)
+*** P.cubic_fold
+*** P.square 
+*** Boolean operations, Minkowski sum
+
+* Misc pointers
+** http://www.fontconfig.org/fontconfig-user.html
+** http://processingjs.nihongoresources.com/bezierinfo/
+** http://www.codeproject.com/Articles/226569/Drawing-polylines-by-tessellation
+** http://portal.acm.org/citation.cfm?id=129906 
+** http://books.google.com/books?q=vatti+clipping+agoston
+** http://www.antigrain.com/research/adaptive_bezier/index.html
+
+
+
+

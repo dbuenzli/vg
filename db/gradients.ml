@@ -48,6 +48,56 @@ Db.image "gradient-radial" ~author:Db.dbuenzli
     I.blend (radial 0. 0. f3)
   end;
 
+Db.image "gradient-axial-move" ~author:Db.dbuenzli
+  ~title:"Move axial gradient."
+  ~tags:["gradient"]
+  ~note:"Left, the circle is inscribed in the unit square and the gradient \
+         is black at the center. On the right a circle outline is cut but the \
+         result should be the same as on the left."
+  ~size:(Size2.v 60. 30.)
+  ~view:(Box2.v P2.o (Size2.v 2. 1.))
+  begin fun _ -> 
+    let c = P2.v 0.5 0.5 in
+    let r = 0.5 in
+    let stops = [ 0., Color.red; 0.5, Color.black; 1.0, Color.red ] in
+    let axial = I.axial stops (V2.v (-0.5) 0.) (V2.v 0.5 0.) in
+    let left = 
+      let circle = P.empty >> P.circle c r in
+      axial >> I.move c >> I.cut circle
+    in
+    let right = 
+      let circle' = P.empty >> P.circle c 0.25 in
+      let area = `O { P.o with P.width = 0.5 } in
+      axial >> I.move c >> I.cut ~area circle' >> I.move (V2.v 1.0 0.)
+    in
+    I.blend left right
+  end;
+
+Db.image "gradient-radial-move" ~author:Db.dbuenzli
+  ~title:"Move radial gradient and outline cut"
+  ~tags:["gradient"]
+  ~note:"On the left the circle cut and the radial gradient are inscribed in \
+         the unit square. On the right a circle outline is cut but the result \
+         should be the same as on the left."
+  ~size:(Size2.v 60. 30.)
+  ~view:(Box2.v P2.o (Size2.v 2. 1.))
+  begin fun _ -> 
+    let c = P2.v 0.5 0.5 in
+    let r = 0.5 in
+    let stops = [ 0., Color.red; 1.0, Color.black ] in
+    let radial = I.radial stops P2.o r in
+    let left = 
+      let circle = P.empty >> P.circle c r in
+      radial >> I.move c >> I.cut circle 
+    in 
+    let right = 
+      let circle' = P.empty >> P.circle c 0.25 in
+      let area = `O { P.o with P.width = 0.5 } in
+      radial >> I.move c >> I.cut ~area circle' >> I.move (V2.v 1.0 0.)
+    in
+    I.blend left right
+  end;
+
 Db.image "gradient-scaling" ~author:Db.dbuenzli
   ~title:"Gradients and scaled ones side-by-side"
   ~tags:["gradient"]
@@ -67,6 +117,7 @@ Db.image "gradient-scaling" ~author:Db.dbuenzli
     I.blend (square ~at:(P2.v 0.0 0.0) radial) >> 
     I.blend (square ~at:(P2.v 0.55 0.0) (scaled radial))
   end;
+
 
 Db.image "gradient-rgb-squares" ~author:Db.dbuenzli
   ~title:"Shaded red, green and blue squares"

@@ -428,6 +428,8 @@ module I : sig
       [t] is the smallest value such that [p] is
       on the circle defined by radius [t * r] and center [f + t * (c - f)].}} *)
 
+(*
+
   val raster : box2 -> Raster.t -> image 
   (** [raster r ri] is an image with [ri] framed in the rectangle
       [r] 
@@ -437,6 +439,7 @@ module I : sig
       {ul 
       {- \[[raster r ri]\]{_[p]} [=] TODO if [p] is in {{!Gg.aboxes}S([r])}.}
       {- \[[raster r ri]\]{_[p]} [= Gg.color.void] otherwise.}} *)
+*)
 
   (** {1:cut Cutting images} *)
 
@@ -446,7 +449,10 @@ module I : sig
       defaults to {{!P.area}[`Anz]}.
       {ul 
       {- \[[cut area p i]\]{_[pt]} [=] \[[i]\]{_[pt]} if \[[a], [p]\]{_[pt]}}
-      {- \[[cut area p i]\]{_[pt]} [=] {!Gg.Color.void} otherwise.}} *)
+      {- \[[cut area p i]\]{_[pt]} [=] {!Gg.Color.void} otherwise.}} 
+
+      {b Warning.} Most renderers support only {e outline} cuts of {!const}, 
+      {!axial} and {!radial} images. *)
 
 (* TODO
 
@@ -498,11 +504,15 @@ module I : sig
       each point of [i] by [m] (see {!Gg.P2.tr}). 
       {ul {- \[[tr m i]\]{_[pt]} [=] \[[i]\]{_[m]{^-1}⋅[pt]} for any [pt]}} *)
 
-  (** {1:tag Tagging images with metadata} *)
+  (** {1:tag Adding image metadata} *)
     
-  val tag : meta -> image -> image 
-  (** [tag m i] is [i] but tagged with [m]. 
-      {ul {- \[[tr m i]\]{_[pt]} [=] \[[i]\]{_[pt]} for any [pt]}} *)
+  val meta : meta -> image -> image 
+  (** [meta m i] is [i] with metadata with [m]. 
+      {ul {- \[[meta m i]\]{_[pt]} [=] \[[i]\]{_[pt]} for any [pt]}} 
+
+      {b Note.} The above semantics may not be true for all renderers
+      and images.
+*)
 
   (** {1:predicates Predicates and comparisons} *)
 

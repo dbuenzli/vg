@@ -12,7 +12,7 @@ open Vg
 
 Db.image "path-sq-outline" ~author:Db.dbuenzli
   ~title:"Square outline in gray"
-  ~tags:["path"; "area" ]
+  ~tags:["path"]
   ~note:"Line width is 0.1 as we are on the surface edge."
   ~size:(Size2.v 50. 50.)
   ~view:Box2.unit
@@ -24,7 +24,7 @@ Db.image "path-sq-outline" ~author:Db.dbuenzli
 
 Db.image "path-sq-outline-dashed" ~author:Db.dbuenzli 
   ~title:"Dashed square outline in gray"
-  ~tags:["path"; "area"; "dashes";]
+  ~tags:["path"; "dashes";]
   ~note:"Line width is 0.1 as we are on the surface edge."  
   ~size:(Size2.v 50. 50.)
   ~view:Box2.unit
@@ -68,27 +68,6 @@ Db.image "path-earcs" ~author:Db.dbuenzli
     (arc ~large:false ~cw:true  >> solution r t) >> I.blend
     (arc ~large:true  ~cw:false >> solution l b) >> I.blend 
     (arc ~large:true  ~cw:true  >> solution r b)
-  end;
-
-Db.image "path-earcs-tr" ~author:Db.dbuenzli
-  ~title:"Elliptical arcs"
-  ~tags:["path"]
-  ~note:"In red, elliptical arc from left point to right point. Top row \
-         is ~large:false. Left column is ~cw:false."
-  ~size:(Size2.v 75. 75.)
-  ~view:(Box2.v (P2.v (-2.) (-2.)) (Size2.v 4. 4.))
-  begin fun _ ->
-    let m = M3.scale2 (V2.v (-1.) 1.) in
-    let e = P.empty >> 
-      P.sub (P2.v 1. 0.) >> P.earc (P2.v 1.0 0.5) (P2.v (-1.) 0.)
-    in
-    let et = P.tr m e in 
-    let et' = P.empty >> 
-      P.sub (P2.v (-1.) 0.) >> P.earc ~cw:true 
-               ~angle:Float.pi (P2.v 1.0 0.5) (P2.v (1.) 0.)
-    in
-    Mui.Log.msg "%a" P.pp et;
-    I.const Color.black >> I.cut et';
   end;
 
 Db.image "path-cubics" ~author:Db.dbuenzli

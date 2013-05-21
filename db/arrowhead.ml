@@ -6,37 +6,40 @@
 
 open Gg
 open Vg
+;;
 
 (** Sierpiński Arrowhead curve 
     http://mathworld.wolfram.com/SierpinskiArrowheadCurve.html *)
 
-let arrowhead_path i len = 
-  let angle = Float.pi /. 3. in
-  let rec loop i len sign turn p = 
-    if i = 0 then p >> P.line ~rel:true V2.(polar len turn) else
-    p >>
-    loop (i - 1) (len /. 2.) (-. sign) (turn +. sign *. angle) >>
-    loop (i - 1) (len /. 2.) sign turn >> 
-    loop (i - 1) (len /. 2.) (-. sign) (turn -. sign *. angle)
-  in
-  P.empty >> loop i len 1. 0.
-;;
-
-for i = 0 to 8 do 
-  let id = Printf.sprintf "sarrowhead-%d" i in
-  let title = Printf.sprintf "Sierpiński Arrowhead curve level %d" i in
-  let s = (if i = 0 then "" else "s") in
-  let note = Printf.sprintf "Curve made of %g segment%s." (3. ** (float i)) s in
-  Db.image id ~author:Db.dbuenzli ~title
-    ~tags:["fractal"; "image"]
-    ~size:(Size2.v 60. 52.5)
-    ~view:(Box2.v (P2.v ~-.0.1 ~-.0.1) (Size2.v 1.2 1.05))
-    ~note
-    begin fun _ ->
-      let area = `O { P.o with P.width = 0.005 } in
-      I.const (Color.gray 0.2) >> I.cut ~area (arrowhead_path i 1.0) 
-    end
-done
+Db.image "arrowhead" ~author:Db.dbuenzli 
+  ~title:"Sierpiński Arrowhead curve levels 0-9"
+  ~tags:["fractal"; "image"]
+  ~note:(Printf.sprintf "Last curve made of %g segments" (3. ** (float 9)))
+  ~size:(Size2.v 120. 255.)
+  ~view:(Box2.v P2.o (Size2.v 2. 4.25))
+  begin fun _ ->
+    let arrowhead_path i len = 
+      let angle = Float.pi /. 3. in
+      let rec loop i len sign turn p = 
+        if i = 0 then p >> P.line ~rel:true V2.(polar len turn) else
+        p >>
+        loop (i - 1) (len /. 2.) (-. sign) (turn +. sign *. angle) >>
+        loop (i - 1) (len /. 2.) sign turn >> 
+        loop (i - 1) (len /. 2.) (-. sign) (turn -. sign *. angle)
+      in
+      P.empty >> loop i len 1. 0.
+    in
+    let area = `O { P.o with P.width = 0.005 } in
+    let acc = ref I.void in
+    for i = 0 to 9 do 
+      acc := 
+        I.const (Color.gray 0.2) >> I.cut ~area (arrowhead_path i 0.8) >>
+        I.move (P2.v (float (i mod 2) +. 0.1) 
+                (0.85 *. float ((9 - i) / 2) +. 0.1)) >>
+        I.blend !acc
+    done;
+    !acc
+  end;
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

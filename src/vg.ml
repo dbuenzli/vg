@@ -50,7 +50,7 @@ let to_string_of_formatter pp v =                       (* NOT thread safe. *)
 
 (* Render metadata 
 
-   The type for metadata is an heterogenous dictionary, for the tricks
+   The type for metadata is an heterogeneous dictionary, for the tricks
    see http://mlton.org/PropertyList. Map keys are augmented to allow
    key value comparison and pretty printing. *)
 
@@ -922,9 +922,9 @@ module I = struct
   let scale s i = Tr (Scale s, i)
   let tr m i = Tr (Matrix m, i)
 
-  (* Tagging images with metadata *)
+  (* Adding metadata to images *)
 
-  let tag m i = Meta (m, i)
+  let meta m i = Meta (m, i)
 
   (* Predicates and comparisons *)  
 
