@@ -183,9 +183,11 @@ let badd_dashes s = function
     array dashes
 
 let badd_stop s (t, c) =
+  let alpha = Color.a c in
   badd_fmt s "<stop offset=\"%g\" stop-color=\"" t;
-  badd_rgb_color s c; 
-  badd_fmt s "\"/>"
+  badd_rgb_color s c;
+  if alpha = 1.0 then badd_fmt s "\"/>" else 
+  badd_fmt s "\" stop-opacity=\"%g\"/>" alpha
 
 let badd_gradient_transforms s trs = 
   let rec loop = function
