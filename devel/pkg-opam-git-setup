@@ -10,16 +10,16 @@ LOC=`dirname $0`
 
 . $LOC/pkg-info
 
-if [ -f $LOC/pkg-opam-git-setup-hook ]; then
-    . $LOC/pkg-opam-git-setup-hook
-fi
-
 # Substitute a few things
 ROOTDIR=.
 . $LOC/pkg-varsubsts
 
 # Remove dev artefacts
 rm -f $DEV_BUILD_ARTEFACTS
+
+if [ -f $LOC/pkg-opam-git-setup-hook ]; then
+    . $LOC/pkg-opam-git-setup-hook
+fi
 
 # Generate oasis artefacts
 $OASIS setup
