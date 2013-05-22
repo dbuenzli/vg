@@ -49,11 +49,11 @@ Db.image "gradient-radial" ~author:Db.dbuenzli
   end;
 
 Db.image "gradient-axial-move" ~author:Db.dbuenzli
-  ~title:"Move axial gradient."
+  ~title:"Move axial gradient and outline cut"
   ~tags:["gradient"]
   ~note:"Left, the circle is inscribed in the unit square and the gradient \
-         is black at the center. On the right a circle outline is cut but the \
-         result should be the same as on the left."
+         is black at the center. On the right a circle outline is cut but due 
+         to the parameters used the result should be the same as on the left."
   ~size:(Size2.v 60. 30.)
   ~view:(Box2.v P2.o (Size2.v 2. 1.))
   begin fun _ -> 
@@ -77,8 +77,8 @@ Db.image "gradient-radial-move" ~author:Db.dbuenzli
   ~title:"Move radial gradient and outline cut"
   ~tags:["gradient"]
   ~note:"On the left the circle cut and the radial gradient are inscribed in \
-         the unit square. On the right a circle outline is cut but the result \
-         should be the same as on the left."
+         the unit square. On the right a circle outline is cut but due to the \
+         the parameters used the result should be the same as on the left."
   ~size:(Size2.v 60. 30.)
   ~view:(Box2.v P2.o (Size2.v 2. 1.))
   begin fun _ -> 

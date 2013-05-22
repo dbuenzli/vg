@@ -451,8 +451,8 @@ module I : sig
       {- \[[cut area p i]\]{_[pt]} [=] \[[i]\]{_[pt]} if \[[a], [p]\]{_[pt]}}
       {- \[[cut area p i]\]{_[pt]} [=] {!Gg.Color.void} otherwise.}} 
 
-      {b Warning.} Most renderers support only {e outline} cuts of {!const}, 
-      {!axial} and {!radial} images. *)
+      {b Warning.} For {e outline} cuts most renderers support only
+      cutting into {!const} {!axial} and {!radial} images. *)
 
 (* TODO
 

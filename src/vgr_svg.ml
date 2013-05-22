@@ -26,7 +26,8 @@ type state =
     mutable todo : cmd list;                        (* commands to perform. *)
     mutable id : int;                                     (* uid generator. *)
     prims :                                           (* cached primitives. *)
-      (Vgr.Private.Data.primitive, svg_prim) Hashtbl.t; 
+      (Vgr.Private.Data.primitive * Vgr.Private.Data.tr list, 
+       svg_prim) Hashtbl.t; 
     paths : (path, int) Hashtbl.t;                         (* cached paths. *)
     mutable s_alpha : float;                       (* current global alpha. *)
     mutable s_blender : I.blender;                (* current blending mode. *)
@@ -186,33 +187,43 @@ let badd_stop s (t, c) =
   badd_rgb_color s c; 
   badd_fmt s "\"/>"
 
+let badd_gradient_transforms s trs = 
+  let rec loop = function
+  | [] -> badd_fmt s "\">"
+  | t :: ts -> badd_transform s t; loop ts 
+  in
+  if trs = [] then (badd_fmt s ">") else 
+  (badd_fmt s " gradientTransform=\""; loop trs)
+
 let w_primitive s p k r = try k (Hashtbl.find s.prims p) r with 
 | Not_found ->
-    let create = function 
-    | Const c -> 
+    let rec create = function 
+    | Const c, _ -> 
         let get () = let c = Buffer.contents s.buf in Buffer.clear s.buf; c in
         let a = Color.a c in
         let cstr = (badd_rgb_color s c; get ()) in
         let astr = if a = 1.0 then "" else (badd_fmt s "%g" a; get ()) in 
         Color (cstr, astr)
-    | Axial (stops, p1, p2) ->
+    | Axial (stops, p1, p2), trs ->
         let id = new_id s in
         badd_fmt s "<defs><linearGradient gradientUnits=\"userSpaceOnUse\" \
-                    id=\"i%d\" x1=\"%g\" y1=\"%g\" x2=\"%g\" y2=\"%g\">" 
+                    id=\"i%d\" x1=\"%g\" y1=\"%g\" x2=\"%g\" y2=\"%g\"" 
           id (V2.x p1) (V2.y p1) (V2.x p2) (V2.y p2); 
+        badd_gradient_transforms s trs; 
         List.iter (badd_stop s) stops; 
         badd_fmt s "</linearGradient></defs>";
         Gradient id
-    | Radial (stops, f, c, r) ->
+    | Radial (stops, f, c, r), trs ->
         let id = new_id s in 
         badd_fmt s "<defs><radialGradient gradientUnits=\"userSpaceOnUse\" \
                     id=\"i%d\" fx=\"%g\" fy=\"%g\" cx=\"%g\" cy=\"%g\" \
-                    r=\"%g\">"
+                    r=\"%g\""
           id (V2.x f) (V2.y f) (V2.x c) (V2.y c) r;
+        badd_gradient_transforms s trs;
         List.iter (badd_stop s) stops; 
         badd_fmt s "</radialGradient></defs>";
         Gradient id
-    | Raster _ -> assert false 
+    | Raster _, _ -> assert false 
     in
     let svg_prim = create p in 
     Hashtbl.add s.prims p svg_prim; w_buf s (k svg_prim) r
@@ -238,6 +249,24 @@ let w_primitive_cut s a path_id k svg_prim r = match a with
     badd_svg_prim s "fill" svg_prim;
     w_buf s k r
 
+let w_clip s a i path_id k r = 
+  let astr = match a with 
+  | `O _ -> warn s (`Unsupported_cut (a, image i)); area_str `Anz 
+  | a -> area_str `Anz 
+  in
+  s.todo <- (Draw i) :: (pop_gstate s) :: s.todo;
+  badd_fmt s "<g clip-path=\"url(#i%d)\" clip-rule=\"%s\">" path_id astr;
+  w_buf s k r
+
+let tr_primitive i =
+  let rec loop acc = function
+  | Primitive (Raster _) | Blend _ | Cut _ -> None
+  | Primitive p -> Some (p, List.rev acc) 
+  | Tr (tr, i) -> loop (tr :: acc) i
+  | Meta (_, i) -> loop acc i
+  in
+  loop [] i 
+
 let rec w_cut s a i k path_id r = match i with 
 | Primitive (Raster _) -> 
     begin match a with 
@@ -246,15 +275,13 @@ let rec w_cut s a i k path_id r = match i with
         warn s (`Other "TODO raster unimplemented"); 
         k r 
     end
-| Primitive p -> w_primitive s p (w_primitive_cut s a path_id k) r
-| Tr _ | Blend _ | Cut _ as i ->
-    let astr = match a with 
-    | `O _ -> warn s (`Unsupported_cut (a, image i)); area_str `Anz 
-    | a -> area_str `Anz 
-    in
-    s.todo <- (Draw i) :: (pop_gstate s) :: s.todo;
-    badd_fmt s "<g clip-path=\"url(#i%d)\" clip-rule=\"%s\">" path_id astr;
-    w_buf s k r
+| Primitive p -> w_primitive s (p, []) (w_primitive_cut s a path_id k) r
+| Tr _ as i ->
+    begin match tr_primitive i with 
+    | None -> w_clip s a i path_id k r
+    | Some p_trs -> w_primitive s p_trs (w_primitive_cut s a path_id k) r
+    end
+| Blend _ | Cut _ as i -> w_clip s a i path_id k r
 | Meta (_, i) -> w_cut s a i k path_id r
 
 let rec w_transforms s tr i k r =     (* collapses nested Tr in single <g>. *)

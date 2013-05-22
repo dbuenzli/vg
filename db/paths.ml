@@ -203,7 +203,6 @@ Db.image "path-derived" ~author:Db.dbuenzli
     I.const (Color.gray 0.3) >> I.cut ~area p
   end;
 
-
 Db.image "path-miter-angle" ~author:Db.dbuenzli
   ~title:"Miter angle limit"
   ~tags:["path";]
