@@ -745,6 +745,9 @@ module Vgr : sig
       (** The type for paths. The segment list is reversed. A few invariants
           apply. See the comment in Vg's source. *)
 
+      val of_path : P.t -> path
+      (** [of_path p] is the internal representation of [p]. *)
+
       (** {1 Image representation} *)
 
       (** The type for transforms. Not uniformely expressed as a
@@ -752,6 +755,9 @@ module Vgr : sig
           transforms. *)
       type tr = Move of v2 | Rot of float | Scale of v2 | Matrix of m3
     
+      val tr_inv : tr -> M3.t 
+      (** [tr_inv tr] is the matrix inverse of [tr]. *)
+      
       (** The type for image primitives. *)    
       type primitive = 
         | Const of color
@@ -766,16 +772,16 @@ module Vgr : sig
         | Blend of I.blender * float option * image * image
         | Tr of tr * image
         | Meta of meta * image
+                    
+      val of_image : I.t -> image 
+      (** [of_image i] is the internal representation of [i]. *)
     end
     
-    val path : Data.path -> P.t
-    (** [path p] is [p]'s path from its internal representation. *)
-
-    val image : Data.image -> I.t
-    (** [image i] is [i]'s path from its internal representation. *)
-
     (** Paths helpers. *)
     module P : sig
+      val of_data : Data.path -> P.t 
+      (** [of_data d] is the path from the internal representation [d]. *)
+
       val earc_params : p2 -> large:bool -> cw:bool -> float -> v2 -> p2 -> 
         (p2 * m2 * float * float) option 
         (** [earc_params p large cw angle r p'] is [Some (c, m, a, a')] 
@@ -788,6 +794,12 @@ module Vgr : sig
       val miter_limit : P.outline -> float 
       (** [miter_limit o] is the miter limit corresponding to 
           [o.miter_angle]. *)
+    end
+
+    (** Image helpers *)
+    module I : sig
+      val of_data : Data.image -> I.t
+      (** [of_data d] is the image from the internal representation [d]. *)
     end
 
     (** {1 Renderers } *)

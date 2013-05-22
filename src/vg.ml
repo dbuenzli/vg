@@ -1145,12 +1145,19 @@ module Vgr = struct
       (* Path representation *)
 
       type segment = P.segment
-      type path = P.t 
+      type path = P.t
+      external of_path : P.t -> path = "%identity" 
       
       (* Image representation *)
     
       type tr = I.tr = Move of v2 | Rot of float | Scale of v2 | Matrix of m3
-      
+
+      let tr_inv = function
+      | Move v -> M3.move2 (V2.neg v) 
+      | Rot a -> M3.rot2 (-. a) 
+      | Scale s -> M3.scale2 (V2.v (1. /. V2.x s) (1. /. V2.y s))
+      | Matrix m -> M3.inv m
+
       type primitive = I.primitive = 
         | Const of color
         | Axial of Color.stops * p2 * p2
@@ -1163,18 +1170,24 @@ module Vgr = struct
         | Blend of I.blender * float option * image * image
         | Tr of tr * image
         | Meta of meta * image
-    end
 
-    external path : Data.path -> P.t = "%identity"
-    external image : Data.image -> I.t = "%identity"
+      external of_image : I.t -> image = "%identity"
+    end
 
     (* Path helpers *)
 
     module P = struct
+      external of_data : Data.path -> P.t = "%identity"
       let earc_params = P.earc_params
       let miter_limit o = 
         let l = 1. /. sin (o.P.miter_angle /. 2.) in 
         if l = infinity then max_float else l
+    end
+
+    (* Image helpers *)
+
+    module I = struct 
+      external of_data : Data.image -> I.t = "%identity"
     end
 
     (* Renderers *)

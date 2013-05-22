@@ -17,7 +17,6 @@ include Arrowhead
 include Rmark
 include Doc
 
-
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
    All rights reserved.

@@ -37,7 +37,13 @@ type gstate =    (* Subset of the graphics state saved by a ctx ## save (). *)
     g_blender : I.blender;
     g_outline : P.outline; 
     g_stroke : js_primitive; 
-    g_fill : js_primitive; }
+    g_fill : js_primitive;
+    g_tr_push : Vgr.Private.Data.tr option }
+
+(* N.B. g_tr_push is used to be able to remember the current CTM to handle
+   the case of uncut primitives, see uncut_bounds. The way we do this 
+   may not be efficient but uncut primitives are not expected to be 
+   widespread. *)
 
 type cmd = Pop of gstate | Draw of Vgr.Private.Data.image
 type state = 
@@ -60,16 +66,25 @@ type state =
 let partial = Vgr.Private.partial
 let limit s = Vgr.Private.limit s.r
 let warn s w = Vgr.Private.warn s.r w
-let image i = Vgr.Private.image i
-let pop_gstate s = 
+let image i = Vgr.Private.I.of_data i
+let pop_gstate ?g_tr_push s = 
   Pop { g_alpha = s.s_alpha; g_blender = s.s_blender; g_outline = s.s_outline; 
-        g_stroke = s.s_stroke; g_fill = s.s_fill; }
+        g_stroke = s.s_stroke; g_fill = s.s_fill; g_tr_push }
 
 let set_gstate s g = 
   s.s_alpha <- g.g_alpha; s.s_blender <- g.g_blender; 
   s.s_outline <- g.g_outline; s.s_stroke <- g.g_stroke; 
   s.s_fill <- g.g_fill
 
+let uncut_bounds s =
+  let rec loop m = function 
+  | Pop { g_tr_push = Some tr; _ } :: cmds -> 
+      loop (M3.mul m (Vgr.Private.Data.tr_inv tr)) cmds 
+  | _ :: cmds -> loop m cmds 
+  | [] -> Vgr.Private.Data.of_path (P.empty >> P.rect (Box2.tr m s.view))
+  in
+  loop M3.id s.todo
+  
 let css_color c =                               (* w3c bureaucrats are pigs. *)
   let srgba = Color.to_srgba c in
   let r = Float.int_of_round (Color.r srgba *. 255.) in 
@@ -213,7 +228,7 @@ let rec r_cut s a = function
     end
 | Tr (tr, i) ->
     s.ctx ## save ();
-    s.todo <- (pop_gstate s) :: s.todo;
+    s.todo <- (pop_gstate ~g_tr_push:tr s) :: s.todo;
     push_transform s tr;
     r_cut s a i
 | Blend _ | Cut _ as i ->
@@ -238,10 +253,9 @@ let rec r_image s k r =
   | (Draw i) :: todo ->
       s.cost <- s.cost + 1;
       match i with
-      | Primitive p -> 
-          (* Uncut primitive, just cut to view, but needs current CTM. *)
-          warn s (`Other "TODO, uncut primitive not implemented");
-          s.todo <- todo;
+      | Primitive _ as i ->            (* Uncut primitive, just cut to view. *)
+          let p = uncut_bounds s in
+          s.todo <- (Draw (Cut (`Anz, p, i))) :: todo;
           r_image s k r
       | Cut (a, p, i) -> 
           s.todo <- todo;
@@ -254,7 +268,7 @@ let rec r_image s k r =
           r_image s k r
       | Tr (tr, i) ->
           s.ctx ## save ();
-          s.todo <- (Draw i) :: (pop_gstate s) :: todo; 
+          s.todo <- (Draw i) :: (pop_gstate ~g_tr_push:tr s) :: todo; 
           push_transform s tr; 
           r_image s k r;
       | Meta (m, i) -> 

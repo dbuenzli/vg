@@ -1,29 +1,20 @@
 * Image
+** Prototype I.cut_glyphs
 ** Finish I.blend. 
 ** Image.raster. Accept any raster value, renderer does its
    best, but it also accepts a 
    raster:Gg.raster -> [`Await | `Ok of Gg.raster ] function that the
    renderer user can plug to use "external" tools to improve normalisation.
-** Make combinators more smart so that renders render more images. 
-   E.g. collapse Tr nodes on primitives. Maybe not.
 ** Do we actually have a renderer that supports arbitrary outline cut ? 
    
 * Path
 ** Review ellipse things. There are a few TODOs and wrong things in there.
 ** Sort out the tolerance stuff
 
-* Renderers
-** Primitive images careful when a transform immediatly follows add it
-   e.g. to the gradient transform. Test.
-** allow to choose rendering intent.
-
-
-
 * SVG
 ** Use dublin core for metadata ? Look into inkscape. 
 ** Outlines should be output to a <defs><g id="id" /></defs> for reuse. 
    Or is that impossible ? 
-
 
 * Samples
 ** Quadratic paths.

@@ -8,7 +8,7 @@ open Gg
 open Vg
 ;;
 
-(** Images from the documentation. *)
+(** Images for the documentation. *)
 
 Db.image "doc-gray-square" ~author:Db.dbuenzli
   ~title:"Unit square area in gray"
@@ -17,8 +17,7 @@ Db.image "doc-gray-square" ~author:Db.dbuenzli
   ~view:Box2.unit
   ~note:"Gray indeed."
   begin fun _ ->
-    let gray = I.const (Color.gray 0.5) in
-    gray >> I.cut (P.empty >> P.rect Box2.unit) (* TODO remove cut *)
+    I.const (Color.gray 0.5)
   end;
 
 Db.image "doc-gray-circle" ~author:Db.dbuenzli
@@ -203,7 +202,9 @@ Db.image "doc-aeo" ~author:Db.dbuenzli
   ~note:"Illustrates the even-odd winding area rule."
   ~size:(Size2.v 90. 30.) 
   ~view:(Box2.v P2.o (Size2.v 3.0 1.0))
-  begin fun _ -> area_rule_examples `Aeo end;
+  begin fun _ -> 
+    area_rule_examples `Aeo 
+  end;
 
 Db.image "doc-caps" ~author:Db.dbuenzli
   ~title:"Path caps" 
