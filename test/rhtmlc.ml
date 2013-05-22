@@ -250,7 +250,7 @@ let ui_render_targets () =
         Time.delay 0. begin fun () -> 
           if not (valid s) then () else
           begin 
-            pp ppf "%a" I.pp img;
+            pp ppf "%a@?" I.pp img;
             let dur = Time.now () -. start in 
             Ui.set_txt_child txt (Buffer.contents b);
             activate false;
