@@ -913,7 +913,7 @@ module I = struct
 
   (* Blending images *)
 
-  let blend ?a ?(blender = `Over) i i' = Blend (blender, a, i, i')
+  let blend ?a src dst = Blend (`Over, a, src, dst)
 
   (* Transforming images *)
 
@@ -1157,6 +1157,8 @@ module Vgr = struct
       | Rot a -> M3.rot2 (-. a) 
       | Scale s -> M3.scale2 (V2.v (1. /. V2.x s) (1. /. V2.y s))
       | Matrix m -> M3.inv m
+
+      type blender = I.blender
 
       type primitive = I.primitive = 
         | Const of color

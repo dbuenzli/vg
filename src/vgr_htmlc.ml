@@ -34,7 +34,7 @@ let dumb_prim = Color (Js.string "")
 
 type gstate =    (* Subset of the graphics state saved by a ctx ## save (). *)
   { g_alpha : float;
-    g_blender : I.blender;
+    g_blender : Vgr.Private.Data.blender;
     g_outline : P.outline; 
     g_stroke : js_primitive; 
     g_fill : js_primitive;
@@ -58,7 +58,7 @@ type state =
     prims :                                           (* cached primitives. *)
       (Vgr.Private.Data.primitive, js_primitive) Hashtbl.t;     
     mutable s_alpha : float;                       (* current global alpha. *)
-    mutable s_blender : I.blender;                (* current blending mode. *)
+    mutable s_blender : Vgr.Private.Data.blender; (* current blending mode. *)
     mutable s_outline : P.outline;         (* current outline stroke state. *)
     mutable s_stroke : js_primitive;               (* current stroke color. *)
     mutable s_fill : js_primitive; }                 (* current fill color. *)

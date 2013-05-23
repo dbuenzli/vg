@@ -12,7 +12,7 @@ open Vgr.Private.Data
 
 type gstate = 
   { g_alpha : float; 
-    g_blender : I.blender; 
+    g_blender : Vgr.Private.Data.blender; 
     g_outline : P.outline; } 
     
 type svg_prim = Gradient of int | Color of string * string
@@ -39,7 +39,7 @@ type state =
        svg_prim) Hashtbl.t; 
     paths : (path, int) Hashtbl.t;                         (* cached paths. *)
     mutable s_alpha : float;                       (* current global alpha. *)
-    mutable s_blender : I.blender;                (* current blending mode. *)
+    mutable s_blender : Vgr.Private.Data.blender; (* current blending mode. *)
     mutable s_outline : P.outline; }       (* current outline stroke state. *)
  
 let partial = Vgr.Private.partial

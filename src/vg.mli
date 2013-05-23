@@ -144,15 +144,16 @@ type image
 (** The type for images. *)
 
 val ( >> ) : 'a -> ('a -> 'b) -> 'b
-(** [x >> f] is [f x]. Associates to left. 
-    Used as the path and image composition operator. *)
+(** [x >> f] is [f x], associates to left.
+    Used to build paths and compose images. *)
 
 (** Paths.
     
     Consult their {{!sempaths}semantics}. 
 
-    Path combinators always take the path to act upon as the last
-    argument. Use {!Vg.(>>)} to build paths from the empty path.  *)
+    The composition operator {!Vg.(>>)} is used to build paths from
+    the empty path. For this reason path combinators always take the
+    path to use as the last argument. *)
 module P : sig
 
   (** {1 Path areas} *)
@@ -389,24 +390,29 @@ end
 
 (** Images.
   
-    Consult their {{!semimages}semantics} aswell as 
-    the semantics of {{!semcolors}colors} and {{!semstops}color stops}. 
+    Consult their {{!semimages}semantics}. 
 
-    Image combinators always take the image as the last
-    argument, to use {!Vg.(>>)} compose them.  *)
+    The composition operator {!Vg.(>>)} is used to compose images. 
+    For this reason image combinators always take the
+    image to use as the last argument. *)
 module I : sig
 
-  (** {1:prims Primitive images} *)
+
+  (** {1 Images} *)
 
   type t = image
   (** The type for images. *)
 
+  val void : image
+  (** [void] is [const ]{!Gg.Color.void}, an invisible black image. 
+      [void] is an identity element for {!blend}.
+*)
+
+  (** {1:prims Primitive images} *)
+
   val const : color -> image
   (** [const c] is an image of color [c].
       {ul {- \[[const c]\]{_[pt]} [= c] for any [pt].}} *)
-
-  val void : image
-  (** [void] is [const ]{!Gg.Color.void}, the invisible black image. *)
 
   val axial : Color.stops -> p2 -> p2 -> image
   (** [axial stops pt pt'] is an image with an axial color gradient 
@@ -452,7 +458,8 @@ module I : sig
       {- \[[cut area p i]\]{_[pt]} [=] {!Gg.Color.void} otherwise.}} 
 
       {b Warning.} For {e outline} cuts most renderers support only
-      cutting into {!const} {!axial} and {!radial} images. *)
+      cutting into {!const} {!axial} and {!radial} images. Consult
+      the individual renderer documentation. *)
 
 (* TODO
 
@@ -467,20 +474,15 @@ module I : sig
 
   (** {1:blend Blending images} *)
   
-  type blender = [ `Atop | `In | `Out | `Over | `Plus | `Copy | `Xor ]
-
-  val blend : ?a:float -> ?blender:blender -> image -> image -> image 
-  (** [blend i i'] blends the colors of [i] over those of [i']. If [a] is 
-      specified this value is used as the alpha value for each color of the 
-      resulting image.
-
-      {b TODO.} Semantics. Blender, support just `Over ? 
+  val blend : ?a:float -> image -> image -> image 
+  (** [blend src dst] is [src] blended over [dst] using source over
+      destination alpha blending. If [a] is specified this value is
+      used as the alpha value for each color of [src].
       {ul 
-      {- \[[blend i i']\]{_[p]} [=] (\[[i]\]{_[p]}) \[\] (\[[i']\]{_[p]}) 
-         for any [p] if [a] is unspecified.}
-      {- \[[blend i i']\]{_[p]} [= (c]{_r}[,c]{_g}[,c]{_b}[,a)] 
-         for any [p] with
-         c = \[[i]\]{_[p]} \[\] \[[i']\]{_[p]} otherwise.}} 
+      {- \[[blend i i']\]{_[p]} [=] [Color.blend c c'] 
+      where [c'] = \[[i']\]{_[p]} and [c = ]\[[i]\]{_[p]}
+      if [a] is unspecified and [c = (V4.of_v3 (V3.of_v4 ]\[[i]\]{_[p]}[) a)] 
+      otherwise.}}
    *)
 
   (** {1:transf Transforming images} *)
@@ -491,7 +493,7 @@ module I : sig
 
   val rot : float -> image -> image
   (** [rot a i] is [i] rotated by [a]. 
-      {ul {- \[[rot a i]\]{_[pt]} [=] \[[i]\]{_[m⋅pt]} for any [pt] with
+      {ul {- \[[rot a i]\]{_[pt]} [=] \[[i]\]{_[m⋅pt]} for any [pt] and with
        [m = M2.rot -a].}} *)
 
   val scale : v2 -> image -> image
@@ -523,8 +525,8 @@ module I : sig
   (** [equal i i'] is [i = i']. *)
 
   val equal_f : (float -> float -> bool) -> image -> image -> bool
-  (** [equal eq i i'] is [i = i'] is like {!equal} but uses [eq] 
-      to test floating point values. 
+  (** [equal eq i i'] is like {!equal} but uses [eq] to test floating
+      point values.
 
       {b Note.} Raster images are tested with {!Gg.Raster.equal}. *)
 
@@ -757,7 +759,9 @@ module Vgr : sig
     
       val tr_inv : tr -> M3.t 
       (** [tr_inv tr] is the matrix inverse of [tr]. *)
-      
+
+      type blender = [ `Atop | `In | `Out | `Over | `Plus | `Copy | `Xor ] 
+
       (** The type for image primitives. *)    
       type primitive = 
         | Const of color
@@ -769,7 +773,7 @@ module Vgr : sig
       type image =
         | Primitive of primitive
         | Cut of P.area * path * image
-        | Blend of I.blender * float option * image * image
+        | Blend of blender * float option * image * image
         | Tr of tr * image
         | Meta of meta * image
                     
@@ -864,7 +868,7 @@ end
 
     [Vg] is designed to be opened in your module. This defines only
     types and modules in your scope and a {e single} value, the
-    sequencing operator {!(>>)}. Thus to use [Vg] start with :
+    composition operator {!(>>)}. Thus to use [Vg] start with :
 {[
 open Gg
 open Vg
@@ -892,9 +896,9 @@ open Vg
     self-interesting translucent path —  which usually applies the
     paint only once —  doesn't directly map to the underlying paint
     stroke metaphor. The collage model is also more economical from a
-    conceptual point view since image cuts naturally unify the
-    distinct concepts of clipping paths, path strokes and path fills
-    of the painter model.
+    conceptual point view since image cuts and blends naturally unify
+    the distinct concepts of clipping paths, path strokes, path fills
+    and compositing groups of the painter model.
 
     The collage model introduced in the following sections was stolen
     and adapted from the following works.
@@ -1045,7 +1049,7 @@ let dot = I.blend circle_outline gray_circle
 {%html: <img src="doc-dot.png" style="width:30mm; height:30mm;"/> %}
 
     The order of arguments in {!I.blend} is defined so that images can
-    be blended using the left-associative sequencing operator
+    be blended using the left-associative composition operator
     {!Vg.(>>)}. That is [dot] can also be written as follows:
 {[
 let dot = gray_circle >> I.blend circle_outline
@@ -1149,7 +1153,7 @@ I.const Color.black >> I.cut ~area p
     {- Matrices given to {!P.tr} and {!I.tr} are supposed to 
        be affine and as such ignore the last row of the matrix.} 
     {- [to_string] functions are not thread-safe. Thread-safety
-       can be achieved with [print] functions.}
+       can be achieved with [pp] functions.}
     {- Do not rely on the output of printer functions, they
        are subject to change.}
     {- Rendering results are undefined if path
@@ -1159,7 +1163,7 @@ I.const Color.black >> I.cut ~area p
        values in the definition of an image results in more
        efficient rendering in space and time.}
     {- Images are said to be immutable. This is only true if you 
-       don't change the samples of raster images given o {!I.raster}.}
+       don't change the samples of raster images given to {!I.raster}.}
     {- Some rendering target provide features that are not accessible 
        from Vg. They were left out so that rendering to different 
        targets doesn't result in too many discrepancies. If you need
@@ -1170,47 +1174,33 @@ I.const Color.black >> I.cut ~area p
 (** {1:semantics Semantics} 
 
     The following notations and definitions are used to give precise
-    meaning to the images and [Vg]'s combinators.
+    meaning to the images and the combinators.
 
     {2:semcolors Colors}
 
-    The semantics of colors is the one ascribed to {{!Gg.Color.t}[Gg.color]}. 
+    The semantics of colors is the one ascribed to
+    {{!Gg.Color.t}[Gg.color]}: colors are in a {e linearized} sRGBA space.
 
-    The (semantic) blending function \[\][ : color -> color -> color]
-    mixes two colors [c = (r,g,b,a)] and [c' = (r',g',b',a')] into a
-    new color value written [c] \[\] [c'] defined as follows :
-{[c \[\] c' = ((a'r' + (1 - a')ar) / a'',
-           (a'g' + (1 - a')ag) / a'',
-           (a'b' + (1 - a')ab) / a'',
-            a'') 
-          with a'' = a' + (1 - a')a]}
+    {3:semstops Color stops} 
 
-      In the equation above division by zero results in zero.  The
-      function \[\] corresponds to the Porter-Duff {e over} operator.
+    A value of type {!Gg.Color.stops} specifies a color at each point
+    of the 1D {e unit} space. It is defined by a list of pairs
+    [(t]{_i}[, c]{_i}[)] where [t]{_i} is a value from [0] to [1] and
+    [c]{_i} the corresponding color at that value. Colors at points
+    between [t]{_i} and [t]{_i+1} are linearly interpolated between
+    [c]{_i} and [c]{_i+1}. If [t]{_i} lies outside [0] to [1]
+    or if [t]{_i-1} >= [t]{_i} the semantics is undefined.
 
-      More information about the alpha component and image
-      compositing can be found here :
+    Given a stops value [stops = \[][(t]{_0}[, c]{_0}[);]
+    [(t]{_1}[,c]{_1}[);] ... [(t]{_n}[, c]{_n}[)][\]] and any point
+    [t] of 1D space, the semantic function: 
+    
+    \[\] [: Gg.Color.stops -> float -> Gg.color] 
+    
+    maps them to a color value written \[[stops]\]{_t}
+    as follows.
 
-      Alvy Ray Smith. {e
-      {{:ftp://ftp.alvyray.com/Acrobat/4_Comp.pdf}Image compositing
-      fundamentals}}. Microsoft technical Memo 4. 1995. 
-
-      {2:semstops Color stops} 
-
-      A value of type {!Gg.Color.stops} specifies a color at each point of the
-      1D {e unit} space. It is defined by a list of pairs
-      [(t]{_i}[, c]{_i}[)] where [t]{_i} is a value from [0] to [1] and
-      [c]{_i} the corresponding color at that value. Colors at points
-      between [t]{_i} and [t]{_i+1} are linearly interpolated between
-      [c]{_i} and [c]{_i+1}. Pairs whose [t]{_i} lies outside [0] to
-      [1] or such that [t]{_i-1} >= [t]{_i} are discarded.
-
-      Given a stops value [stops = \[][(t]{_0}[, c]{_0}[);]
-      [(t]{_1}[, c]{_1}[);] ... [(t]{_n}[, c]{_n}[)][\]] and any point
-      [t] of 1D space, the semantic function \[\] [: Color.stops ->
-      float -> color] maps them to a color value written
-      \[[stops]\]{_t} as follows.
-      {ul
+    {ul
       {- \[[]\]{_t} = [(0, 0, 0, 0)] for any [t]}
       {- \[[stops]\]{_t} [= c]{_0} if [t < t]{_0}.}
       {- \[[stops]\]{_t} [= c]{_n} if [t >= t]{_n}.}
@@ -1220,12 +1210,11 @@ I.const Color.black >> I.cut ~area p
 
     {2:semimages Images}    
 
-    An image is a mapping from the infinite 2D euclidian space to
-    {{!semcolors}colors}. Values of type {!image} represent infinite
-    images. Given an image [i] and a point [pt] of the plane the
-    semantic function 
+    Values of type {!image} represent maps from the infinite
+    2D euclidian space to {{!semcolors}colors}. Given an image [i] and 
+    a point [pt] of the plane the semantic function
 
-    \[\][: image -> p2 -> Gg.color] 
+    \[\][: image -> Gg.p2 -> Gg.color] 
 
     maps them to a color value written \[[i]\]{_[pt]} representing the
     image's color at this point.
@@ -1233,7 +1222,7 @@ I.const Color.black >> I.cut ~area p
     {2:sempaths Paths and areas}
     
     A value of type {!path} is a list of subpaths. A subpath is a list
-    of {e directed} and connected curved {e segments}. Subpaths can be
+    of {e directed} and connected curved {e segments}. Subpaths are
     disconnected from each other and may (self-)intersect.
 
     A path and a value of type {!P.area} defines a finite area of the
@@ -1292,7 +1281,7 @@ I.const Color.black >> I.cut ~area p
            centered at the end point with a diameter equal to [o.width].}
         {- [`Bevel], joins the outer parallel curves by a segment.}}
 
-        {4:semcaps Path caps} 
+        {4:semcaps Subpath caps} 
 
         The shape of subpath (or dashes) end points is specified in
         [o.cap] by a value of type {!P.cap}. From left to right:
@@ -1305,7 +1294,7 @@ I.const Color.black >> I.cut ~area p
         {- [`Square], end points are square and extend by a distance 
            equal to half [o.width].}}
 
-        {4:semdashes Path dashes} 
+        {4:semdashes Outline dashes} 
 
         The path outline area can be chopped at regular intervals by
         spefiying a value [(off, pat)] of type {!P.dashes} in [o.dashes].
