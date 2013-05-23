@@ -17,7 +17,16 @@ type gstate =
     
 type svg_prim = Gradient of int | Color of string * string
 
-type cmd = Pop of unit | Draw of Vgr.Private.Data.image
+type cmd = 
+  | Pop of Vgr.Private.Data.tr list
+  | Draw of Vgr.Private.Data.image
+
+(* N.B. the transforms in Pop are used to be able to remember the
+   current transformation matrix to handle the case of uncut
+   primitives, see uncut_bounds. The way we do this may not be
+   efficient but uncut primitives are not expected to be
+   widespread. *)
+
 type state = 
   { r : Vgr.Private.renderer;                    (* corresponding renderer. *)
     buf : Buffer.t;                                   (* formatting buffer. *)
@@ -37,9 +46,18 @@ let partial = Vgr.Private.partial
 let limit s = Vgr.Private.limit s.r
 let warn s w = Vgr.Private.warn s.r w
 let image i = Vgr.Private.I.of_data i
-let pop_gstate s = Pop ()
-let set_gstate s gs = () 
 let new_id s = s.id <- s.id + 1; s.id
+let pop_gstate ?(trs = []) s = Pop trs
+let set_gstate s gs = () 
+let uncut_bounds s =
+  let rec loop m = function 
+  | [] -> Vgr.Private.Data.of_path (P.empty >> P.rect (Box2.tr m s.view))
+  | Pop trs :: cmds -> 
+      let mul_inv m tr = M3.mul m (Vgr.Private.Data.tr_inv tr) in
+      loop (List.fold_left mul_inv m trs) cmds 
+  | _ :: cmds -> loop m cmds 
+  in
+  loop M3.id s.todo
 
 let cap_str = function 
 | `Butt -> "butt" | `Round -> "round" | `Square -> "square"
@@ -286,17 +304,18 @@ let rec w_cut s a i k path_id r = match i with
 | Blend _ | Cut _ as i -> w_clip s a i path_id k r
 | Meta (_, i) -> w_cut s a i k path_id r
 
-let rec w_transforms s tr i k r =     (* collapses nested Tr in single <g>. *)
-  if s.cost > limit s then (s.cost <- 0; partial (w_transforms s tr i k) r) else
+let rec w_transforms s trs i k r =    (* collapses nested Tr in single <g>. *)
+  if s.cost > limit s then (s.cost <- 0; partial (w_transforms s trs i k) r)else
   begin
     s.cost <- s.cost + 1;
     match i with
-    | Tr (tr', i') -> badd_transform s tr; w_buf s (w_transforms s tr' i' k) r
-    | Meta (_, i) -> w_transforms s tr i k r
+    | Tr (tr, i') -> 
+        badd_transform s tr; w_buf s (w_transforms s (tr :: trs) i' k) r
+    | Meta (_, i) -> 
+        w_transforms s trs i k r
     | i ->
-        badd_transform s tr;
         badd_str s "\">"; 
-        s.todo <- (Draw i) :: pop_gstate s :: s.todo;
+        s.todo <- (Draw i) :: pop_gstate ~trs s :: s.todo;
         w_buf s k r
   end
 
@@ -311,10 +330,9 @@ let rec w_image s k r =
   | (Draw i) :: todo -> 
       s.cost <- s.cost + 1; 
       match i with 
-      | Primitive _ -> 
-          (* Uncut primitive, just cut to view. Need CTM *) 
-          warn s (`Other "TODO, uncut primitive not implemented");
-          s.todo <- todo;
+      | Primitive _ as i ->           (* Uncut primitive, just cut to view. *)
+          let p = uncut_bounds s in 
+          s.todo <- (Draw (Cut (`Anz, p, i))) :: todo;
           w_image s k r
       | Cut (a, p, i) -> 
           s.todo <- todo;
@@ -327,14 +345,14 @@ let rec w_image s k r =
             warn s (`Other "TODO, blend mode and group opacity");
             w_image s k r
           end
-      | Tr (tr, i) ->
+      | Tr _ as i ->
           s.todo <- todo;
           badd_str s "<g transform=\""; 
-          w_transforms s tr i (w_image s k) r
+          w_transforms s [] i (w_image s k) r
       | Meta (m, i) -> 
           s.todo <- (Draw i) :: todo; 
           w_image s k r
-
+            
 let render xml_decl s v k r = match v with 
 | `End -> w_str "</g></svg>" (Vgr.Private.flush k) r
 | `Image (size, view, i) -> 
@@ -344,6 +362,7 @@ let render xml_decl s v k r = match v with
     badd_descr s (Vgm.find m Vgm.description);
     badd_init s size view;
     s.todo <- [Draw i];
+    s.view <- view;
     w_buf s (w_image s k) r
 
 let target ?(xml_decl = true) () = 
