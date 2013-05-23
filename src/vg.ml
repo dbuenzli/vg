@@ -913,7 +913,7 @@ module I = struct
 
   (* Blending images *)
 
-  let blend ?a src dst = Blend (`Over, a, src, dst)
+  let blend src dst = Blend (`Over, None, src, dst)
 
   (* Transforming images *)
 

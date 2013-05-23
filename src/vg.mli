@@ -474,16 +474,12 @@ module I : sig
 
   (** {1:blend Blending images} *)
   
-  val blend : ?a:float -> image -> image -> image 
+  val blend : image -> image -> image 
   (** [blend src dst] is [src] blended over [dst] using source over
-      destination alpha blending. If [a] is specified this value is
-      used as the alpha value for each color of [src].
+      destination alpha blending.
       {ul 
-      {- \[[blend i i']\]{_[p]} [=] [Color.blend c c'] 
-      where [c'] = \[[i']\]{_[p]} and [c = ]\[[i]\]{_[p]}
-      if [a] is unspecified and [c = (V4.of_v3 (V3.of_v4 ]\[[i]\]{_[p]}[) a)] 
-      otherwise.}}
-   *)
+      {- \[[blend src dst]\]{_[p]} [=] [Color.blend]  \[[src]\]{_[p]}  
+      \[[dst]\]{_[p]}}} *)
 
   (** {1:transf Transforming images} *)
 
@@ -898,7 +894,8 @@ open Vg
     stroke metaphor. The collage model is also more economical from a
     conceptual point view since image cuts and blends naturally unify
     the distinct concepts of clipping paths, path strokes, path fills
-    and compositing groups of the painter model.
+    and compositing groups (unsupported for now in [Vg]) of the
+    painter model.
 
     The collage model introduced in the following sections was stolen
     and adapted from the following works.
