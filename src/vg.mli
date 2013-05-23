@@ -502,16 +502,6 @@ module I : sig
       each point of [i] by [m] (see {!Gg.P2.tr}). 
       {ul {- \[[tr m i]\]{_[pt]} [=] \[[i]\]{_[m]{^-1}⋅[pt]} for any [pt]}} *)
 
-  (** {1:tag Adding image metadata} *)
-    
-  val meta : meta -> image -> image 
-  (** [meta m i] is [i] with metadata with [m]. 
-      {ul {- \[[meta m i]\]{_[pt]} [=] \[[i]\]{_[pt]} for any [pt]}} 
-
-      {b Note.} The above semantics may not be true for all renderers
-      and images.
-*)
-
   (** {1:predicates Predicates and comparisons} *)
 
   val is_void : image -> bool 
