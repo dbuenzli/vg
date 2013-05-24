@@ -10,19 +10,30 @@ open Vg
 
 (** Test images for alpha blending. *)
 
-Db.image "alpha-squares" ~author:Db.dbuenzli
-  ~title:"Blue, yellow and green squares overlapping"
+Db.image "alpha-spots" ~author:Db.dbuenzli
+  ~title:"Alpha spots"
   ~tags:["alpha"]
-  ~size:(Size2.v 60. 60.)
-  ~view:(Box2.v (P2.v (-0.1) (-0.1)) (Size2.v 1.2 1.2))
+  ~note:"Spots with 0.75 alpha composed in various order. Left to right, 
+         top to bottom, back most color first: rgb, rbg, grb, gbr, brg, bgr."
+  ~size:(Size2.v 70. 100.)
+  ~view:(Box2.v P2.o (Size2.v 0.7 1.0))
   begin fun _ -> 
-    let rr = P.empty >> P.rect (Box2.v (P2.v 0.1 0.3) (Size2.v 0.4 0.6)) in
-    let rg = P.empty >> P.rect (Box2.v (P2.v 0.25 0.) (Size2.v 0.4 0.6)) in
-    let rb = P.empty >> P.rect (Box2.v (P2.v 0.4 0.4) (Size2.v 0.6 0.4)) in
-    let r = I.const (Color.v 1. 0. 0. 0.5) >> I.cut rr in 
-    let g = I.const (Color.v 0. 1. 0. 0.5) >> I.cut rg in
-    let b = I.const (Color.v 0. 0. 1. 0.5) >> I.cut rb in 
-    r >> I.blend g >> I.blend b
+   let a = Float.pi_div_2 in 
+   let da = Float.two_pi /. 3. in
+   let dotp = P.empty >> P.circle P2.o 0.08 in
+   let dot c da = I.const c >> I.cut dotp >> I.move (V2.polar 0.05 (a +. da)) in
+   let r = dot (Color.v 0.608 0.067 0.118 0.75) da in
+   let g = dot (Color.v 0.314 0.784 0.471 0.75) 0. in 
+   let b = dot (Color.v 0.000 0.439 0.722 0.75) (-. da) in
+   let triplet a b c = a >> I.blend b >> I.blend c in
+   let triplet_row y a b c = 
+     let fst = triplet a b c >> I.move (P2.v 0.2 y) in 
+     let snd = triplet a c b >> I.move (P2.v 0.5 y) in 
+     fst >> I.blend snd
+   in
+   (triplet_row 0.8 r g b) >> I.blend 
+   (triplet_row 0.5 g r b) >> I.blend 
+   (triplet_row 0.2 b r g)
   end
 
 (*---------------------------------------------------------------------------

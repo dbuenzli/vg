@@ -30,12 +30,13 @@ Db.image "arrowhead" ~author:Db.dbuenzli
       P.empty >> loop i len 1. 0.
     in
     let area = `O { P.o with P.width = 0.005 } in
+    let gray = I.const (Color.gray 0.2) in
     let acc = ref I.void in
-    for i = 0 to 9 do 
+    for i = 0 to 9 do
+      let x = float (i mod 2) +. 0.1 in 
+      let y = 0.85 *. float (i / 2) +. 0.1 in
       acc := 
-        I.const (Color.gray 0.2) >> I.cut ~area (arrowhead_path i 0.8) >>
-        I.move (P2.v (float (i mod 2) +. 0.1) 
-                (0.85 *. float ((9 - i) / 2) +. 0.1)) >>
+        gray >> I.cut ~area (arrowhead_path i 0.8) >> I.move (V2.v x y) >> 
         I.blend !acc
     done;
     !acc

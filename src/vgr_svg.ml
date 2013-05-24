@@ -11,8 +11,8 @@ open Vgr.Private.Data
 (* Renderer *)
 
 type gstate = 
-  { g_alpha : float; 
-    g_blender : Vgr.Private.Data.blender; 
+  { g_alpha : float;                                     (* unused for now. *)
+    g_blender : Vgr.Private.Data.blender;                (* unused for now. *)
     g_outline : P.outline; } 
     
 type svg_prim = Gradient of int | Color of string * string
@@ -321,7 +321,7 @@ let rec w_transforms s trs i k r =    (* collapses nested Tr in single <g>. *)
 
 let rec w_image s k r =
   if s.cost > limit s then (s.cost <- 0; partial (w_image s k) r) else
-  match s.todo with 
+  match s.todo with
   | [] -> Hashtbl.reset s.prims; Hashtbl.reset s.paths; k r
   | Pop gs :: todo -> 
       set_gstate s gs; 
@@ -337,14 +337,9 @@ let rec w_image s k r =
       | Cut (a, p, i) -> 
           s.todo <- todo;
           w_path s p (w_cut s a i (w_image s k)) r
-      | Blend (blender, alpha, i, i') -> 
-          (* TODO blender and alpha *) 
+      | Blend (_, _, i, i') ->
           s.todo <- (Draw i') :: (Draw i) :: todo; 
-          if blender = `Over && alpha = None then w_image s k r else
-          begin
-            warn s (`Other "TODO, blend mode and group opacity");
-            w_image s k r
-          end
+          w_image s k r
       | Tr _ as i ->
           s.todo <- todo;
           badd_str s "<g transform=\""; 

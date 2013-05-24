@@ -33,8 +33,8 @@ type js_primitive =
 let dumb_prim = Color (Js.string "")
 
 type gstate =    (* Subset of the graphics state saved by a ctx ## save (). *)
-  { g_alpha : float;
-    g_blender : Vgr.Private.Data.blender;
+  { g_alpha : float;                                     (* unused for now. *)
+    g_blender : Vgr.Private.Data.blender;                (* unused for now. *)
     g_outline : P.outline; 
     g_stroke : js_primitive; 
     g_fill : js_primitive;
@@ -122,9 +122,7 @@ let set_dashes ?(warning = true) s dashes =
       ctx ## lineDashOffset <- offset;
       ctx ## setLineDash(da)
 
-let init_ctx s = 
-  s.ctx ## globalAlpha <- s.s_alpha;
-(*  s.ctx ## globalCompositeOperation <-  TODO *)
+let init_ctx s =
   let o = s.s_outline in
   s.ctx ## lineWidth <- o.P.width; 
   s.ctx ## lineCap <- cap_str o.P.cap; 
@@ -262,8 +260,7 @@ let rec r_image s k r =
           set_path s p;
           r_cut s a i;
           r_image s k r
-      | Blend (blender, alpha, i, i') -> 
-          (* TODO blender and alpha *)
+      | Blend (_, _, i, i') -> 
           s.todo <- (Draw i') :: (Draw i) :: todo;
           r_image s k r
       | Tr (tr, i) ->

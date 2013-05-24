@@ -106,11 +106,14 @@ Db.image "gradient-scaling" ~author:Db.dbuenzli
   ~size:(Size2.v 60. 60.)
   ~view:(Box2.v (P2.v ~-.0.1 ~-.0.1) (Size2.v 1.2 1.2))
   begin fun _ -> 
-    let r = P.empty >> P.rect (Box2.v (P2.v 0. 0.) (Size2.v 0.45 0.45)) in
-    let stops = [ 0.0, Color.red; 0.5, Color.green; 1.0, Color.blue ] in
+    let y = Color.v 1.000 0.827 0.000 1.0 in
+    let b = Color.v 0.000 0.529 0.741 1.0 in     
+    let r = Color.v 0.769 0.008 0.200 1.0 in 
+    let stops = [ 0.0, r; 0.5, b; 1.0, y] in
     let axial = I.axial stops P2.o (P2.v 0.45 0.) in
     let radial = I.radial stops ~f:(P2.v 0.25 0.25) (P2.v 0.5 0.5) 0.5 in
     let scaled i = i >> I.scale (Size2.v 0.5 0.333) in
+    let r = P.empty >> P.rect (Box2.v (P2.v 0. 0.) (Size2.v 0.45 0.45)) in
     let square ~at i = i >> I.cut r >> I.move at in
     square ~at:(P2.v 0.0 0.55) axial >> 
     I.blend (square ~at:(P2.v 0.55 0.55) (scaled axial)) >> 

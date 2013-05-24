@@ -248,6 +248,44 @@ Db.image "doc-joins" ~author:Db.dbuenzli
     (path 0. `Miter) >> I.blend (path 1. `Round) >> I.blend (path 2. `Bevel)
   end;
 
+Db.image "doc-earcs" ~author:Db.dbuenzli
+  ~title:"Elliptical arcs"
+  ~tags:["doc"; "path"]
+  ~note:"Illustrates elliptical arc parameters. In red, elliptical arc \
+         from left point to right point. Top row is ~large:false. \
+         Left column is ~cw:false."
+  ~size:(Size2.v 75. 45.)
+  ~view:(Box2.v P2.o (Size2.v 7.5 4.5))
+  begin fun _ ->
+    let angle = Float.rad_of_deg 0. in
+    let r = Size2.v 1.0 0.5 in
+    let p0 = P2.v 0. (Size2.h r) in
+    let p1 = P2.v (Size2.w r) 0.0 in 
+    let square = P.empty >> P.rect (Box2.v_mid P2.o (Size2.v 0.1 0.1)) in
+    let mark pt = I.const (Color.gray 0.1) >> I.cut square >> I.move pt in
+    let ellipses =
+      let area = `O { P.o with P.width = 0.02 } in
+      let els = 
+        P.empty >> P.ellipse ~angle P2.o r >> P.ellipse ~angle V2.(p0 + p1) r 
+      in
+      I.const (Color.gray 0.5) >> I.cut ~area els
+    in
+    let solution x y sol =
+      ellipses >> I.blend sol >> I.blend (mark p0) >> I.blend (mark p1) >>
+      I.move (P2.v x y)
+    in
+    let arc ~large ~cw = 
+      let a = P.(empty >> sub p0 >> earc ~large ~cw ~angle r  p1) in
+      I.const Color.red >> I.cut ~area:(`O { P.o with P.width = 0.02 }) a
+    in
+    let l, r, t, b = 1.5, 5.0, 3.0, 1.0 in
+    (arc ~large:false ~cw:false >> solution l t) >> I.blend
+    (arc ~large:false ~cw:true  >> solution r t) >> I.blend
+    (arc ~large:true  ~cw:false >> solution l b) >> I.blend 
+    (arc ~large:true  ~cw:true  >> solution r b)
+  end;
+
+
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

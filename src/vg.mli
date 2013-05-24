@@ -241,9 +241,9 @@ module P : sig
       traversed and [cw] if the arc is to be traversed in the
       clockwise direction (both default to [false]). In the following
       image, in red, the elliptical arc from the left point to the
-      right one.  The top row is [~large:false] and the left columns
+      right one.  The top row is [~large:false] and the left column
       is [~cw:false]:
-      {%html: <img src="earc.png" style="width:75mm; height:45mm;"/> %}
+      {%html: <img src="doc-earcs.png" style="width:75mm; height:45mm;"/> %}
   *)
 
   val close : path -> path
@@ -405,8 +405,7 @@ module I : sig
 
   val void : image
   (** [void] is [const ]{!Gg.Color.void}, an invisible black image. 
-      [void] is an identity element for {!blend}.
-*)
+      [void] is an identity element for {!blend}. *)
 
   (** {1:prims Primitive images} *)
 
@@ -502,7 +501,12 @@ module I : sig
       each point of [i] by [m] (see {!Gg.P2.tr}). 
       {ul {- \[[tr m i]\]{_[pt]} [=] \[[i]\]{_[m]{^-1}⋅[pt]} for any [pt]}} *)
 
-  (** {1:predicates Predicates and comparisons} *)
+  (** {1:predicates Predicates and comparisons} 
+
+      {b Note.} These predicates consider the structure of image
+      values not their denotational interpretation; a single
+      denotational interpretation can have many structural
+      representations. *)
 
   val is_void : image -> bool 
   (** [is_void i] is [i == void]. *)
@@ -555,8 +559,7 @@ type renderer
        {{:http://www.w3.org/TR/SVG11/}SVG 1.1} document.}
     {- {!Vgr_htmlc}, renders sequence of images on an 
        {{:http://www.w3.org/TR/2dcontext/}HTML canvas} 
-       element via {{:http://ocsigen.org/js_of_ocaml/}js_of_ocaml}.}}
-*) 
+       element via {{:http://ocsigen.org/js_of_ocaml/}js_of_ocaml}.}} *) 
 module Vgr : sig
 
   (** {1:warnings Render warnings} 
@@ -709,8 +712,7 @@ module Vgr : sig
          rectangle to render.}
       {- If the renderer doesn't support [Vg]'s full rendering model or
          diverges from its semantics it must ignore unsupported features
-         and warn the client via the {!warn} function.}}
-*)
+         and warn the client via the {!warn} function.}} *)
   module Private : sig
     
     (** {1 Internal data} *)

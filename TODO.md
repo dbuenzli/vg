@@ -1,28 +1,38 @@
-# Before first release
+# TODO 
 
-## Path
+## Before first release
 
-Review ellipse things. There are a few TODOs and wrong things in there.
+### Path
 
-## Image
+* Review ellipse things. There are a few TODOs and wrong things in there.
+
+### Image
 
 Do we actually have a renderer that supports arbitrary outline cut ? 
 
 * Prototype I.cut_glyphs
-* Finish I.blend, remove blending operators for now but support 
-  alpha group. Implement Gg.Color.blend. Specify the semantics.
 * Image.raster. Accept any raster value, renderer does its best, but it 
   also accepts a 
   raster:Gg.raster -> [`Await | `Ok of Gg.raster ] function that the
   renderer user can plug to use "external" tools to improve normalisation.
 
-## SVG renderer 
+### SVG renderer 
 
 * Use dublin core for metadata ? Look into inkscape. 
 * Outlines should be output to a <defs><g id="id" /></defs> for reuse. 
   Or is that impossible ? 
 
-## Glyph api
+### PDF renderer 
+
+Implement !
+
+### Misc
+
+* Final code review. 
+* Review doc of Vgm now that we removed I.meta.
+* grep TODO
+
+### Glyph api
 
 Maybe an approach similar to raster. Define a type that allows for
 quite different font specification and provide a normalizer in the
@@ -53,37 +63,32 @@ renderers for resolution.
 * Test miànjï 面积 (area, surface area), vector.
 * Test font http://www.twardoch.com/fonts/ Nadeyezhda 
 
-# Db images ideas 
+## Db images ideas 
 
 * Quadratic paths.
-* vgrender that takes a cmxs and outputs svg or pdf.
 * Test degenerate color stops discarding.
 * Test degenerate subpaths rendering. 
 * Dash offset is for start of each subpath, negative dashoffsets. 
 * Primitives, special cases axial with p = p', radial with c = c'. 
-* prim.ml only base images (the renderer needs to crop). 
 * Test geometric primitives, quadric and ellipse for pdf renderer.
-* fill rules.
-* gradient stops as premultiplied color value cannot blend red to blue
-  while alpha 1.0 to alpha 0.0.
 * The IEEE 754 double floating point line vs the real line.
 * The IEEE 754 double floating point grid vs the real plane
 * How many doubles between 10 and 11, 100 and 101, 1000 and 1001, etc.
   or 2 ** n and 2 ** n+1.
-* slogans.
 * Pies, better to eat them than use them.
   http://en.wikipedia.org/wiki/File:Piecharts.svg 
 * Rectangle, area cut of w = 0 or s = 0 is nothing but outline cut
   is segment. 
 
-#  After first release
+##  After first release
 
-## Path
+### Path
 
 Quite a few convience operations on paths could be added. This would
 be only at the Vg level renderers wouldn't need to be extended. But
 does it really belong in Vg ? Tension between general computational
-geometry lib and rendering lib.
+geometry lib and rendering lib. However quite a few of these things
+could be used by a potential rasterizer.
 
 * P.mem : area -> path -> p2 -> bool
 * P.length : path -> float (* arc length *)
@@ -93,16 +98,23 @@ geometry lib and rendering lib.
 * Boolean operations on paths
 * Minkowski sum
 
-## Image 
+### Image 
 
-Support more blending operators. Is it really useful for the kind 
-of rendering targetted by Vg ? 
+Support more blending operators, how much is it used in practice ?
+
+Support group opacity, that would be really useful, however HTML
+canvas doesn't support it. 
+
+In any case these two features would lead to the following signature
+for I.blend:
+
+I.blend : ?a:float -> ?blender:blender -> image -> image -> image 
 
 * http://cairographics.org/operators/
 * http://lists.cairographics.org/archives/cairo/2008-October/015362.html
+* http://www.w3.org/TR/compositing/
 
-
-# Misc pointers
+## Pointers
 
 * http://www.fontconfig.org/fontconfig-user.html
 * http://processingjs.nihongoresources.com/bezierinfo/
@@ -111,8 +123,7 @@ of rendering targetted by Vg ?
 * http://books.google.com/books?q=vatti+clipping+agoston
 * http://www.antigrain.com/research/adaptive_bezier/index.html
 
-
-# Attic PDF renderer notes
+## Attic PDF renderer notes
 
 * Generate PDF/A
 * Rewrite to use Form XObjects. 
@@ -142,9 +153,3 @@ the first function, we will call the second one to output the stream.
 The compress function should reapeatedly call the first one
 to get data and call the first one to output. Hard to integrate
 I think (input).
-
-
-
-
-
-

@@ -8,43 +8,28 @@ open Gg
 open Vg
 ;;
 
-(** Test image for colors. *)
+(** Test images for colors. *)
 
-Db.image "color-rgb-squares" ~author:Db.dbuenzli
-  ~title:"Red green and blue squares"
+Db.image "color-ramps" ~author:Db.dbuenzli
+  ~title:"Primary and grayscale ramps"
   ~tags:["color"]
-  ~size:(Size2.v 50. 50.) 
-  ~view:(Box2.v P2.o (Size2.v 40. 40.))
-  ~note:"Red, green, blue from bottom left counter-clockwise."
+  ~note:"From 0 to 1 by 0.1 increments in sRGB space. From right to left \ 
+         top to bottom, red, green, blue, gray."
+  ~size:(Size2.v 100. 100.)
+  ~view:(Box2.v P2.o (Size2.v 2.2 2.2))
   begin fun _ -> 
-    let r = P.empty >> P.rect (Box2.v P2.o (Size2.v 20. 20.)) in
-    let square ~at c = I.const c >> I.cut r >> I.move at in 
-    square ~at:P2.o Color.red >> 
-    I.blend (square ~at:(P2.v 20. 0.0) Color.green) >>
-    I.blend (square ~at:(P2.v 20. 20.) Color.blue)
-  end;
-
-Db.image "color-grayscale-ramp" ~author:Db.dbuenzli
-  ~title:"Grayscale ramp"
-  ~tags:["color"]
-  ~size:(Size2.v 50. 50.) 
-  ~view:Box2.unit
-  ~note:"From 0 to 1 by 0.1 increments in sRGB space."
-  begin fun _ -> 
-    let dI = 0.1 in
-    let step_count = (1.0 /. dI) +. 1. in
-    let dx = 1. /. step_count in
-    let bar = P.empty >> P.rect (Box2.v P2.o (Size2.v (dx +. 0.005) 1.0)) in 
-    let level ~at i = I.const i >> I.cut bar >> I.move at in
-    let rec scale step acc =
-      if step >= step_count then acc else
-      let i = Color.gray (step *. dI)  in
-      let at = P2.v (step *. dx) 0. in
-      scale (step +. 1.) (acc >> I.blend (level ~at i))
-    in
-    scale 0. I.void
+    let levels = [ 0.0; 0.1; 0.2; 0.3; 0.4; 0.5; 0.6; 0.7; 0.8; 0.9; 1.0 ] in
+    let sq = P.empty >> P.rect (Box2.v P2.o (Size2.v 1.1 1.1)) in 
+    let bars color = 
+      let bar l = I.const (color l) >> I.cut sq >> I.move (P2.v l 0.) in
+      let add_bar acc l = acc >> I.blend (bar l) in
+      List.fold_left add_bar I.void levels
+    in 
+    (bars (fun l -> Color.v l 0. 0. 1.) >> I.move (P2.v 0.0 1.1)) >> I.blend
+    (bars (fun l -> Color.v 0. l 0. 1.) >> I.move (P2.v 1.1 1.1)) >> I.blend
+    (bars (fun l -> Color.v 0. 0. l 1.) >> I.move (P2.v 0.0 0.0)) >> I.blend
+    (bars (fun l -> Color.v l  l  l 1.) >> I.move (P2.v 1.1 0.0))
   end
-
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
