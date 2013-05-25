@@ -145,6 +145,28 @@ end
 type meta = Vgm.t
 type 'a key = 'a Vgm.key
 
+(* Fonts *)
+
+module Font = struct
+
+  type weight = 
+    [ `Normal | `Bold | `W100 | `W200 | `W300 | `W400 | `W500 | `W600 
+    | `W700 | `W800 | `W900 ]
+
+  type slant = [ `Normal | `Italic | `Oblique ]
+  type t = { name : string; size : float; weight : weight; slant : slant }
+ 
+  let create ?(slant = `Normal) ?(weight = `Normal) name size = 
+    { name; size; weight; slant } 
+
+  let name font = font.name
+  let size font = font.size
+  let weight font = font.weight
+  let slant font = font.slant
+end
+
+type font = Font.t
+
 (* Paths *)
 
 module P = struct

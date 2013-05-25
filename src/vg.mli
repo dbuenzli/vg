@@ -135,6 +135,53 @@ module Vgm : sig
       are not checked by renderers. *)
 end
 
+(** {1 Fonts} *)
+
+type font 
+(** The type for fonts. *)
+
+(** Fonts. 
+
+    Font handling and text rendering in [Vg] is highly renderer
+    dependent and low-level. Text layout and text to glyph
+    translations are expected to be carried out by an external
+    library. 
+
+    Values of type [font] just represent a font specification 
+    to be resolved by the concrete renderer. *)
+module Font : sig
+
+  (** {1 Fonts} *)
+
+  type weight = 
+    [ `Normal | `Bold | `W100 | `W200 | `W300 | `W400 | `W500 | `W600 
+    | `W700 | `W800 | `W900 ]
+  (** The type for font weights. *)
+
+  type slant = [ `Normal | `Italic | `Oblique ]
+  (** The type for font slants. *)
+
+  type t = font
+  (** The type for fonts. *)
+ 
+  val create : ?slant:slant -> ?weight:weight -> string -> float -> font
+  (** [create slant weight name size] is a font with given [name], [size],
+      [weight] (defaults to [`Normal]) and [slant] (defaults to [`Normal]). *)
+
+  val name : font -> string
+  (** [name font] is the name of [font]. *)
+
+  val size : font -> float
+  (** [size font] is the size of [font]. *)
+
+  val weight : font -> weight
+  (** [weight font] is the weight of [font]. *)
+
+  val slant : font -> slant
+  (** [slant font] is slant of [font]. *)
+end
+
+
 (** {1 Paths and images} *)
 
 type path 
