@@ -280,7 +280,7 @@ let w_clip s a i path_id k r =
 
 let tr_primitive i =
   let rec loop acc = function
-  | Primitive (Raster _) | Blend _ | Cut _ -> None
+  | Primitive (Raster _) | Blend _ | Cut _ | Cut_glyphs _ -> None
   | Primitive p -> Some (p, List.rev acc) 
   | Tr (tr, i) -> loop (tr :: acc) i
   | Meta (_, i) -> loop acc i
@@ -301,7 +301,7 @@ let rec w_cut s a i k path_id r = match i with
     | None -> w_clip s a i path_id k r
     | Some p_trs -> w_primitive s p_trs (w_primitive_cut s a path_id k) r
     end
-| Blend _ | Cut _ as i -> w_clip s a i path_id k r
+| Blend _ | Cut _ | Cut_glyphs _ as i -> w_clip s a i path_id k r
 | Meta (_, i) -> w_cut s a i k path_id r
 
 let rec w_transforms s trs i k r =    (* collapses nested Tr in single <g>. *)
@@ -337,6 +337,10 @@ let rec w_image s k r =
       | Cut (a, p, i) -> 
           s.todo <- todo;
           w_path s p (w_cut s a i (w_image s k)) r
+      | Cut_glyphs (a, run, i) -> 
+          s.todo <- todo; 
+          warn s (`Other "TODO cut glyphs unimplemented"); 
+          k r 
       | Blend (_, _, i, i') ->
           s.todo <- (Draw i') :: (Draw i) :: todo; 
           w_image s k r

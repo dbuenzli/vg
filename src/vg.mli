@@ -137,6 +137,9 @@ end
 
 (** {1 Fonts} *)
 
+type glyph = int
+(** The type for glyphs. Index in a font glyph table. *)
+
 type font 
 (** The type for fonts. *)
 
@@ -184,8 +187,16 @@ module Font : sig
   val equal : font -> font -> bool 
   (** [equal font font'] is [font = font']. *)
 
+  val equal_f : (float -> float -> bool) -> font -> font -> bool 
+  (** [equal_f eq font font'] is like {!equal} but uses [eq] to test floating
+      point values. *)
+
   val compare : font -> font -> int
   (** [compare font font'] is [Pervasives.compare font font'] *)
+
+  val compare_f : (float -> float -> int) -> font -> font -> int 
+  (** [compare_f cmp font font'] is like {!compare} but uses [cmp] to compare 
+      floating point values. *)
 
   (** {1 Printers} *)
 
@@ -521,16 +532,25 @@ module I : sig
       cutting into {!const} {!axial} and {!radial} images. Consult
       the individual renderer documentation. *)
 
-(* TODO
 
-  type glyph = int * v2
+  val cut_glyphs : ?area:P.area -> ?text:string -> 
+    ?advances:v2 list -> 
+    font -> glyph list -> image -> image
+  (** [cut_glyphs text clusters font glyphs i] is like {!cut} except the
+      path cut is the union of all the paths of the glyphs [glyphs] of the 
+      font [font].
 
-  type text = string * (int * int) list * bool (* reverse *)
-  (* cluster is an indivisble mapping of M character to N glyphs. *)
+      The origin of the first glyph is set to [P2.o], the origin of
+      each subsequent glyph in [glyphs] is offset by the advance
+      vector of the previous glyph as provided by [font]. Advance
+      vectors for each glyph can be overriden by providing their value
+      in [advances].
 
-  val cut_glyphs : ?text:text -> P.area -> glyph list -> image ->
-  image
-*)
+      If provided the [text] parameter indicates the UTF-8 text
+      corresponding to the sequence of glyphs. This may be used by
+      certain renderer to allow text search in the result or to draw
+      the text if it lacks control over glyph rendering (in which case
+      an empty list of glyphs may be passed). *)
 
   (** {1:blend Blending images} *)
   
@@ -781,6 +801,12 @@ module Vgr : sig
     (** Internal data. *)
     module Data : sig
 
+      (** {1 Font representation} *)
+
+      type font = 
+        { name : string; size : float; weight : Font.weight; 
+          slant : Font.slant }
+
       (** {1 Path representation} *)
 
       type segment = 
@@ -817,11 +843,19 @@ module Vgr : sig
         | Axial of Color.stops * p2 * p2
         | Radial of Color.stops * p2 * p2 * float
         | Raster of box2 * raster
-                      
+                  
+      (** The type for glyph runs. *)
+      type glyph_run =
+        { font : font;
+          text : string option; 
+          advances : v2 list option; 
+          glyphs : glyph list; }
+
       (** The type for images. *)
       type image =
         | Primitive of primitive
         | Cut of P.area * path * image
+        | Cut_glyphs of P.area * glyph_run * image 
         | Blend of blender * float option * image * image
         | Tr of tr * image
         | Meta of meta * image

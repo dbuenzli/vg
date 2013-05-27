@@ -166,7 +166,21 @@ module Font = struct
   (* Predicates and comparisons *)
 
   let equal = ( = )
+  let equal_f eq font font' = 
+    font.name = font'.name && eq font.size font'.size && 
+    font.weight = font'.weight && font.slant = font'.slant
+    
   let compare = Pervasives.compare
+  let compare_f cmp font font' = 
+    let c = Pervasives.compare font.name font'.name in 
+    if c <> 0 then c else 
+    let c = cmp font.size font'.size in 
+    if c <> 0 then c else 
+    let c = Pervasives.compare font.weight font'.weight in 
+    if c <> 0 then c else
+    let c = Pervasives.compare font.slant font'.slant in 
+    c
+
 
   (* Printers *)
 
@@ -185,6 +199,7 @@ module Font = struct
   let to_string p = to_string_of_formatter pp p 
 end
 
+type glyph = int
 type font = Font.t
 
 (* Paths *)
@@ -929,12 +944,71 @@ module I = struct
         (pp_stops pp_f) stops (V2.pp_f pp_f) p (V2.pp_f pp_f) p' pp_f r
   | Raster (r, ri) -> 
       pp ppf "@[<1>(i-raster %a@ %a)@]" (Box2.pp_f pp_f) r Raster.pp ri
-          
+
+  (* Glyph runs *)
+
+  type glyph_run = 
+    { font : font;
+      text : string option; 
+      advances : v2 list option; 
+      glyphs : glyph list; }
+
+  let eq_advances eq r1 r2 = match r1.advances, r2.advances with 
+  | None, None -> true
+  | Some a1, Some a2 -> 
+      begin try List.for_all2 (V2.equal_f eq) a1 a2 with 
+      | Invalid_argument _ -> false
+      end
+  | _, _ -> false 
+
+  let cmp_advances cmp adv adv' = match adv, adv' with
+  | None, None -> 0 
+  | Some a1s, Some a2s -> 
+      let rec adv a1s a2s = match a1s, a2s with 
+      | a1 :: a1s, a2 :: a2s -> 
+          let c = V2.compare_f cmp a1 a2 in
+          if c <> 0 then c else adv a1s a2s
+      | a1s, a2s -> Pervasives.compare a1s a2s
+      in
+      adv a1s a2s
+  | a1, a2 -> Pervasives.compare a1 a2
+
+  let eq_glyph_run eq r1 r2 =
+    Font.equal_f eq r1.font r2.font && r1.text = r2.text && 
+    eq_advances eq r1 r2 && r1.glyphs = r2.glyphs
+   
+  let cmp_glyph_run cmp r1 r2 =
+    let c = Font.compare_f cmp r1.font r2.font in 
+    if c <> 0 then c else 
+    let c = Pervasives.compare r1.text r2.text in 
+    if c <> 0 then c else 
+    let c = cmp_advances cmp r1.advances r2.advances in 
+    if c <> 0 then c else
+    Pervasives.compare r1.glyphs r2.glyphs
+    
+  let pp_glyph_run ppf r =
+    let pp_text ppf = function 
+    | None -> () 
+    | Some t -> pp ppf "@ @[<1>(text %s)@]" t
+    in
+    let pp_advances ppf = function 
+    | None -> () 
+    | Some avs -> 
+        pp ppf "@ @[<1>(advances";
+        List.iter (fun a -> pp ppf "@ %a" V2.pp a) avs; 
+        pp ppf ")@]"
+    in
+    pp ppf "%a@%a%a@ (glyphs" Font.pp r.font pp_text r.text 
+      pp_advances r.advances;
+    List.iter (fun g -> pp ppf " %d" g) r.glyphs; 
+    pp ppf ")"
+    
   (* Images *)
 
   type t = 
     | Primitive of primitive
     | Cut of P.area * P.t * t
+    | Cut_glyphs of P.area * glyph_run * t
     | Blend of blender * float option * t * t
     | Tr of tr * t
     | Meta of meta * t
@@ -952,6 +1026,9 @@ module I = struct
   (* Cutting images *)
 
   let cut ?(area = `Anz) p i = Cut (area, p, i)  
+  let cut_glyphs ?(area = `Anz) ?text ?advances font glyphs i =
+    let run = { font; text; advances; glyphs; } in 
+    Cut_glyphs (area, run , i)
 
   (* Blending images *)
 
@@ -986,6 +1063,8 @@ module I = struct
             eq_primitive eq i i'
         | Cut (a, p, i), Cut (a', p', i') -> 
             P.eq_area eq a a' && P.equal_f eq p p' && loop ((i, i') :: acc)
+        | Cut_glyphs (a, r, i), Cut_glyphs (a', r', i') ->
+            P.eq_area eq a a' && eq_glyph_run eq r r' && loop ((i, i') :: acc)
         | Blend (b, a, i1, i2), Blend (b', a', i1', i2') -> 
             b = b' && eq_alpha eq a a' && loop ((i1, i1') :: (i2, i2') :: acc)
         | Tr (tr, i), Tr (tr', i') -> 
@@ -1012,6 +1091,11 @@ module I = struct
             let c = P.cmp_area cmp a a' in 
             if c <> 0 then c else 
             let c = P.compare_f cmp p p' in 
+            if c <> 0 then c else loop ((i, i') :: acc)
+        | Cut_glyphs (a, r, i), Cut_glyphs (a', r', i') ->
+            let c = P.cmp_area cmp a a' in 
+            if c <> 0 then c else 
+            let c = cmp_glyph_run cmp r r' in
             if c <> 0 then c else loop ((i, i') :: acc)
         | Blend (b, a, i1, i2), Blend (b', a', i1', i2') -> 
             let c = Pervasives.compare b b' in 
@@ -1048,6 +1132,10 @@ module I = struct
             loop todo
         | Cut (a, p, i) ->
             pp ppf "@[<1>(i-cut@ %a@ %a@ "(P.pp_area_f pp_f) a (P.pp_f pp_f) p; 
+            loop (`I i :: `Pop :: todo)
+        | Cut_glyphs (a, r, i) -> 
+            pp ppf "@[<1>(i-cut-glyphs %a@ %a@ " 
+              (P.pp_area_f pp_f) a pp_glyph_run r;
             loop (`I i :: `Pop :: todo)
         | Blend (b, a, i, i') -> 
             pp ppf "@[<1>(i-blend@ %a%a@ " pp_blender b (pp_alpha pp_f) a;
@@ -1183,7 +1271,13 @@ module Vgr = struct
     (* Internal data *)
 
     module Data = struct
-      
+
+      (* Fonts *) 
+
+      type font = Font.t = 
+        { name : string; size : float; weight : Font.weight; 
+          slant : Font.slant }
+
       (* Path representation *)
 
       type segment = P.segment
@@ -1207,10 +1301,17 @@ module Vgr = struct
         | Axial of Color.stops * p2 * p2
         | Radial of Color.stops * p2 * p2 * float
         | Raster of box2 * raster
-              
+           
+      type glyph_run = I.glyph_run = 
+        { font : font;
+          text : string option; 
+          advances : v2 list option; 
+          glyphs : glyph list; }
+
       type image = I.t = 
         | Primitive of primitive
         | Cut of P.area * P.t * image
+        | Cut_glyphs of P.area * glyph_run * image
         | Blend of I.blender * float option * image * image
         | Tr of tr * image
         | Meta of meta * image

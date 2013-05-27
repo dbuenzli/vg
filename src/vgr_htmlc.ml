@@ -229,7 +229,7 @@ let rec r_cut s a = function
     s.todo <- (pop_gstate ~g_tr_push:tr s) :: s.todo;
     push_transform s tr;
     r_cut s a i
-| Blend _ | Cut _ as i ->
+| Blend _ | Cut _ | Cut_glyphs _ as i ->
     let a = match a with
     | `O _ -> warn s (`Unsupported_cut (a, image i)); `Anz
     | a -> a
@@ -260,6 +260,10 @@ let rec r_image s k r =
           set_path s p;
           r_cut s a i;
           r_image s k r
+      | Cut_glyphs (a, run, i) -> 
+          s.todo <- todo; 
+          warn s (`Other "TODO cut glyphs unimplemented"); 
+          k r 
       | Blend (_, _, i, i') -> 
           s.todo <- (Draw i') :: (Draw i) :: todo;
           r_image s k r
