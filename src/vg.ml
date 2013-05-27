@@ -149,20 +149,40 @@ type 'a key = 'a Vgm.key
 
 module Font = struct
 
-  type weight = 
-    [ `Normal | `Bold | `W100 | `W200 | `W300 | `W400 | `W500 | `W600 
-    | `W700 | `W800 | `W900 ]
-
   type slant = [ `Normal | `Italic | `Oblique ]
+  type weight = 
+    [ `W100 | `W200 | `W300 | `W400 | `W500 | `W600 | `W700 | `W800 | `W900 ]
+
   type t = { name : string; size : float; weight : weight; slant : slant }
  
-  let create ?(slant = `Normal) ?(weight = `Normal) name size = 
+  let create ?(slant = `Normal) ?(weight = `W400) name size = 
     { name; size; weight; slant } 
 
   let name font = font.name
   let size font = font.size
   let weight font = font.weight
   let slant font = font.slant
+
+  (* Predicates and comparisons *)
+
+  let equal = ( = )
+  let compare = Pervasives.compare
+
+  (* Printers *)
+
+  let weight_to_str = function 
+  | `W100 -> "100" | `W200 -> "200" | `W300 -> "300" | `W400 -> "400"
+  | `W500 -> "500" | `W600 -> "600" | `W700 -> "700" | `W800 -> "800"
+  | `W900 -> "900"
+    
+  let slant_to_str = function 
+  | `Normal -> "normal" | `Italic -> "italic" | `Oblique -> "oblique"
+
+  let pp ppf font =     
+    pp ppf "@[<1>(font@ (name %s)@ (size %g)@ (weight %s)@ (slant %s))@]"
+      font.name font.size (weight_to_str font.weight) (slant_to_str font.slant)
+
+  let to_string p = to_string_of_formatter pp p 
 end
 
 type font = Font.t

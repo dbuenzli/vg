@@ -142,10 +142,9 @@ type font
 
 (** Fonts. 
 
-    Font handling and text rendering in [Vg] is highly renderer
-    dependent and low-level. Text layout and text to glyph
-    translations are expected to be carried out by an external
-    library. 
+    Font handling in [Vg] happens in renderers and text layout and
+    text to glyph translations are expected to be carried out by an
+    external library.
 
     Values of type [font] just represent a font specification 
     to be resolved by the concrete renderer. *)
@@ -154,7 +153,7 @@ module Font : sig
   (** {1 Fonts} *)
 
   type weight = 
-    [ `Normal | `Bold | `W100 | `W200 | `W300 | `W400 | `W500 | `W600 
+    [ `W100 | `W200 | `W300 | `W400 | `W500 | `W600 
     | `W700 | `W800 | `W900 ]
   (** The type for font weights. *)
 
@@ -166,21 +165,36 @@ module Font : sig
  
   val create : ?slant:slant -> ?weight:weight -> string -> float -> font
   (** [create slant weight name size] is a font with given [name], [size],
-      [weight] (defaults to [`Normal]) and [slant] (defaults to [`Normal]). *)
+      [weight] (defaults to [`W400]) and [slant] (defaults to [`Normal]). *)
 
   val name : font -> string
-  (** [name font] is the name of [font]. *)
+  (** [name font] is [font]'s name. *)
 
   val size : font -> float
-  (** [size font] is the size of [font]. *)
+  (** [size font] is [font]'s size. *)
 
   val weight : font -> weight
-  (** [weight font] is the weight of [font]. *)
+  (** [weight font] is [font]'s weight. *)
 
   val slant : font -> slant
-  (** [slant font] is slant of [font]. *)
-end
+  (** [slant font] is [font]'s slant. *)
 
+  (** {1 Predicates and comparisons} *)
+
+  val equal : font -> font -> bool 
+  (** [equal font font'] is [font = font']. *)
+
+  val compare : font -> font -> int
+  (** [compare font font'] is [Pervasives.compare font font'] *)
+
+  (** {1 Printers} *)
+
+  val to_string : font -> string 
+  (** [to_string font] is a textual representation of [font]. *)
+
+  val pp : Format.formatter -> font -> unit
+  (** [pp ppf font] is a textual representation of [font] on [ppf]. *)
+end
 
 (** {1 Paths and images} *)
 
