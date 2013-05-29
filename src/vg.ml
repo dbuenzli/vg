@@ -1244,8 +1244,8 @@ module Vgr = struct
     in
     let k _ _ = assert false in
     let r = { dst = (dst :> dst); o; o_pos; o_max; limit; warn; meta; k} in
-    let once, rfun = target r dst in 
-    r.k <- if once then r_once rfun else r_loop rfun; 
+    let multi, rfun = target r dst in 
+    r.k <- if multi then r_loop rfun else r_once rfun; 
     r
                                               
   let render r v = r.k (v :> [ `Await | `End | `Image of renderable ]) r
