@@ -38,12 +38,24 @@ type gstate =    (* Subset of the graphics state saved by a ctx ## save (). *)
     g_outline : P.outline; 
     g_stroke : js_primitive; 
     g_fill : js_primitive;
-    g_tr_push : Vgr.Private.Data.tr option }
+    g_tr : M3.t }
 
 (* N.B. g_tr_push is used to be able to remember the current CTM to handle
    the case of uncut primitives, see uncut_bounds. The way we do this 
    may not be efficient but uncut primitives are not expected to be 
    widespread. *)
+
+(* glyph_cuts need particular support because current browsers are
+   completly broken w.r.t. text drawing. Basically for now you are not
+   able to specify text that is smaller than 1px which means that the
+   minimal size you are able to specify absurdly depends on the
+   current transfomration matrix (see http://jsfiddle.net/Fk3fc/2/).
+   Besides we also get problems by the fact that we flip the
+   coordinate system.  To circumvent these issues we maintain the
+   current transformation matrix with g_tr and view_tr, extract
+   rotation, scaling and translation components to figure out where
+   (and which scale) in the original untransformed coordinate system
+   we need to draw the text. *)
 
 type cmd = Pop of gstate | Draw of Vgr.Private.Data.image
 type state = 
@@ -54,9 +66,12 @@ type state =
     resolution : Gg.v2;                        (* resolution of the canvas. *)
     mutable cost : int;                          (* cost counter for limit. *)
     mutable view : Gg.box2;           (* current renderable view rectangle. *)
+    mutable view_tr : M3.t;                    (* view to canvas transform. *)
     mutable todo : cmd list;                        (* commands to perform. *)
+    fonts : (Vgr.Private.Data.font, string) Hashtbl.t;     (* cached fonts. *)
     prims :                                           (* cached primitives. *)
       (Vgr.Private.Data.primitive, js_primitive) Hashtbl.t;     
+    mutable s_tr : M3.t;
     mutable s_alpha : float;                       (* current global alpha. *)
     mutable s_blender : Vgr.Private.Data.blender; (* current blending mode. *)
     mutable s_outline : P.outline;         (* current outline stroke state. *)
@@ -67,9 +82,9 @@ let partial = Vgr.Private.partial
 let limit s = Vgr.Private.limit s.r
 let warn s w = Vgr.Private.warn s.r w
 let image i = Vgr.Private.I.of_data i
-let pop_gstate ?g_tr_push s = 
+let pop_gstate s = 
   Pop { g_alpha = s.s_alpha; g_blender = s.s_blender; g_outline = s.s_outline; 
-        g_stroke = s.s_stroke; g_fill = s.s_fill; g_tr_push }
+        g_stroke = s.s_stroke; g_fill = s.s_fill; g_tr = s.s_tr }
 
 let set_gstate s g = 
   s.s_alpha <- g.g_alpha; s.s_blender <- g.g_blender; 
@@ -77,13 +92,7 @@ let set_gstate s g =
   s.s_fill <- g.g_fill
 
 let uncut_bounds s =
-  let rec loop m = function 
-  | Pop { g_tr_push = Some tr; _ } :: cmds -> 
-      loop (M3.mul m (Vgr.Private.Data.tr_inv tr)) cmds 
-  | _ :: cmds -> loop m cmds 
-  | [] -> Vgr.Private.Data.of_path (P.empty >> P.rect (Box2.tr m s.view))
-  in
-  loop M3.id s.todo
+  Vgr.Private.Data.of_path (P.empty >> P.rect (Box2.tr (M3.inv s.s_tr) s.view))
   
 let css_color c =                               (* w3c bureaucrats are pigs. *)
   let srgba = Color.to_srgba c in
@@ -124,6 +133,8 @@ let set_dashes ?(warning = true) s dashes =
 
 let init_ctx s =
   let o = s.s_outline in
+  let m = s.view_tr in 
+  M3.(s.ctx ## transform (e00 m, e10 m, e01 m, e11 m, e02 m, e12 m));
   s.ctx ## lineWidth <- o.P.width; 
   s.ctx ## lineCap <- cap_str o.P.cap; 
   s.ctx ## lineJoin <- join_str o.P.join; 
@@ -143,10 +154,18 @@ let set_outline s o =
   ()
 
 let push_transform s = function 
-| Move v -> s.ctx ## translate (V2.x v, V2.y v)
-| Rot a -> s.ctx ## rotate (a)
-| Scale sv -> s.ctx ## scale (V2.x sv, V2.y sv)
-| Matrix m -> M3.(s.ctx ## transform (e00 m, e10 m, e01 m, e11 m, e02 m, e12 m))
+| Move v -> 
+    s.ctx ## translate (V2.x v, V2.y v); 
+    s.s_tr <- M3.mul s.s_tr (M3.move2 v)
+| Rot a -> 
+    s.ctx ## rotate (a); 
+    s.s_tr <- M3.mul s.s_tr (M3.rot2 a)
+| Scale sv -> 
+    s.ctx ## scale (V2.x sv, V2.y sv); 
+    s.s_tr <- M3.mul s.s_tr (M3.scale2 sv)
+| Matrix m -> 
+    M3.(s.ctx ## transform (e00 m, e10 m, e01 m, e11 m, e02 m, e12 m));
+    s.s_tr <- M3.mul s.s_tr m
   
 (* N.B. In the future, if browsers begin supporting them we could in r_path,
    1) construct and cache path objects 2) use ctx ## ellipse. *)
@@ -196,6 +215,13 @@ let get_primitive s p = try Hashtbl.find s.prims p with
     in
     let js_prim = create p in 
     Hashtbl.add s.prims p js_prim; js_prim
+
+let get_font s font = try Hashtbl.find s.fonts font with
+| Not_found -> 
+    let js_font = failwith "TODO"
+      
+    in
+    Hashtbl.add s.fonts font js_font; js_font
     
 let rec r_cut s a = function 
 | Primitive (Raster _) as i -> 
@@ -226,7 +252,7 @@ let rec r_cut s a = function
     end
 | Tr (tr, i) ->
     s.ctx ## save ();
-    s.todo <- (pop_gstate ~g_tr_push:tr s) :: s.todo;
+    s.todo <- (pop_gstate s) :: s.todo;
     push_transform s tr;
     r_cut s a i
 | Blend _ | Cut _ | Cut_glyphs _ as i ->
@@ -242,7 +268,7 @@ let rec r_cut s a = function
 let rec r_image s k r =
   if s.cost > limit s then (s.cost <- 0; partial (r_image s k) r) else 
   match s.todo with
-  | [] -> Hashtbl.reset s.prims; k r
+  | [] -> Hashtbl.reset s.prims; Hashtbl.reset s.fonts; k r
   | Pop gs :: todo -> 
       s.ctx ## restore ();
       set_gstate s gs;
@@ -269,7 +295,7 @@ let rec r_image s k r =
           r_image s k r
       | Tr (tr, i) ->
           s.ctx ## save ();
-          s.todo <- (Draw i) :: (pop_gstate ~g_tr_push:tr s) :: todo; 
+          s.todo <- (Draw i) :: (pop_gstate s) :: todo; 
           push_transform s tr; 
           r_image s k r;
       | Meta (m, i) -> 
@@ -291,11 +317,21 @@ let render s v k r = match v with
     let sy = ch /. Box2.h view in
     let dx = -. Box2.ox view *. sx in
     let dy = ch +. Box2.oy view *. sy in 
-    s.ctx ## setTransform (sx, 0., 0., -.sy, dx, dy); (* view rect -> canvas *)
-    init_ctx s;
+    let view_tr = M3.v sx      0. dx 
+                      0. (-. sy)  dy
+                      0.       0. 1.
+    in
     s.cost <- 0;
     s.view <- view; 
+    s.view_tr <- view_tr;
     s.todo <- [ Draw i ];
+    s.s_tr <- M3.id; 
+    s.s_blender <- `Over; 
+    s.s_alpha <- 1.0; 
+    s.s_outline <- P.o; 
+    s.s_stroke <- dumb_prim; 
+    s.s_fill <- dumb_prim;
+    init_ctx s;
     r_image s k r
 
 let ppi_300 = V2.v 11811. 11811.             (* 300 ppi in pixel per meters. *)
@@ -309,8 +345,11 @@ let target c =
                    resolution; 
                    cost = 0; 
                    view = Box2.empty; 
+                   view_tr = M3.id;
                    todo = [];
+                   fonts = Hashtbl.create 20; 
                    prims = Hashtbl.create 231;
+                   s_tr = M3.id;
                    s_blender = `Over;
                    s_alpha = 1.0; 
                    s_outline = P.o; 
