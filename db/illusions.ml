@@ -4,20 +4,43 @@
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
-(* Renderer independent images *)
+open Gg
+open Vg
+;;
 
-include Paths
-include Colors
-include Alphas
-include Gradients
-include Uncut
-include Glyphs
-include Escapes
+(** Café wall illusion. 
+    http://mathworld.wolfram.com/CafeWallIllusion.html *)
 
-include Arrowhead
-include Doc
-include Illusions
-include Rmark
+Db.image "cafe-wall" ~author:Db.dbuenzli
+  ~title:"Café Wall Illusion"
+  ~tags:["image"; "dashes"; "illusion"]
+  ~note:"Also known as Münsterberg illusion. The gray lines are parallel."
+  ~size:(Size2.v 115. 65.)
+  ~view:(Box2.v P2.o (Size2.v 2.3 1.3))
+  begin fun _ -> 
+    let line = P.empty >> P.line (P2.v 2. 0.) in
+    let border = 
+      let area = `O { P.o with P.width = 0.005 } in
+      I.const (Color.gray 0.5) >> I.cut ~area line 
+    in
+    let bricks offset =
+      let hwidth = 0.05 in
+      let dashes = Some (offset, [0.2]) in
+      let area = `O { P.o with P.width = 2. *. hwidth; dashes; } in
+      I.const (Color.black) >> I.cut ~area line >> I.move (V2.v 0. hwidth) >>
+      I.blend border
+    in
+    let blend_row acc (y, offset) = 
+      acc >> I.blend ((bricks offset) >> I.blend border >> I.move (V2.v 0. y))
+    in
+    let rows = [0.0, -0.04; 0.1,  0.00; 0.2, -0.04; 0.3, -0.08; 0.4, -0.12; 
+                0.5, -0.08; 0.6, -0.04; 0.7,  0.00; 0.8, -0.04; 0.9, -0.08; ] 
+    in
+    I.const Color.white >> 
+    I.blend (List.fold_left blend_row I.void rows) >>
+    I.blend (border >> I.move (V2.v 0. 1.)) >> 
+    I.move (V2.v 0.15 0.15)
+  end;
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
@@ -51,5 +74,3 @@ include Rmark
    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ---------------------------------------------------------------------------*)
-
-

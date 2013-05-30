@@ -4,20 +4,23 @@
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
-(* Renderer independent images *)
+open Gg
+open Vg
+;;
 
-include Paths
-include Colors
-include Alphas
-include Gradients
-include Uncut
-include Glyphs
-include Escapes
+(** Test images for glyphs. *)
 
-include Arrowhead
-include Doc
-include Illusions
-include Rmark
+Db.image "glyph-revolt" ~author:Db.dbuenzli
+  ~title:"Revolt in black"
+  ~tags:["glyph"]
+  ~note:"The characters should read \"Revolt!\"."
+  ~size:(Size2.v 50. 50.)
+  ~view:Box2.unit
+  begin fun _ -> 
+    let font = Font.create "Open Sans" 0.1 in
+    let text = "Revolt!" in 
+    I.const (Color.gray 0.3) >> I.cut_glyphs ~text font []
+  end;
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
@@ -51,5 +54,3 @@ include Rmark
    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ---------------------------------------------------------------------------*)
-
-
