@@ -71,7 +71,7 @@ type state =
     fonts : (Vgr.Private.Data.font, string) Hashtbl.t;     (* cached fonts. *)
     prims :                                           (* cached primitives. *)
       (Vgr.Private.Data.primitive, js_primitive) Hashtbl.t;     
-    mutable s_tr : M3.t;
+    mutable s_tr : M3.t;         (* current transformation without view_tr. *)
     mutable s_alpha : float;                       (* current global alpha. *)
     mutable s_blender : Vgr.Private.Data.blender; (* current blending mode. *)
     mutable s_outline : P.outline;         (* current outline stroke state. *)
@@ -89,7 +89,7 @@ let pop_gstate s =
 let set_gstate s g = 
   s.s_alpha <- g.g_alpha; s.s_blender <- g.g_blender; 
   s.s_outline <- g.g_outline; s.s_stroke <- g.g_stroke; 
-  s.s_fill <- g.g_fill
+  s.s_fill <- g.g_fill; s.s_tr <- g.g_tr
 
 let uncut_bounds s =
   Vgr.Private.Data.of_path (P.empty >> P.rect (Box2.tr (M3.inv s.s_tr) s.view))
