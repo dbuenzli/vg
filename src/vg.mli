@@ -550,7 +550,10 @@ module I : sig
       corresponding to the sequence of glyphs. This may be used by
       certain renderer to allow text search in the result or to draw
       the text if it lacks control over glyph rendering (in which case
-      an empty list of glyphs may be passed). *)
+      an empty list of glyphs may be passed). 
+
+      In general if [text] is present and [glyphs] is empty renderer
+      should try to perform a best effort rendering of [text]. *)
 
   (** {1:blend Blending images} *)
   

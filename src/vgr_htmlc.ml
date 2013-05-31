@@ -26,9 +26,10 @@ let dash_support ctx = Js.Optdef.test ((Js.Unsafe.coerce ctx) ## setLineDash)
 
 (* Renderer *)
 
+type js_font = Js.js_string Js.t                       (* lovely isn't it ? *) 
 type js_primitive = 
-  | Color of Js.js_string Js.t 
-  | Gradient of Dom_html.canvasGradient Js.t
+| Color of Js.js_string Js.t                                  (* even more. *)
+| Gradient of Dom_html.canvasGradient Js.t          (* Oh! a datastructure. *)
 
 let dumb_prim = Color (Js.string "")
 
@@ -39,23 +40,6 @@ type gstate =    (* Subset of the graphics state saved by a ctx ## save (). *)
     g_stroke : js_primitive; 
     g_fill : js_primitive;
     g_tr : M3.t }
-
-(* N.B. g_tr_push is used to be able to remember the current CTM to handle
-   the case of uncut primitives, see uncut_bounds. The way we do this 
-   may not be efficient but uncut primitives are not expected to be 
-   widespread. *)
-
-(* glyph_cuts need particular support because current browsers are
-   completly broken w.r.t. text drawing. Basically for now you are not
-   able to specify text that is smaller than 1px which means that the
-   minimal size you are able to specify absurdly depends on the
-   current transfomration matrix (see http://jsfiddle.net/Fk3fc/2/).
-   Besides we also get problems by the fact that we flip the
-   coordinate system.  To circumvent these issues we maintain the
-   current transformation matrix with g_tr and view_tr, extract
-   rotation, scaling and translation components to figure out where
-   (and which scale) in the original untransformed coordinate system
-   we need to draw the text. *)
 
 type cmd = Pop of gstate | Draw of Vgr.Private.Data.image
 type state = 
@@ -68,7 +52,8 @@ type state =
     mutable view : Gg.box2;           (* current renderable view rectangle. *)
     mutable view_tr : M3.t;                    (* view to canvas transform. *)
     mutable todo : cmd list;                        (* commands to perform. *)
-    fonts : (Vgr.Private.Data.font, string) Hashtbl.t;     (* cached fonts. *)
+    fonts :                                                (* cached fonts. *)
+      (Vgr.Private.Data.font * float, js_font) Hashtbl.t;     
     prims :                                           (* cached primitives. *)
       (Vgr.Private.Data.primitive, js_primitive) Hashtbl.t;     
     mutable s_tr : M3.t;         (* current transformation without view_tr. *)
@@ -101,7 +86,7 @@ let css_color c =                               (* w3c bureaucrats are pigs. *)
   let b = Float.int_of_round (Color.b srgba *. 255.) in
   let a = Color.a srgba in
   if a = 1.0 then Js.string (str "rgb(%d,%d,%d)" r g b) else
-  Js.string (str "rgba(%d,%d,%d,%f)" r g b a)
+  Js.string (str "rgba(%d,%d,%d,%g)" r g b a)
 
 let cap_str = 
   let butt = Js.string "butt" in
@@ -119,6 +104,39 @@ let area_str =
   let nz = Js.string "nonzero" in 
   let eo = Js.string "evenodd" in 
   function `Anz -> nz | `Aeo -> eo | `O _ -> assert false
+
+let get_primitive s p = try Hashtbl.find s.prims p with 
+| Not_found -> 
+    let add_stop g (t, c) = g ## addColorStop (t, css_color c) in 
+    let create = function 
+    | Const c -> Color (css_color c)
+    | Axial (stops, pt, pt') ->
+        let g = P2.(s.ctx ## createLinearGradient(x pt, y pt, x pt', y pt')) in
+        List.iter (add_stop g) stops; Gradient g
+    | Radial (stops, f, c, r) ->
+        let g = P2.(s.ctx ## createRadialGradient(x f, y f, 0., x c, y c, r)) in
+        List.iter (add_stop g) stops; Gradient g
+    | Raster _ -> assert false
+    in
+    let js_prim = create p in 
+    Hashtbl.add s.prims p js_prim; js_prim
+
+let get_font s (font, size as spec) = try Hashtbl.find s.fonts spec with
+| Not_found -> 
+    let js_font =
+      let slant = match font.slant with 
+      | `Italic -> "italic" | `Normal -> "normal" | `Oblique -> "oblique" 
+      in
+      let weight = match font.weight with 
+      | `W100 -> "100" | `W200 -> "200" | `W300 -> "300" | `W400 -> "400" 
+      | `W500 -> "500" | `W600 -> "600" | `W700 -> "700" | `W800 -> "800"
+      | `W900 -> "900"
+      in
+      let font = str "%s %s %gpx \"%s\"" slant weight size font.name in 
+      Mui.Log.msg "%s" font;
+      Js.string font
+    in
+    Hashtbl.add s.fonts spec js_font; js_font
 
 let set_dashes ?(warning = true) s dashes = 
   if not s.dash_support then (if warning then warn s (`Other warn_dash)) else
@@ -141,18 +159,6 @@ let init_ctx s =
   s.ctx ## miterLimit <- (Vgr.Private.P.miter_limit o);
   set_dashes ~warning:false s o.P.dashes
 
-let set_outline s o =       
-  if s.s_outline == o then () else
-  let old = s.s_outline in  
-  s.s_outline <- o;
-  if old.P.width <> o.P.width then (s.ctx ## lineWidth <- o.P.width);
-  if old.P.cap <> o.P.cap then (s.ctx ## lineCap <- cap_str o.P.cap);
-  if old.P.join <> o.P.join then (s.ctx ## lineJoin <- join_str o.P.join);
-  if old.P.miter_angle <> o.P.miter_angle then 
-    (s.ctx ## miterLimit <- Vgr.Private.P.miter_limit o);
-  if old.P.dashes <> o.P.dashes then set_dashes s o.P.dashes; 
-  ()
-
 let push_transform s = function 
 | Move v -> 
     s.ctx ## translate (V2.x v, V2.y v); 
@@ -166,7 +172,37 @@ let push_transform s = function
 | Matrix m -> 
     M3.(s.ctx ## transform (e00 m, e10 m, e01 m, e11 m, e02 m, e12 m));
     s.s_tr <- M3.mul s.s_tr m
-  
+
+let set_outline s o =       
+  if s.s_outline == o then () else
+  let old = s.s_outline in  
+  s.s_outline <- o;
+  if old.P.width <> o.P.width then (s.ctx ## lineWidth <- o.P.width);
+  if old.P.cap <> o.P.cap then (s.ctx ## lineCap <- cap_str o.P.cap);
+  if old.P.join <> o.P.join then (s.ctx ## lineJoin <- join_str o.P.join);
+  if old.P.miter_angle <> o.P.miter_angle then 
+    (s.ctx ## miterLimit <- Vgr.Private.P.miter_limit o);
+  if old.P.dashes <> o.P.dashes then set_dashes s o.P.dashes; 
+  ()
+
+let set_stroke s p = 
+  let p = get_primitive s p in 
+  if s.s_stroke != p then begin match p with 
+  | Color c -> s.ctx ## strokeStyle <- c; s.s_stroke <- p
+  | Gradient g -> s.ctx ## strokeStyle_gradient <- g; s.s_stroke <- p
+  end
+
+let set_fill s p = 
+  let p = get_primitive s p in 
+  if s.s_fill != p then begin match p with 
+  | Color c -> s.ctx ## fillStyle <- c; s.s_fill <- p
+  | Gradient g -> s.ctx ## fillStyle_gradient <- g; s.s_fill <- p
+  end
+
+let set_font s f = 
+  let f = get_font s f in 
+  s.ctx ## font <- f
+
 (* N.B. In the future, if browsers begin supporting them we could in r_path,
    1) construct and cache path objects 2) use ctx ## ellipse. *)
 
@@ -200,29 +236,43 @@ let set_path s p =
   s.ctx ## beginPath ();
   loop P2.o (List.rev p)
 
-let get_primitive s p = try Hashtbl.find s.prims p with 
-| Not_found -> 
-    let add_stop g (t, c) = g ## addColorStop (t, css_color c) in 
-    let create = function 
-    | Const c -> Color (css_color c)
-    | Axial (stops, pt, pt') ->
-        let g = P2.(s.ctx ## createLinearGradient(x pt, y pt, x pt', y pt')) in
-        List.iter (add_stop g) stops; Gradient g
-    | Radial (stops, f, c, r) ->
-        let g = P2.(s.ctx ## createRadialGradient(x f, y f, 0., x c, y c, r)) in
-        List.iter (add_stop g) stops; Gradient g
-    | Raster _ -> assert false
-    in
-    let js_prim = create p in 
-    Hashtbl.add s.prims p js_prim; js_prim
+(* The way glyph_cuts is implemented is a little bit odd because
+   current browsers are completly broken w.r.t. canvas text drawing:
+   it is impossible to specify text that is smaller than 1px which
+   means that the minimal size absurdly depends on the current
+   transformation matrix (see http://jsfiddle.net/Fk3fc/2/).  Besides
+   we also get problems by the fact that we flip the coordinate
+   system.  To circumvent these we extract from the current transform
+   the rotation, scaling and translation in the original,
+   untransformed, coordinate system and draw the glyphs there. *)
 
-let get_font s font = try Hashtbl.find s.fonts font with
-| Not_found -> 
-    let js_font = failwith "TODO"
-      
-    in
-    Hashtbl.add s.fonts font js_font; js_font
-    
+let rec r_cut_glyphs s a run = function 
+| Primitive (Raster _) | Tr _ | Blend _ | Cut _ | Cut_glyphs _ as i -> 
+    warn s (`Unsupported_glyph_cut (a, image i))
+| Primitive p ->
+    begin match run.text with 
+    | None -> warn s (`Other "No text specified in glyph cut")
+    | Some text -> 
+        let text = Js.string text in
+        s.ctx ## save ();
+        let m = M3.mul s.view_tr s.s_tr in
+        let font_size = V2.norm (V2.tr m (V2.v 0. run.font.size)) in
+        let o = P2.tr m P2.o in
+        set_font s (run.font, font_size);
+        let m = s.s_tr in
+        M3.(s.ctx ## setTransform (e00 m, -. e10 m, 
+                                   -. e01 m, e11 m, 
+                                   V2.x o, V2.y o));
+        begin match a with 
+        | `O o -> 
+            set_outline s o; set_stroke s p; s.ctx ## strokeText (text, 0., 0.)
+        | `Aeo | `Anz -> 
+            set_fill s p; s.ctx ## fillText (text, 0., 0.)
+        end;
+        s.ctx ## restore (); 
+    end
+| Meta (_, i) -> r_cut_glyphs s a run i 
+
 let rec r_cut s a = function 
 | Primitive (Raster _) as i -> 
     begin match a with 
@@ -234,20 +284,10 @@ let rec r_cut s a = function
         s.ctx ## restore ()
     end
 | Primitive p ->
-    let p = get_primitive s p in
     begin match a with 
-    | `O o -> 
-        set_outline s o;
-        if s.s_stroke != p then begin match p with 
-        | Color c -> s.ctx ## strokeStyle <- c; s.s_stroke <- p
-        | Gradient g -> s.ctx ## strokeStyle_gradient <- g; s.s_stroke <- p
-        end;
-        s.ctx ## stroke ()
-    | `Aeo | `Anz ->
-        if s.s_fill != p then begin match p with 
-        | Color c -> s.ctx ## fillStyle <- c; s.s_fill <- p
-        | Gradient g -> s.ctx ## fillStyle_gradient <- g; s.s_fill <- p
-        end;
+    | `O o -> set_outline s o; set_stroke s p; s.ctx ## stroke ()
+    | `Aeo | `Anz -> 
+        set_fill s p; 
         (Js.Unsafe.coerce s.ctx : ctx_ext Js.t) ## fill (area_str a)
     end
 | Tr (tr, i) ->
@@ -288,8 +328,8 @@ let rec r_image s k r =
           r_image s k r
       | Cut_glyphs (a, run, i) -> 
           s.todo <- todo; 
-          warn s (`Other "TODO cut glyphs unimplemented"); 
-          k r 
+          r_cut_glyphs s a run i; 
+          r_image s k r
       | Blend (_, _, i, i') -> 
           s.todo <- (Draw i') :: (Draw i) :: todo;
           r_image s k r
@@ -305,7 +345,7 @@ let rec r_image s k r =
 let render s v k r = match v with 
 | `End -> k r
 | `Image (size, view, i) -> 
-    let to_css_mm = str "%fmm" in
+    let to_css_mm = str "%gmm" in
     s.c ## style ## width <- Js.string (to_css_mm (Size2.w size)); 
     s.c ## style ## height <- Js.string (to_css_mm (Size2.h size));
     let cw = (Size2.w size /. 1000.) *. (V2.x s.resolution) in

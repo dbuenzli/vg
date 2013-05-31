@@ -13,13 +13,15 @@ open Vg
 Db.image "glyph-revolt" ~author:Db.dbuenzli
   ~title:"Revolt in black"
   ~tags:["glyph"]
-  ~note:"The characters should read \"Revolt!\"."
-  ~size:(Size2.v 50. 50.)
-  ~view:Box2.unit
+  ~note:"The characters should read “Revolt!”, approximatively centered \
+         in the image."
+  ~size:(Size2.v 135. 45.)
+  ~view:(Box2.v P2.o (Size2.v 3. 1.))
   begin fun _ -> 
-    let font = Font.create "Open Sans" 0.1 in
+    let font = Font.create ~weight:`W800 "Open Sans" 0.7 in
     let text = "Revolt!" in 
-    I.const (Color.gray 0.3) >> I.cut_glyphs ~text font []
+    I.const Color.black >> I.cut_glyphs ~text font [] >> 
+    I.move (V2.v 0.23 0.25)
   end;
 
 (*---------------------------------------------------------------------------

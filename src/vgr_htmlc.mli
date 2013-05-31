@@ -34,8 +34,17 @@ val target : Dom_html.canvasElement Js.t -> [`Other] Vg.Vgr.target
     
     The following render warnings are reported:
     {ul
-    {- [`Unsupported_cut (`O o)], outline cuts can be performed only on 
-       {!I.const}, {!I.axial} and {!I.radial} primitive images.}} *)
+    {- [`Unsupported_cut ((`O o), i)], outline cuts can be performed only on 
+       (possibly transformed) {!I.const}, {!I.axial} and {!I.radial} 
+       primitive images.}
+    {- [`Unsupported_glyph_cut (a, i)], glyph cuts can be performed only
+       on bare {!I.const}, {!I.axial} and {!I.radial} primitive images.}}
+*)
+
+(** {1 Fonts} 
+
+    The HTML canvas 
+*)
 
 (** {1 Multiple images} 
 
