@@ -87,7 +87,7 @@ Db.image "path-cubics" ~author:Db.dbuenzli
 
 Db.image "path-dashes" ~author:Db.dbuenzli
   ~title:"Dash patterns"
-  ~tags:["path";]
+  ~tags:["path"; "dashes";]
   ~note:"Miscellaneous dash patterns and offsets. "
   ~size:(Size2.v 100. 100.)
   ~view:(Box2.v P2.o (Size2.v 26. 26.))
@@ -114,7 +114,7 @@ Db.image "path-dashes" ~author:Db.dbuenzli
 
 Db.image "path-cantor-dashes" ~author:Db.dbuenzli
   ~title:"Cantor set with dashes" 
-  ~tags:["path"; "fractal"]
+  ~tags:["path"; "fractal"; "dashes";]
   ~note:"The Cantor set is drawn with dashes to represent its elements. \
          Maximal dash pattern size is a largely undocumented parameter of \
          the renderer backends, the line renderings may quickly become \
