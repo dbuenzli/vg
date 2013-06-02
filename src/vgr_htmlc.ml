@@ -194,7 +194,7 @@ let set_stroke s p =
 
 let set_fill s p = 
   let p = get_primitive s p in 
-  if s.s_fill != p then begin match p with 
+  if (s.s_fill != p) then begin match p with 
   | Color c -> s.ctx ## fillStyle <- c; s.s_fill <- p
   | Gradient g -> s.ctx ## fillStyle_gradient <- g; s.s_fill <- p
   end
@@ -244,19 +244,23 @@ let set_path s p =
    we also get problems by the fact that we flip the coordinate
    system.  To circumvent these we extract from the current transform
    the rotation, scaling and translation in the original,
-   untransformed, coordinate system and draw the glyphs there. *)
+   untransformed, coordinate system and draw the glyphs there. 
+   This however makes it tricky to integrate with gradients, for 
+   now we just disallow gradient cuts. *)
 
 let rec r_cut_glyphs s a run = function 
-| Primitive (Raster _) | Tr _ | Blend _ | Cut _ | Cut_glyphs _ as i -> 
+| Primitive (Raster _ | Axial _ | Radial _) | Tr _ | Blend _ | Cut _ 
+| Cut_glyphs _ as i ->
     warn s (`Unsupported_glyph_cut (a, image i))
-| Primitive p ->
+| Primitive p as i ->
     begin match run.text with 
     | None -> warn s (`Other "No text specified in glyph cut")
     | Some text -> 
         let text = Js.string text in
         s.ctx ## save ();
+        s.todo <- (pop_gstate s) :: s.todo;
         let m = M3.mul s.view_tr s.s_tr in
-        let o = P2.tr m P2.o in
+        let o = P2.tr m run.o in
         let font_size = V2.norm (V2.tr m (V2.v 0. run.font.size)) in
         let y_scale = 1. /. V2.norm (V2.tr s.s_tr V2.oy) in
         let x_scale =
@@ -273,11 +277,14 @@ let rec r_cut_glyphs s a run = function
                   V2.x o,                   V2.y o));
         begin match a with 
         | `O o -> 
-            set_outline s o; set_stroke s p; s.ctx ## strokeText (text, 0., 0.)
-        | `Aeo | `Anz -> 
+            warn s (`Unsupported_glyph_cut (a, image i))
+            (* some work is needed here as the outline params won't 
+               be in the right coordinate system *)
+            (* set_outline s o; set_stroke s p;
+               s.ctx ## strokeText (text, 0., 0.) *)
+        | `Aeo | `Anz ->
             set_fill s p; s.ctx ## fillText (text, 0., 0.)
         end;
-        s.ctx ## restore (); 
     end
 | Meta (_, i) -> r_cut_glyphs s a run i 
 

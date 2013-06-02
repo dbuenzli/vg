@@ -24,6 +24,55 @@ Db.image "glyph-revolt" ~author:Db.dbuenzli
     I.move (V2.v 0.23 0.25)
   end;
 
+Db.image "glyph-aspect" ~author:Db.dbuenzli
+  ~title:"Glyph aspect"
+  ~tags:["glyph"]
+  ~note:"The character should read “R”, without distortion."
+  ~size:(Size2.v 25. 50.)
+  ~view:(Box2.v P2.o (Size2.v 2. 1.))
+  begin fun _ -> 
+    let font = Font.create ~weight:`W800 "Open Sans" 0.5 in
+    let text = "R" in 
+    let sq = P.empty >> P.rect (Box2.v (P2.v 0. 0.75) (P2.v 0.25 0.25)) in 
+    I.const Color.black >> I.cut sq >> 
+    I.blend (I.const Color.black >> I.cut_glyphs ~text font []) >> 
+    I.scale (V2.v 4.0 1.0)
+  end;
+
+Db.image "glyph-multi" ~author:Db.dbuenzli
+  ~title:"Multiple revolts"
+  ~tags:["glyph"]
+  ~note:"Unit square filled with revolts."
+  ~size:(Size2.v 135. 135.)
+  ~view:Box2.unit
+  begin fun _ -> 
+    let font = Font.create ~weight:`W800 "Open Sans" 0.025 in
+    let text = "Revolt!" in
+    let angle = Float.rad_of_deg 30. in
+(*    let stops = [0., Color.black; 1., Color.white ] in*)
+    let revolt pos = 
+      I.const Color.black >> I.cut_glyphs ~text font [] >> I.move pos
+    in
+    let next max dv pt = 
+      if V2.x pt < V2.x max then Some (V2.v (V2.x pt +. V2.x dv) (V2.y pt)) else
+      let y = V2.y pt +. V2.y dv in 
+      if y > V2.y max then None else Some (V2.v 0. y)
+    in
+    let max = V2.v 1.3 1.3 in
+    let dv = V2.v 0.11 0.03 in
+    let rec blend_revolt acc = function
+    | None -> acc 
+    | Some pt -> blend_revolt (acc >> I.blend (revolt pt)) (next max dv pt) 
+    in
+    let margin = 
+      let area = `O { P.o with P.width = 0.1 } in
+      I.const Color.white >> I.cut ~area (P.empty >> P.rect Box2.unit)
+    in
+    blend_revolt (I.const Color.white) (Some P2.o) >> I.rot angle >> 
+    I.move (P2.v 0.2 (-. sin (angle))) >>
+    I.blend margin
+  end;
+
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
    All rights reserved.

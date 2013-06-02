@@ -950,6 +950,7 @@ module I = struct
   type glyph_run = 
     { font : font;
       text : string option; 
+      o : p2;
       advances : v2 list option; 
       glyphs : glyph list; }
 
@@ -975,12 +976,14 @@ module I = struct
 
   let eq_glyph_run eq r1 r2 =
     Font.equal_f eq r1.font r2.font && r1.text = r2.text && 
-    eq_advances eq r1 r2 && r1.glyphs = r2.glyphs
+    V2.equal_f eq r1.o r2.o && eq_advances eq r1 r2 && r1.glyphs = r2.glyphs
    
   let cmp_glyph_run cmp r1 r2 =
     let c = Font.compare_f cmp r1.font r2.font in 
     if c <> 0 then c else 
     let c = Pervasives.compare r1.text r2.text in 
+    if c <> 0 then c else 
+    let c = V2.compare_f cmp r1.o r2.o in 
     if c <> 0 then c else 
     let c = cmp_advances cmp r1.advances r2.advances in 
     if c <> 0 then c else
@@ -989,7 +992,7 @@ module I = struct
   let pp_glyph_run ppf r =
     let pp_text ppf = function 
     | None -> () 
-    | Some t -> pp ppf "@ @[<1>(text %s)@]" t
+    | Some t -> pp ppf "@ @[<1>(text \"%s\")@]" t
     in
     let pp_advances ppf = function 
     | None -> () 
@@ -998,8 +1001,8 @@ module I = struct
         List.iter (fun a -> pp ppf "@ %a" V2.pp a) avs; 
         pp ppf ")@]"
     in
-    pp ppf "%a@%a%a@ (glyphs" Font.pp r.font pp_text r.text 
-      pp_advances r.advances;
+    pp ppf "%a%a@ @[<1>(o %a)@]%a@ (glyphs" 
+      Font.pp r.font pp_text r.text V2.pp r.o pp_advances r.advances;
     List.iter (fun g -> pp ppf " %d" g) r.glyphs; 
     pp ppf ")"
     
@@ -1026,8 +1029,9 @@ module I = struct
   (* Cutting images *)
 
   let cut ?(area = `Anz) p i = Cut (area, p, i)  
-  let cut_glyphs ?(area = `Anz) ?text ?advances font glyphs i =
-    let run = { font; text; advances; glyphs; } in 
+  let cut_glyphs ?area ?text ?advances font glyphs i =
+    let area = match area with None -> `Anz | Some o -> (o :> P.area) in
+    let run = { font; text; o = P2.o; advances; glyphs; } in 
     Cut_glyphs (area, run , i)
 
   (* Blending images *)
@@ -1305,6 +1309,7 @@ module Vgr = struct
       type glyph_run = I.glyph_run = 
         { font : font;
           text : string option; 
+          o : p2;
           advances : v2 list option; 
           glyphs : glyph list; }
 

@@ -340,7 +340,7 @@ let rec w_image s k r =
       | Cut_glyphs (a, run, i) -> 
           s.todo <- todo; 
           warn s (`Other "TODO cut glyphs unimplemented"); 
-          k r 
+          w_image s k r
       | Blend (_, _, i, i') ->
           s.todo <- (Draw i') :: (Draw i) :: todo; 
           w_image s k r

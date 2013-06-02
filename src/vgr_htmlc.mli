@@ -38,13 +38,23 @@ val target : Dom_html.canvasElement Js.t -> [`Other] Vg.Vgr.target
        (possibly transformed) {!I.const}, {!I.axial} and {!I.radial} 
        primitive images.}
     {- [`Unsupported_glyph_cut (a, i)], glyph cuts can be performed only
-       on bare {!I.const}, {!I.axial} and {!I.radial} primitive images.}}
-*)
+       on bare {!I.const} primitive images and outline cuts are currently
+       unsupported.}} *)
 
-(** {1 Fonts} 
+(** {1 Text rendering support} 
 
-    The HTML canvas 
-*)
+    Fonts use the CSS font selection mechanism. Make sure that the
+    fonts you use are embedded (and {e loaded}) in your DOM via
+    [\@font-face].
+
+    The text rendering API of HTML canvas doesn't give control over
+    glyph rendering. This means that the [advances] and glyph list
+    arguments of {!Vg.I.cut_glyphs} are ignored and you will need to
+    provide the [text] argument.
+
+    At the moment the renderer also needs to work around a particular
+    browser bug which means that glyphs cut are currently limited to
+    non-outline area cuts in constant images.  *)
 
 (** {1 Multiple images} 
 

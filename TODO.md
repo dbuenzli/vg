@@ -22,6 +22,11 @@ Do we actually have a renderer that supports arbitrary outline cut ?
 * Outlines should be output to a <defs><g id="id" /></defs> for reuse. 
   Or is that impossible ? 
 
+### Canvas renderer
+
+* Try to handle more glyph cuts.
+
+
 ### PDF renderer 
 
 Implement !

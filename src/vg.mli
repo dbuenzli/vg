@@ -532,11 +532,10 @@ module I : sig
       cutting into {!const} {!axial} and {!radial} images. Consult
       the individual renderer documentation. *)
 
-
-  val cut_glyphs : ?area:P.area -> ?text:string -> 
-    ?advances:v2 list -> 
+  val cut_glyphs : ?area:[ `O of P.outline ] -> ?text:string -> 
+    ?advances:v2 list -> (* ?o:p2 -> *)
     font -> glyph list -> image -> image
-  (** [cut_glyphs text clusters font glyphs i] is like {!cut} except the
+  (** [cut_glyphs area text advances font glyphs i] is like {!cut} except the
       path cut is the union of all the paths of the glyphs [glyphs] of the 
       font [font].
 
@@ -553,7 +552,11 @@ module I : sig
       an empty list of glyphs may be passed). 
 
       In general if [text] is present and [glyphs] is empty renderer
-      should try to perform a best effort rendering of [text]. *)
+      should try to perform a best effort rendering of [text]. 
+
+      If [area] it provided the outline area of the glyphs are cut as
+      specified, otherwise the area of the glyphs is determined as 
+      mandated by the font. *)
 
   (** {1:blend Blending images} *)
   
@@ -851,6 +854,7 @@ module Vgr : sig
       type glyph_run =
         { font : font;
           text : string option; 
+          o : p2;                          (** Unused for now, always P2.o *)
           advances : v2 list option; 
           glyphs : glyph list; }
 
