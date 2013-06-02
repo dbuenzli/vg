@@ -33,8 +33,8 @@ Db.image "cafe-wall" ~author:Db.dbuenzli
     let blend_row acc (y, offset) = 
       acc >> I.blend ((bricks offset) >> I.blend border >> I.move (V2.v 0. y))
     in
-    let rows = [0.0, -0.04; 0.1,  0.00; 0.2, -0.04; 0.3, -0.08; 0.4, -0.12; 
-                0.5, -0.08; 0.6, -0.04; 0.7,  0.00; 0.8, -0.04; 0.9, -0.08; ] 
+    let rows = [0.0, 0.36; 0.1, 0.00; 0.2, 0.36; 0.3, 0.32; 0.4, 0.28; 
+                0.5, 0.32; 0.6, 0.36; 0.7, 0.00; 0.8, 0.36; 0.9, 0.32; ] 
     in
     I.const Color.white >> 
     I.blend (List.fold_left blend_row I.void rows) >>

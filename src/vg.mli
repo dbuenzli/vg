@@ -1410,8 +1410,9 @@ I.const Color.black >> I.cut ~area p
 
         The {e dash pattern} [pat] is a list of lengths that specify
         the length of alternating dashes and gaps (starting with
-        dashes). The {e dash offset} [off] indicates where to start in
-        the dash pattern at the beginning of a subpath.}}  *)
+        dashes). The {e dash offset} [off] is a {e positive} offset
+        that indicates where to start in the dash pattern at the
+        beginning of a subpath.}}  *)
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
