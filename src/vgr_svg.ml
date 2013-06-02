@@ -17,9 +17,8 @@ type gstate =
     
 type svg_prim = Gradient of int | Color of string * string
 
-type cmd = 
-  | Pop of Vgr.Private.Data.tr list
-  | Draw of Vgr.Private.Data.image
+type g_state = { g_tr : M3.t } 
+type cmd = Pop of g_state | Draw of Vgr.Private.Data.image
 
 (* N.B. the transforms in Pop are used to be able to remember the
    current transformation matrix to handle the case of uncut
@@ -38,6 +37,7 @@ type state =
       (Vgr.Private.Data.primitive * Vgr.Private.Data.tr list, 
        svg_prim) Hashtbl.t; 
     paths : (path, int) Hashtbl.t;                         (* cached paths. *)
+    mutable s_tr : M3.t;  (* current transformation without view transform. *)
     mutable s_alpha : float;                       (* current global alpha. *)
     mutable s_blender : Vgr.Private.Data.blender; (* current blending mode. *)
     mutable s_outline : P.outline; }       (* current outline stroke state. *)
@@ -47,17 +47,11 @@ let limit s = Vgr.Private.limit s.r
 let warn s w = Vgr.Private.warn s.r w
 let image i = Vgr.Private.I.of_data i
 let new_id s = s.id <- s.id + 1; s.id
-let pop_gstate ?(trs = []) s = Pop trs
-let set_gstate s gs = () 
+let pop_gstate s = Pop { g_tr = s.s_tr }
+let set_gstate s g = s.s_tr <- g.g_tr 
+
 let uncut_bounds s =
-  let rec loop m = function 
-  | [] -> Vgr.Private.Data.of_path (P.empty >> P.rect (Box2.tr m s.view))
-  | Pop trs :: cmds -> 
-      let mul_inv m tr = M3.mul m (Vgr.Private.Data.tr_inv tr) in
-      loop (List.fold_left mul_inv m trs) cmds 
-  | _ :: cmds -> loop m cmds 
-  in
-  loop M3.id s.todo
+  Vgr.Private.Data.of_path (P.empty >> P.rect (Box2.tr (M3.inv s.s_tr) s.view))
 
 let cap_str = function 
 | `Butt -> "butt" | `Round -> "round" | `Square -> "square"
@@ -135,12 +129,12 @@ let badd_init s size view =
     sx 0. 0. (-. sy) dx dy (* map view rect -> viewport *)
 
 let badd_transform s = function 
-| Move v -> badd_fmt s "translate(%g %g)" (V2.x v) (V2.y v)
-| Rot a -> badd_fmt s "rotate(%g)" (Float.deg_of_rad a)
-| Scale sv -> badd_fmt s "scale(%g %g)" (V2.x sv) (V2.y sv)
+| Move v -> badd_fmt s "translate(%g %g)" (V2.x v) (V2.y v); M3.move2 v
+| Rot a -> badd_fmt s "rotate(%g)" (Float.deg_of_rad a); M3.rot2 a
+| Scale sv -> badd_fmt s "scale(%g %g)" (V2.x sv) (V2.y sv); M3.scale2 sv
 | Matrix m -> 
     badd_fmt s "transform(%g %g %g %g %g %g)"
-      (M3.e00 m) (M3.e10 m) (M3.e01 m) (M3.e11 m) (M3.e02 m) (M3.e12 m)
+      (M3.e00 m) (M3.e10 m) (M3.e01 m) (M3.e11 m) (M3.e02 m) (M3.e12 m); m
 
 let w_path s p k r = try k (Hashtbl.find s.paths p) r with
 | Not_found -> 
@@ -210,7 +204,7 @@ let badd_stop s (t, c) =
 let badd_gradient_transforms s trs = 
   let rec loop = function
   | [] -> badd_fmt s "\">"
-  | t :: ts -> badd_transform s t; loop ts 
+  | t :: ts -> ignore (badd_transform s t); loop ts 
   in
   if trs = [] then (badd_fmt s ">") else 
   (badd_fmt s " gradientTransform=\""; loop trs)
@@ -304,18 +298,20 @@ let rec w_cut s a i k path_id r = match i with
 | Blend _ | Cut _ | Cut_glyphs _ as i -> w_clip s a i path_id k r
 | Meta (_, i) -> w_cut s a i k path_id r
 
-let rec w_transforms s trs i k r =    (* collapses nested Tr in single <g>. *)
-  if s.cost > limit s then (s.cost <- 0; partial (w_transforms s trs i k) r)else
+let rec w_transforms s acc i k r =    (* collapses nested Tr in single <g>. *)
+  if s.cost > limit s then (s.cost <- 0; partial (w_transforms s acc i k) r)else
   begin
     s.cost <- s.cost + 1;
     match i with
     | Tr (tr, i') -> 
-        badd_transform s tr; w_buf s (w_transforms s (tr :: trs) i' k) r
+        let tr = badd_transform s tr in
+        w_buf s (w_transforms s (M3.mul acc tr) i' k) r
     | Meta (_, i) -> 
-        w_transforms s trs i k r
+        w_transforms s acc i k r
     | i ->
         badd_str s "\">"; 
-        s.todo <- (Draw i) :: pop_gstate ~trs s :: s.todo;
+        s.todo <- (Draw i) :: pop_gstate s :: s.todo;
+        s.s_tr <- M3.mul s.s_tr acc;
         w_buf s k r
   end
 
@@ -347,7 +343,7 @@ let rec w_image s k r =
       | Tr _ as i ->
           s.todo <- todo;
           badd_str s "<g transform=\""; 
-          w_transforms s [] i (w_image s k) r
+          w_transforms s M3.id i (w_image s k) r
       | Meta (m, i) -> 
           s.todo <- (Draw i) :: todo; 
           w_image s k r
@@ -375,6 +371,7 @@ let target ?(xml_decl = true) () =
                       id = 0; 
                       prims = Hashtbl.create 241; 
                       paths = Hashtbl.create 241;
+                      s_tr = M3.id;
                       s_alpha = 1.; 
                       s_blender = `Over; 
                       s_outline = P.o; }
