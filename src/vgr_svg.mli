@@ -38,7 +38,21 @@ val target : ?xml_decl:bool -> unit -> Vg.Vgr.dst_stored Vg.Vgr.target
     The following render warnings are reported:
     {ul 
     {- [`Unsupported_cut (`O o)], outline cuts can be performed 
-       only on [I.const], [I.axial] and [I.radial] primitive images.}} *)
+       only on [I.const], [I.axial] and [I.radial] primitive images.}
+    {- [`Unspported_glyph_cut (a, i)], glyph cuts can be performed
+       only on bare {!Vg.I.const} primitive images.}} *)
+
+(** {1 Text rendering support} 
+
+    {b Warning.} The following is subject to change in the future. 
+
+    Fonts use the CSS font selection mechanism. For now no mechanism
+    is provided for including external references to the fonts.
+
+    The advances and glyph arguments of {!Vg.I.cut_glyphs} are ignored
+    and you will need to provide the [text] argument. 
+
+    Glyph cuts are currently limited to areas cuts in constant images. *)
 
 (** {1 Multiple images} 
 

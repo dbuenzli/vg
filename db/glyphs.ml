@@ -13,7 +13,7 @@ open Vg
 Db.image "glyph-revolt" ~author:Db.dbuenzli
   ~title:"Revolt in black"
   ~tags:["glyph"]
-  ~note:"The characters should read “Revolt!”, approximatively centered \
+  ~note:"Black characters “Revolt!”, approximatively centered \
          in the image."
   ~size:(Size2.v 135. 45.)
   ~view:(Box2.v P2.o (Size2.v 3. 1.))
@@ -21,6 +21,21 @@ Db.image "glyph-revolt" ~author:Db.dbuenzli
     let font = Font.create ~weight:`W800 "Open Sans" 0.7 in
     let text = "Revolt!" in 
     I.const Color.black >> I.cut_glyphs ~text font [] >> 
+    I.move (V2.v 0.23 0.25)
+  end;
+
+Db.image "glyph-revolt-outline" ~author:Db.dbuenzli
+  ~title:"Revolt outline in black"
+  ~tags:["glyph"]
+  ~note:"Black outlined characters “Revolt!”, approximatively centered \
+         in the image with bevel path joins."
+  ~size:(Size2.v 135. 45.)
+  ~view:(Box2.v P2.o (Size2.v 3. 1.))
+  begin fun _ -> 
+    let font = Font.create ~weight:`W800 "Open Sans" 0.7 in
+    let area = `O { P.o with P.width = 0.03; join = `Bevel } in
+    let text = "Revolt!" in 
+    I.const Color.black >> I.cut_glyphs ~area ~text font [] >> 
     I.move (V2.v 0.23 0.25)
   end;
 
@@ -42,14 +57,13 @@ Db.image "glyph-aspect" ~author:Db.dbuenzli
 Db.image "glyph-multi" ~author:Db.dbuenzli
   ~title:"Multiple revolts"
   ~tags:["glyph"]
-  ~note:"Unit square filled with revolts."
-  ~size:(Size2.v 135. 135.)
-  ~view:Box2.unit
-  begin fun _ -> 
+  ~note:"Rectangle filled with revolts rotated by 30°."
+  ~size:(Size2.v 108. 135.)
+  ~view:(Box2.v P2.o (P2.v 0.8 1.0))
+  begin fun view -> 
     let font = Font.create ~weight:`W800 "Open Sans" 0.025 in
     let text = "Revolt!" in
     let angle = Float.rad_of_deg 30. in
-(*    let stops = [0., Color.black; 1., Color.white ] in*)
     let revolt pos = 
       I.const Color.black >> I.cut_glyphs ~text font [] >> I.move pos
     in
@@ -66,7 +80,7 @@ Db.image "glyph-multi" ~author:Db.dbuenzli
     in
     let margin = 
       let area = `O { P.o with P.width = 0.1 } in
-      I.const Color.white >> I.cut ~area (P.empty >> P.rect Box2.unit)
+      I.const Color.white >> I.cut ~area (P.empty >> P.rect view)
     in
     blend_revolt (I.const Color.white) (Some P2.o) >> I.rot angle >> 
     I.move (P2.v 0.2 (-. sin (angle))) >>

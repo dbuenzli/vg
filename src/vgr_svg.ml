@@ -10,13 +10,8 @@ open Vgr.Private.Data
 
 (* Renderer *)
 
-type gstate = 
-  { g_alpha : float;                                     (* unused for now. *)
-    g_blender : Vgr.Private.Data.blender;                (* unused for now. *)
-    g_outline : P.outline; } 
-    
+type svg_font = string
 type svg_prim = Gradient of int | Color of string * string
-
 type g_state = { g_tr : M3.t } 
 type cmd = Pop of g_state | Draw of Vgr.Private.Data.image
 
@@ -33,6 +28,8 @@ type state =
     mutable view : Gg.box2;           (* current renderable view rectangle. *)
     mutable todo : cmd list;                        (* commands to perform. *)
     mutable id : int;                                     (* uid generator. *)
+    fonts :                                                (* cached fonts. *)
+      (Vgr.Private.Data.font, svg_font) Hashtbl.t; 
     prims :                                           (* cached primitives. *)
       (Vgr.Private.Data.primitive * Vgr.Private.Data.tr list, 
        svg_prim) Hashtbl.t; 
@@ -49,7 +46,6 @@ let image i = Vgr.Private.I.of_data i
 let new_id s = s.id <- s.id + 1; s.id
 let pop_gstate s = Pop { g_tr = s.s_tr }
 let set_gstate s g = s.s_tr <- g.g_tr 
-
 let uncut_bounds s =
   Vgr.Private.Data.of_path (P.empty >> P.rect (Box2.tr (M3.inv s.s_tr) s.view))
 
@@ -88,7 +84,22 @@ let badd_esc_str s str =
   | _ -> incr last
   done;
   Buffer.add_substring s.buf str !start (!last - !start)
-      
+
+(* Warning the following uses s.buf *)
+let bget_font s font = try Hashtbl.find s.fonts font with 
+| Not_found ->
+    (* N.B. it seems that specifying using style="font:..." or font="..." 
+       results in broken behaviour in one or other of the browsers. *)
+    let font_str = 
+      badd_str s "font-family=\""; 
+      badd_esc_str s font.name; 
+      badd_fmt s "\" font-style=\"%s\" font-weight=\"%s\" font-size=\"%g\""
+        (Vgr.Private.Font.css_slant font) (Vgr.Private.Font.css_weight font)
+        font.size; 
+      Buffer.contents s.buf
+    in
+    Hashtbl.add s.fonts font font_str; Buffer.clear s.buf; font_str
+
 let badd_title s = function
 | None -> () 
 | Some t -> badd_str s "<title>"; badd_esc_str s t; badd_str s "</title>"
@@ -177,11 +188,6 @@ let badd_rgb_color s c =
   let b = Float.int_of_round (Color.b srgba *. 255.) in
   badd_fmt s "#%02X%02X%02X" r g b
 
-let badd_svg_prim s op = function
-| Color (c, "") -> badd_fmt s " %s=\"%s\"/>" op c
-| Color (c, a) -> badd_fmt s " %s=\"%s\" %s-opacity=\"%s\"/>" op c op a
-| Gradient id -> badd_fmt s " %s=\"url(#i%d)\"/>" op id
-
 let badd_dashes s = function
 | None -> () 
 | Some (offset, dashes) -> 
@@ -193,6 +199,23 @@ let badd_dashes s = function
     if offset <> 0. then badd_fmt s " stroke-dashoffset=\"%g\"" offset;
     badd_fmt s " stroke-dasharray=\""; 
     array dashes
+
+let badd_outline s o = 
+  let w = o.P.width in 
+  let c = o.P.cap in 
+  let j = o.P.join in
+  let ma = o.P.miter_angle in
+  if w <> P.o.P.width then badd_fmt s " stroke-width=\"%g\"" w; 
+  if c <> P.o.P.cap then badd_fmt s " stroke-linecap=\"%s\"" (cap_str c); 
+  if j <> P.o.P.join then badd_fmt s " stroke-linejoin=\"%s\"" (join_str j);
+  if ma <> P.o.P.miter_angle then 
+    badd_fmt s " stroke-miterlimit=\"%g\"" (Vgr.Private.P.miter_limit o);
+  badd_dashes s o.P.dashes
+  
+let badd_svg_prim s op = function
+| Color (c, "") -> badd_fmt s " %s=\"%s\"" op c
+| Color (c, a) -> badd_fmt s " %s=\"%s\" %s-opacity=\"%s\"" op c op a
+| Gradient id -> badd_fmt s " %s=\"url(#i%d)\"" op id
 
 let badd_stop s (t, c) =
   let alpha = Color.a c in
@@ -244,23 +267,16 @@ let w_primitive s p k r = try k (Hashtbl.find s.prims p) r with
 
 let w_primitive_cut s a path_id k svg_prim r = match a with 
 | `O o ->
-    let w = o.P.width in 
-    let c = o.P.cap in 
-    let j = o.P.join in
-    let ma = o.P.miter_angle in
     badd_fmt s "<use l:href=\"#i%d\"" path_id;
-    if w <> P.o.P.width then badd_fmt s " stroke-width=\"%g\"" w; 
-    if c <> P.o.P.cap then badd_fmt s " stroke-linecap=\"%s\"" (cap_str c); 
-    if j <> P.o.P.join then badd_fmt s " stroke-linejoin=\"%s\"" (join_str j);
-    if ma <> P.o.P.miter_angle then 
-      badd_fmt s " stroke-miterlimit=\"%g\"" (Vgr.Private.P.miter_limit o);
-    badd_dashes s o.P.dashes;
+    badd_outline s o;
     badd_svg_prim s "stroke" svg_prim;
+    badd_str s "/>";
     w_buf s k r
 | `Anz | `Aeo ->
     let rule = if a = `Anz then "" else " fill-rule=\"evenodd\"" in 
     badd_fmt s "<use l:href=\"#i%d\"%s" path_id rule; 
     badd_svg_prim s "fill" svg_prim;
+    badd_str s "/>";
     w_buf s k r
 
 let w_clip s a i path_id k r = 
@@ -315,6 +331,30 @@ let rec w_transforms s acc i k r =    (* collapses nested Tr in single <g>. *)
         w_buf s k r
   end
 
+let rec w_cut_glyphs s a run i k r = match i with 
+| Primitive (Raster _) | Tr _ | Blend _ | Cut _ | Cut_glyphs _ as i -> 
+    warn s (`Unsupported_glyph_cut (a, image i)); k r
+| Primitive p as i ->
+    begin match run.text with 
+    | None -> warn s (`Other "No text specified in glyph cut"); k r
+    | Some text ->
+        let font = bget_font s run.font in
+        w_primitive s (p, []) begin fun svg_prim r -> 
+          (* font attribute doesn't seem to work !? *)
+          badd_fmt s "<text transform=\"scale(1,-1)\" %s " font;
+          begin match a with 
+          | `O o -> badd_outline s o; badd_svg_prim s "stroke" svg_prim
+          | `Anz | `Aeo -> badd_svg_prim s "fill" svg_prim
+          end;
+          badd_str s ">";
+          badd_esc_str s text; 
+          badd_str s "</text>"; 
+          w_buf s k r
+        end r
+    end
+| Meta (_, i) -> w_cut_glyphs s a run i k r
+
+
 let rec w_image s k r =
   if s.cost > limit s then (s.cost <- 0; partial (w_image s k) r) else
   match s.todo with
@@ -335,8 +375,7 @@ let rec w_image s k r =
           w_path s p (w_cut s a i (w_image s k)) r
       | Cut_glyphs (a, run, i) -> 
           s.todo <- todo; 
-          warn s (`Other "TODO cut glyphs unimplemented"); 
-          w_image s k r
+          w_cut_glyphs s a run i (w_image s k) r
       | Blend (_, _, i, i') ->
           s.todo <- (Draw i') :: (Draw i) :: todo; 
           w_image s k r
@@ -369,6 +408,7 @@ let target ?(xml_decl = true) () =
                       view = Box2.empty; 
                       todo = [];
                       id = 0; 
+                      fonts = Hashtbl.create 17;
                       prims = Hashtbl.create 241; 
                       paths = Hashtbl.create 241;
                       s_tr = M3.id;

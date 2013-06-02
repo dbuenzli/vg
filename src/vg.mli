@@ -877,10 +877,16 @@ module Vgr : sig
     (** Font helpers. *)
 
     module Font : sig
-      val css_font : ?unit:string -> Data.font -> string 
+      val css_font : unit:string -> Data.font -> string 
       (** [css_font unit font] is a CSS
           {{:http://www.w3.org/TR/CSS2/fonts.html#font-shorthand}font property}
-          for the font with size expressed in [unit] (defaults to [""]). *)
+          for the font with size expressed in [unit]. *)
+      
+      val css_weight : Data.font -> string 
+      (** [css_weight font] is [font]'s weigth as CSS [font-weight] value. *)
+
+      val css_slant : Data.font -> string 
+      (** [css_slant font] is [font]'s slant as a CSS [font-style] value. *)
     end
 
     (** Paths helpers. *)

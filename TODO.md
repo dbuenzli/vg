@@ -18,6 +18,7 @@ Do we actually have a renderer that supports arbitrary outline cut ?
 
 ### SVG renderer 
 
+* Try to handle more glyph cuts.
 * Use dublin core for metadata ? Look into inkscape. 
 * Outlines should be output to a <defs><g id="id" /></defs> for reuse. 
   Or is that impossible ? 
@@ -25,7 +26,6 @@ Do we actually have a renderer that supports arbitrary outline cut ?
 ### Canvas renderer
 
 * Try to handle more glyph cuts.
-
 
 ### PDF renderer 
 

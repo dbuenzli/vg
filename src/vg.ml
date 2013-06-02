@@ -1329,11 +1329,14 @@ module Vgr = struct
     (* Font helpers *)
 
     module Font = struct
-      let css_font ?(unit = "") font =
-        let slant = Font.slant_to_str font.Font.slant in 
-        let weight = Font.weight_to_str font.Font.weight in
-        Printf.sprintf "%s %s %g%s \"%s\"" slant weight font.Font.size unit 
+      let css_slant font = Font.slant_to_str font.Data.slant
+      let css_weight font = Font.weight_to_str font.Data.weight
+      let css_font ~unit font =
+        let slant = css_slant font in
+        let weight = css_weight font in
+        Printf.sprintf "%s %s %g%s \"%s\"" slant weight font.Data.size unit 
           font.Font.name
+
     end
     
     (* Path helpers *)
