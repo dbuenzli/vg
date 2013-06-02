@@ -256,13 +256,21 @@ let rec r_cut_glyphs s a run = function
         let text = Js.string text in
         s.ctx ## save ();
         let m = M3.mul s.view_tr s.s_tr in
-        let font_size = V2.norm (V2.tr m (V2.v 0. run.font.size)) in
         let o = P2.tr m P2.o in
+        let font_size = V2.norm (V2.tr m (V2.v 0. run.font.size)) in
+        let y_scale = 1. /. V2.norm (V2.tr s.s_tr V2.oy) in
+        let x_scale =
+          (* we don't apply the view transform but still need to scale
+             for aspect ratio distortions. *)
+          let sa = (float s.c ## width) /. (float s.c ## height) in 
+          let va = Box2.w s.view /. Box2.h s.view in 
+          sa /. va
+        in
         set_font s (run.font, font_size);
-        let m = s.s_tr in
-        M3.(s.ctx ## setTransform (e00 m, -. e10 m, 
-                                   -. e01 m, e11 m, 
-                                   V2.x o, V2.y o));
+        M3.(s.ctx ## setTransform 
+              (   e00 s.s_tr *. x_scale, -. e10 s.s_tr *. x_scale,
+               -. e01 s.s_tr *. y_scale,    e11 s.s_tr *. y_scale, 
+                  V2.x o,                   V2.y o));
         begin match a with 
         | `O o -> 
             set_outline s o; set_stroke s p; s.ctx ## strokeText (text, 0., 0.)
