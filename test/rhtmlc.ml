@@ -166,12 +166,13 @@ let ui_image_info () : 'a Ui.t * (S.t -> unit) =
   g *> (Ui.group () *> title *> author) *> note, 
   set_image_info
 
-let ui_log ppf : 'a Ui.t * ('b -> unit) * (unit -> unit) =
+let ui_log ppf : 'a Ui.t * ('b -> unit) * (unit -> unit) * (unit -> unit) =
   let log, conf_log = Ui.select ppf None ~id:"r-log" [] in 
   let warns = ref [] in
-  let add_log w = warns := w :: !warns; conf_log (`List !warns) in
+  let add_log w = warns := w :: !warns in
+  let update_log () = conf_log (`List !warns) in
   let clear_log () = warns := []; conf_log (`List []) in
-  log, add_log, clear_log
+  log, add_log, clear_log, update_log
 
 let ui_render_targets () = 
   let targets = Ui.group ~id:"r-targets" () in
@@ -306,17 +307,18 @@ let ui () =
   let targets, render, activity = ui_render_targets () in
   let image_info, set_image_info = ui_image_info () in
   let stats, set_stats = ui_render_stats () in
-  let log, add_log, clear_log = ui_log Vgr.pp_warning in 
+  let log, add_log, clear_log, update_log = ui_log Vgr.pp_warning in 
   let set_white_bg s = Ui.classify targets "white" s.S.white_bg in
   let update ~force o n = 
     let f = force in
     let redraw = ref false in
+    let finish dur steps = set_stats dur steps; update_log () in
     if f || o.S.id <> n.S.id then (set_image_info n; redraw := true); 
     if f || o.S.tags <> n.S.tags then set_tags n;
     if f || o.S.renderer <> n.S.renderer then redraw := true;
     if f || o.S.white_bg <> n.S.white_bg then set_white_bg n;
     if f || o.S.resolution <> n.S.resolution then redraw := true; 
-    if !redraw then render ~warn:add_log ~start:clear_log ~finish:set_stats n;
+    if !redraw then render ~warn:add_log ~start:clear_log ~finish n;
     Ui.set_hash (S.to_hash n);
   in
   let on_change ui f = 
