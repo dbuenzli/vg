@@ -124,17 +124,8 @@ let get_primitive s p = try Hashtbl.find s.prims p with
 let get_font s (font, size as spec) = try Hashtbl.find s.fonts spec with
 | Not_found -> 
     let js_font =
-      let slant = match font.slant with 
-      | `Italic -> "italic" | `Normal -> "normal" | `Oblique -> "oblique" 
-      in
-      let weight = match font.weight with 
-      | `W100 -> "100" | `W200 -> "200" | `W300 -> "300" | `W400 -> "400" 
-      | `W500 -> "500" | `W600 -> "600" | `W700 -> "700" | `W800 -> "800"
-      | `W900 -> "900"
-      in
-      let font = str "%s %s %gpx \"%s\"" slant weight size font.name in 
-      Mui.Log.msg "%s" font;
-      Js.string font
+      let font = { font with size } in
+      Js.string (Vgr.Private.Font.css_font ~unit:"px" font)
     in
     Hashtbl.add s.fonts spec js_font; js_font
 

@@ -1282,6 +1282,8 @@ module Vgr = struct
         { name : string; size : float; weight : Font.weight; 
           slant : Font.slant }
 
+      external of_font : Font.t -> font = "%identity"
+
       (* Path representation *)
 
       type segment = P.segment
@@ -1324,6 +1326,16 @@ module Vgr = struct
       external of_image : I.t -> image = "%identity"
     end
 
+    (* Font helpers *)
+
+    module Font = struct
+      let css_font ?(unit = "") font =
+        let slant = Font.slant_to_str font.Font.slant in 
+        let weight = Font.weight_to_str font.Font.weight in
+        Printf.sprintf "%s %s %g%s \"%s\"" slant weight font.Font.size unit 
+          font.Font.name
+    end
+    
     (* Path helpers *)
 
     module P = struct
@@ -1339,6 +1351,8 @@ module Vgr = struct
     module I = struct 
       external of_data : Data.image -> I.t = "%identity"
     end
+
+    
 
     (* Renderers *)
 

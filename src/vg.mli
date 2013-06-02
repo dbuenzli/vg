@@ -813,6 +813,9 @@ module Vgr : sig
         { name : string; size : float; weight : Font.weight; 
           slant : Font.slant }
 
+      val of_font : Font.t -> font
+      (** [of_font font] is the internal representation of [font]. *)
+      
       (** {1 Path representation} *)
 
       type segment = 
@@ -870,7 +873,16 @@ module Vgr : sig
       val of_image : I.t -> image 
       (** [of_image i] is the internal representation of [i]. *)
     end
-    
+
+    (** Font helpers. *)
+
+    module Font : sig
+      val css_font : ?unit:string -> Data.font -> string 
+      (** [css_font unit font] is a CSS
+          {{:http://www.w3.org/TR/CSS2/fonts.html#font-shorthand}font property}
+          for the font with size expressed in [unit] (defaults to [""]). *)
+    end
+
     (** Paths helpers. *)
     module P : sig
       val of_data : Data.path -> P.t 
