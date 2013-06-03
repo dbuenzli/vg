@@ -42,6 +42,81 @@ Db.image "cafe-wall" ~author:Db.dbuenzli
     I.move (V2.v 0.15 0.15)
   end;
 
+(** Pie chart illusion. 
+    Data taken from here http://en.wikipedia.org/wiki/File:Piecharts.svg *)
+
+Db.image "pie-ambiguity" ~author:Db.dbuenzli
+  ~title:"Pie chart ambiguity"
+  ~tags:["image"; "illusion"]
+  ~note:"Proportions showing that angles are hard to compare \
+         visually."
+  ~size:(Size2.v 90. 138.)
+  ~view:(Box2.v P2.o (Size2.v 1.5 2.3))
+  begin fun _ ->
+    let pie_chart r colors pcts =
+      let rv = V2.v r r in
+      let sector (acc, start) color pct =
+        let stop = start +. (pct /. 100.) *. Float.two_pi in
+        let sector = 
+          P.empty >> 
+          P.line (V2.polar r start) >> P.earc rv (V2.polar r stop) >> 
+          P.line P2.o 
+        in
+        acc >> I.blend (color >> I.cut sector), stop
+      in
+      fst (List.fold_left2 sector (I.void, Float.pi_div_2) colors pcts)
+    in
+    let bar_chart bar_size pad colors pcts = 
+      let w, h = V2.to_tuple bar_size in
+      let font = Font.create ~weight:`W400 "Open Sans" (h *. 0.015) in
+      let mgray = I.const (Color.gray 0.45) in 
+      let lgray = I.const (Color.gray 0.75) in
+      let bar (acc, x) color pct = 
+        let bar = 
+          let box = Box2.v P2.o (Size2.v w ((pct /. 100.) *. h)) in
+          color >> I.cut (P.empty >> P.rect box) 
+        in
+        let label =
+          let text = Printf.sprintf "%g" pct in
+          let pos = P2.v (0.275 *. w) (-1.4 *. (Font.size font)) in 
+          mgray >> I.cut_glyphs ~text font [] >> I.move pos
+        in
+        let x = x +. pad in 
+        acc >> I.blend (bar >> I.blend label >> I.move (V2.v x 0.)), x +. w
+      in
+      let bars, xmax = List.fold_left2 bar (I.void, 0.) colors pcts in
+      let floor = 
+        let ln = P.empty >> P.sub (P2.v pad 0.) >> P.line (P2.v xmax 0.) in
+        lgray >> I.cut ~area:(`O { P.o with P.width = h *. 0.001 }) ln
+      in
+      bars >> I.blend floor
+    in 
+    let distribs = [[ 23.; 22.; 20.; 18.; 17.];
+                    [ 20.; 20.; 19.; 21.; 20.];
+                    [ 17.; 18.; 20.; 22.; 23.]]
+    in
+    let colors = 
+      let min = Float.rad_of_deg 0. in
+      let max = Float.rad_of_deg 360. in
+      let rec colors count acc i =
+        if i < 0 then acc else 
+        let h = min +. (float i) *. ((max -. min) /. count) in
+        let c = Color.of_lcha (V4.v 75. 35. h 1.0) in
+        colors count (I.const c :: acc) (i - 1)
+      in
+      colors 5. [] 4
+    in
+    let bar_and_pie (acc, y) pcts = 
+      let pie = pie_chart 0.25 colors pcts in
+      let bars = bar_chart (Size2.v 0.08 2.) 0.04 colors pcts in
+      let bp = bars >> I.blend (pie >> I.move (V2.v 1.0 0.25)) in
+      acc >> I.blend (bp >> I.move (V2.v 0. y)), y +. 0.75
+    in
+    let white = I.const Color.white in
+    let charts = fst (List.fold_left bar_and_pie (white, 0.) distribs) in
+    charts >> I.move (V2.v 0.125 0.15)
+  end;
+
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
    All rights reserved.
