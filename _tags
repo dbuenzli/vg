@@ -12,3 +12,5 @@
 <test/mui.{mli,ml}> : package(js_of_ocaml.syntax), syntax(camlp4o)
 <test/sqc.{mli,ml,byte}> : package(gg), package(js_of_ocaml), \
                            package(js_of_ocaml.syntax), syntax(camlp4o)
+<test/minc.{mli,ml,byte}> : package(gg), package(js_of_ocaml), \
+                            package(js_of_ocaml.syntax), syntax(camlp4o)
