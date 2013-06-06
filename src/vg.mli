@@ -158,7 +158,8 @@ module Font : sig
   type weight = 
     [ `W100 | `W200 | `W300 | `W400 | `W500 | `W600 
     | `W700 | `W800 | `W900 ]
-  (** The type for font weights. *)
+  (** The type for font weights. Usually [`W400] denotes a normal 
+      weight and [`W700], a bold weight. *)
 
   type slant = [ `Normal | `Italic | `Oblique ]
   (** The type for font slants. *)
