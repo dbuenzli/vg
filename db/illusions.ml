@@ -101,7 +101,7 @@ Db.image "pie-ambiguity" ~author:Db.dbuenzli
       let rec colors count acc i =
         if i < 0 then acc else 
         let h = min +. (float i) *. ((max -. min) /. count) in
-        let c = Color.of_lcha (V4.v 75. 35. h 1.0) in
+        let c = Color.of_laba ~lch:true (V4.v 75. 40. h 1.0) in
         colors count (I.const c :: acc) (i - 1)
       in
       colors 5. [] 4
