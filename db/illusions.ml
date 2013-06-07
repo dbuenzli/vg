@@ -69,7 +69,7 @@ Db.image "pie-ambiguity" ~author:Db.dbuenzli
     let bar_chart bar_size pad colors pcts = 
       let w, h = V2.to_tuple bar_size in
       let font = Font.create ~weight:`W400 "Open Sans" (h *. 0.015) in
-      let mgray = I.const (Color.gray 0.45) in 
+      let mgray = I.const (Color.gray 0.3) in 
       let lgray = I.const (Color.gray 0.75) in
       let bar (acc, x) color pct = 
         let bar = 
@@ -95,16 +95,10 @@ Db.image "pie-ambiguity" ~author:Db.dbuenzli
                     [ 20.; 20.; 19.; 21.; 20.];
                     [ 17.; 18.; 20.; 22.; 23.]]
     in
-    let colors = 
-      let min = Float.rad_of_deg 0. in
-      let max = Float.rad_of_deg 360. in
-      let rec colors count acc i =
-        if i < 0 then acc else 
-        let h = min +. (float i) *. ((max -. min) /. count) in
-        let c = Color.of_laba ~lch:true (V4.v 75. 40. h 1.0) in
-        colors count (I.const c :: acc) (i - 1)
-      in
-      colors 5. [] 4
+    let colors =                   (* Brewer's Set2, http://colorbrewer.org/ *)
+      let n x = float x /. 255. in 
+      let c r g b = I.const (Color.v (n r) (n g) (n b) 1.) in 
+      [c 102 194 165; c 252 141 98; c 141 160 203; c 231 138 195; c 166 216 84]
     in
     let bar_and_pie (acc, y) pcts = 
       let pie = pie_chart 0.25 colors pcts in
