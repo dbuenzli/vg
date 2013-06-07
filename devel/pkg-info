@@ -4,7 +4,7 @@
 # Retrieves meta data about the package and store it in variables for
 # other scripts to use.
 
-SITEGENROOT=${SITEGENROOT:="~/sync/erratique"}
+SITEGENROOT=${SITEGENROOT:="$HOME/sync/erratique"}
 DEV_BUILD_ARTEFACTS=".typerex build _tags myocamlbuild.ml"
 
 set -e

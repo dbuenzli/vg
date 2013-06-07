@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# Usage: pkg-www-demos
+# Publishes the project's demos on the www with webglue
+
+set -e
+
+LOC=`dirname $0`
+
+. $LOC/pkg-info
+
+BDIR=${BDIR:="_build"}
+PAGEROOT=$SITEGENROOT/maps/software/$NAME
+
+CP=${CP:="cp"}
+
+$CP $BDIR/test/{rhtmlc,sqc}.{html,js} $PAGEROOT/demos/
+
