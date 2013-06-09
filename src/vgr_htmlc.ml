@@ -80,11 +80,11 @@ let uncut_bounds s =
   Vgr.Private.Data.of_path (P.empty >> P.rect (Box2.tr (M3.inv s.s_tr) s.view))
   
 let css_color c =                               (* w3c bureaucrats are pigs. *)
-  let srgba = Color.to_srgba c in
-  let r = Float.int_of_round (Color.r srgba *. 255.) in 
-  let g = Float.int_of_round (Color.g srgba *. 255.) in 
-  let b = Float.int_of_round (Color.b srgba *. 255.) in
-  let a = Color.a srgba in
+  let srgb = Color.to_srgb c in
+  let r = Float.int_of_round (Color.r srgb *. 255.) in 
+  let g = Float.int_of_round (Color.g srgb *. 255.) in 
+  let b = Float.int_of_round (Color.b srgb *. 255.) in
+  let a = Color.a srgb in
   if a = 1.0 then Js.string (str "rgb(%d,%d,%d)" r g b) else
   Js.string (str "rgba(%d,%d,%d,%g)" r g b a)
 

@@ -182,10 +182,10 @@ let w_path s p k r = try k (Hashtbl.find s.paths p) r with
     w_buf s (w_data (List.rev p) k) r
 
 let badd_rgb_color s c = 
-  let srgba = Color.to_srgba c in
-  let r = Float.int_of_round (Color.r srgba *. 255.) in 
-  let g = Float.int_of_round (Color.g srgba *. 255.) in 
-  let b = Float.int_of_round (Color.b srgba *. 255.) in
+  let srgb = Color.to_srgb c in
+  let r = Float.int_of_round (Color.r srgb *. 255.) in 
+  let g = Float.int_of_round (Color.g srgb *. 255.) in 
+  let b = Float.int_of_round (Color.b srgb *. 255.) in
   badd_fmt s "#%02X%02X%02X" r g b
 
 let badd_dashes s = function
