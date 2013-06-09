@@ -1,4 +1,13 @@
-(* This code is in the public domain. *)
+(* This code is in the public domain.
+
+   To compile to example:
+
+   ocamlfind ocamlc \
+    -package js_of_ocaml -package js_of_ocaml.syntax \
+    -package gg -package vg -package vg.htmlc \
+    -syntax camlp4o -linkpkg -o minc.byte minc.ml \
+   && js_of_ocaml minc.byte 
+*)
 
 open Gg
 open Vg
