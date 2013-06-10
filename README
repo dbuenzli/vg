@@ -1,5 +1,5 @@
 -------------------------------------------------------------------------------
-%%MODNAME%% - %%SYNOPSIS%%
+Vg - %%SYNOPSIS%%
      Release %%VERSION%%
 -------------------------------------------------------------------------------
 
@@ -12,7 +12,7 @@ Contact: %%AUTHORS%%
 Installation
 ------------
 
-To install %%MODNAME%% you need at least : 
+To install Vg you need at least : 
 
     OCaml %%OCAMLVERSION%% %%PPDEPS%%
 

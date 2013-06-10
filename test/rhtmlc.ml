@@ -358,7 +358,7 @@ let ui () =
     let header =
       Ui.group () ~id:"r-header" *>
         Ui.label "Vg Image database" *>
-        (fst (Ui.text ~id:"r-version" "v0.0.0")) (* TODO %%VERSION%% *)
+        (fst (Ui.text ~id:"r-version" "%%VERSION%%"))
     in
     let ui = 
       Ui.group ~id:"r-ui" () *> 

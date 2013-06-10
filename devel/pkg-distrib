@@ -3,31 +3,30 @@
 # Usage: pkg-distrib 
 # Make a distribution tarball in /tmp.
 
-set -e
+set -xev
 LOC=`dirname $0`
 
 TAR=${TAR="tar"}
-GIT=${GIT="git"}
 
 . $LOC/pkg-info
 
-DIRNAME=$NAME-$VERSION
-ROOTDIR=/tmp/$DIRNAME
+rm -R -f $CLONEDIR
+#git clone -b master . $CLONEDIR
+cp -R . $CLONEDIR
+cd $CLONEDIR
 
-# TODO this should start from a git checkout 
-
-rm -R -f $ROOTDIR
-git clone -b master . $ROOTDIR
-cd $ROOTDIR
+# Substitute a few things
+. $LOC/pkg-varsubsts
 
 # Remove dev artefacts
 rm -R -f .git .gitignore $DEV_BUILD_ARTEFACTS
 
+if [ -f $LOC/pkg-oasis-hook ]; then
+    . $LOC/pkg-oasis-hook
+fi
+
 # Generate oasis artefacts
 oasis setup
-
-# Substitute a few things
-. $LOC/pkg-varsubsts
 
 # Test oasis setup 
 ocaml setup.ml -configure
@@ -46,7 +45,7 @@ fi
 ocaml setup.ml -distclean
 
 cd ..
-$TAR -cvjf $DIRNAME.tbz $DIRNAME
-rm -R $DIRNAME
+$TAR -cvjf $PKGDIR.tbz $PKGDIR
+rm -R $PKGDIR
 
 

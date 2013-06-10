@@ -29,8 +29,8 @@ OPAMOCAMLVERSION=`$ECHO "$OCAMLVERSION" | \
 ARCHIVE=$NAME-$VERSION.tbz
 OPAMPACK=$NAME.$VERSION
 
-$MKDIR -p $OPAMROOT/packages/$OPAMPACK/files
-$CD $OPAMROOT/packages/$OPAMPACK
+$MKDIR -p $OPAMWWWROOT/packages/$OPAMPACK/files
+$CD $OPAMWWWROOT/packages/$OPAMPACK
 
 ## TODO this should be improved. Hooks, doc install etc.
 ## Thomas mentioned good descr for http://opam.ocamlpro.com/pkg/why3.0.81.html
@@ -73,7 +73,7 @@ EOF
 #EOF
 # doc:[ "README" "CHANGES" "doc/index.html"]
 
-$CD $OPAMROOT
+$CD $OPAMWWWROOT
 $OPAMMKREPO --generate-checksums $OPAMPACK
 $RM -rf archives # avoid that cache
 $OPAMMKREPO --index

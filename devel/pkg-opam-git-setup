@@ -17,8 +17,8 @@ ROOTDIR=.
 # Remove dev artefacts
 rm -f $DEV_BUILD_ARTEFACTS
 
-if [ -f $LOC/pkg-opam-git-setup-hook ]; then
-    . $LOC/pkg-opam-git-setup-hook
+if [ -f $LOC/pkg-oasis-hook ]; then
+    . $LOC/pkg-oasis-hook
 fi
 
 # Generate oasis artefacts

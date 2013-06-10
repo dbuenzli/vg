@@ -15,7 +15,8 @@ action ()
                     devel/db-locs
                     devel/jsoo-build $* test/rhtmlc.ml
                     ;;
-      minc)         shift; devel/jsoo-build $* test/minc.ml;;
+      sqc)          shift; devel/jsoo-build $* test/sqc.ml ;;
+      minc)         shift; devel/jsoo-build $* test/minc.ml ;;
       doc)          shift; devel/pkg-doc $* doc/dev-api.docdir ;;
       api-doc)      shift; devel/pkg-doc $* doc/api.docdir ;;
       distrib)      devel/pkg-distrib ;;

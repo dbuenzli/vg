@@ -10,7 +10,7 @@ LOC=`dirname $0`
 
 OCAMLBUILD=${OCAMLBUILD:="ocamlbuild -classic-display -use-ocamlfind"}
 OCAMLDOCFLAGS=${OCAMLDOCFLAGS:="-docflags -colorize-code,-charset,utf-8"}
-BDIR=${BDIR:="_build"}
+BUILDDIR=${BUILDDIR:="_build"}
 
 RELOAD_BROWSER=false
 THE_BROWSER=""
@@ -45,7 +45,7 @@ else
 fi
 
 $OCAMLBUILD -no-links $OCAMLDOCFLAGS $DOCDIRFILE/index.html
-cp doc/style.css $BDIR/$DOCDIRFILE/style.css
+cp doc/style.css $BUILDDIR/$DOCDIRFILE/style.css
 
 if [ -f $LOC/pkg-doc-hook ]; then
     . $LOC/pkg-doc-hook
@@ -53,5 +53,5 @@ fi
 
 # Reload browser
 if [ "$RELOAD_BROWSER" == "true" ]; then 
-     $LOC/reload-browser $THE_BROWSER file://$PWD/$BDIR/$DOCDIRFILE/
+     $LOC/reload-browser $THE_BROWSER file://$PWD/$BUILDDIR/$DOCDIRFILE/
 fi

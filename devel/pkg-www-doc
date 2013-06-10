@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# Usage: pkg-www-doc
+# Publishes the project's docs on the www
+
+set -ex
+LOC=`dirname $0`
+
+. $LOC/pkg-info
+
+rm -R -f $CLONEDIR
+git clone -b master . $CLONEDIR
+cd $CLONEDIR
+
+. $LOC/pkg-varsubsts
+./devel/pkg-doc doc/api.docdir
+cp $BUILDDIR/doc/api.docdir/* $PKGWWWROOT/doc/
+
+

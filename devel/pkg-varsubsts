@@ -6,7 +6,6 @@
 set -e
 LOC=`dirname $0`
 
-FIND=${FIND="find"}
 SED=${SED="sed"}
 
 VARSUBSTS="s|%%NAME%%|$NAME|g; \
@@ -25,7 +24,9 @@ if [ -f $LOC/pkg-varsubsts-hook ]; then
     . $LOC/pkg-varsubsts-hook
 fi
 
-for file in `$FIND $ROOTDIR \( -name .git \) -prune -o -type f -print`; do
-    $SED "$VARSUBSTS" $file > $file.tmp
-    mv -f $file.tmp $file
+for file in `git ls-files`; do
+    if [ ! -x "$file" ]; then                # skip scripts
+        $SED "$VARSUBSTS" $file > $file.tmp
+        mv -f $file.tmp $file
+    fi
 done

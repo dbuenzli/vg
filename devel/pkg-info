@@ -4,19 +4,15 @@
 # Retrieves meta data about the package and store it in variables for
 # other scripts to use.
 
-SITEGENROOT=${SITEGENROOT:="$HOME/sync/erratique"}
-DEV_BUILD_ARTEFACTS=".typerex build _tags myocamlbuild.ml"
-
 set -e
 LOC=`dirname $0`
 
 ECHO=${ECHO:="echo"}
 SED=${SED:="sed"}
 TR=${TR:="tr"}
-GIT=${GIT:="git"}
 OASISQ=${OASISQ:="oasis query"}
 
-VERSION=`$ECHO "\`$GIT describe master\`" | $SED "s/^.\(.*\)/\1/"`
+VERSION=`$ECHO "\`git describe master\`" | $SED "s/^.\(.*\)/\1/"`
 NAME=`$OASISQ Name`
 MODNAME=`$OASISQ Library\("$NAME"\).Modules`
 SYNOPSIS=`$OASISQ Synopsis`
@@ -31,6 +27,15 @@ GITREPO=`$OASISQ "SrcRepo(head).Location"`
 if [ "$DEPS" ]; then
  PPDEPS=`$ECHO ", $DEPS"| $SED "s|,|,   |g" | $TR "," "\n" | $SED "s|$|\\\\\|"`
 fi
+
+PKGDIR=$NAME-$VERSION
+WWWROOT=${WWWROOT:="$HOME/sync/erratique"}
+PKGWWWROOT=${PKGWWWROOT:="$WWWROOT/maps/software/$NAME"}
+OPAMWWWROOT=${OPAMWWWROOT:="$WWWROOT/maps/opam"}
+
+BUILDDIR=${BUILDDIR:="_build"}
+CLONEDIR=${CLONEDIR:="/tmp/$PKGDIR"}
+DEV_BUILD_ARTEFACTS=".typerex build _tags myocamlbuild.ml"
 
 if [ -f $LOC/pkg-info-hook ]; then
     . $LOC/pkg-info-hook
