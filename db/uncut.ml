@@ -9,7 +9,7 @@ open Vg
 
 (** Test images for uncut image primitives. *)
 
-let emerald = Color.v 0.314 0.784 0.471 1.
+let emerald = Color.v_srgb 0.314 0.784 0.471
 ;;
 
 Db.image "uncut-const" ~author:Db.dbuenzli

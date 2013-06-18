@@ -22,9 +22,9 @@ Db.image "alpha-spots" ~author:Db.dbuenzli
    let da = Float.two_pi /. 3. in
    let dotp = P.empty >> P.circle P2.o 0.08 in
    let dot c da = I.const c >> I.cut dotp >> I.move (V2.polar 0.05 (a +. da)) in
-   let r = dot (Color.v 0.608 0.067 0.118 0.75) da in
-   let g = dot (Color.v 0.314 0.784 0.471 0.75) 0. in 
-   let b = dot (Color.v 0.000 0.439 0.722 0.75) (-. da) in
+   let r = dot (Color.v_srgb 0.608 0.067 0.118 ~a:0.75) da in
+   let g = dot (Color.v_srgb 0.314 0.784 0.471 ~a:0.75) 0. in 
+   let b = dot (Color.v_srgb 0.000 0.439 0.722 ~a:0.75) (-. da) in
    let triplet a b c = a >> I.blend b >> I.blend c in
    let triplet_row y a b c = 
      let fst = triplet a b c >> I.move (P2.v 0.2 y) in 

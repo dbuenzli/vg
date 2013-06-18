@@ -25,10 +25,10 @@ Db.image "color-ramps" ~author:Db.dbuenzli
       let add_bar acc l = acc >> I.blend (bar l) in
       List.fold_left add_bar I.void levels
     in 
-    (bars (fun l -> Color.v l 0. 0. 1.) >> I.move (P2.v 0.0 1.1)) >> I.blend
-    (bars (fun l -> Color.v 0. l 0. 1.) >> I.move (P2.v 1.1 1.1)) >> I.blend
-    (bars (fun l -> Color.v 0. 0. l 1.) >> I.move (P2.v 0.0 0.0)) >> I.blend
-    (bars (fun l -> Color.v l  l  l 1.) >> I.move (P2.v 1.1 0.0))
+    (bars (fun l -> Color.v_srgb l 0. 0.) >> I.move (P2.v 0.0 1.1)) >> I.blend
+    (bars (fun l -> Color.v_srgb 0. l 0.) >> I.move (P2.v 1.1 1.1)) >> I.blend
+    (bars (fun l -> Color.v_srgb 0. 0. l) >> I.move (P2.v 0.0 0.0)) >> I.blend
+    (bars (fun l -> Color.v_srgb l  l  l) >> I.move (P2.v 1.1 0.0))
   end
 
 (*---------------------------------------------------------------------------

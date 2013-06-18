@@ -96,8 +96,7 @@ Db.image "pie-ambiguity" ~author:Db.dbuenzli
                     [ 17.; 18.; 20.; 22.; 23.]]
     in
     let colors =                   (* Brewer's Set2, http://colorbrewer.org/ *)
-      let n x = float x /. 255. in 
-      let c r g b = I.const (Color.v (n r) (n g) (n b) 1.) in 
+      let c r g b = I.const (Color.v_srgbi r g b) in 
       [c 102 194 165; c 252 141 98; c 141 160 203; c 231 138 195; c 166 216 84]
     in
     let bar_and_pie (acc, y) pcts = 

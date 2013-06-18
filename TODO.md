@@ -2,6 +2,7 @@
 
 ## Before first release
 
+
 ### Path
 
 * Review ellipse things. There are a few TODOs and wrong things in there.
@@ -36,6 +37,7 @@ Implement !
 * Final code review. 
 * Review doc of Vgm now that we removed I.meta.
 * grep TODO
+* Add minc to examples.
 
 ### Glyph api
 

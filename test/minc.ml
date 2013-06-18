@@ -17,7 +17,7 @@ open Vg
 let aspect = 1.618  
 let size = Size2.v (aspect *. 100.) 100. (* mm *)
 let view = Box2.v P2.o (Size2.v aspect 1.)
-let image = I.const (Color.v 0.314 0.784 0.471 1.)
+let image = I.const (Color.v_srgb 0.314 0.784 0.471)
 
 (* Browser bureaucracy. *)
 

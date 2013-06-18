@@ -106,9 +106,9 @@ Db.image "gradient-scaling" ~author:Db.dbuenzli
   ~size:(Size2.v 60. 60.)
   ~view:(Box2.v (P2.v ~-.0.1 ~-.0.1) (Size2.v 1.2 1.2))
   begin fun _ -> 
-    let y = Color.v 1.000 0.827 0.000 1.0 in
-    let b = Color.v 0.000 0.529 0.741 1.0 in     
-    let r = Color.v 0.769 0.008 0.200 1.0 in 
+    let y = Color.v_srgb 1.000 0.827 0.000 in
+    let b = Color.v_srgb 0.000 0.529 0.741 in     
+    let r = Color.v_srgb 0.769 0.008 0.200 in 
     let stops = [ 0.0, r; 0.5, b; 1.0, y] in
     let axial = I.axial stops P2.o (P2.v 0.45 0.) in
     let radial = I.radial stops ~f:(P2.v 0.25 0.25) (P2.v 0.5 0.5) 0.5 in
