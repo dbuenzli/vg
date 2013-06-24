@@ -3,7 +3,7 @@
 # Usage: pkg-www-doc
 # Publishes the project's docs on the www
 
-set -ex
+set -e
 LOC=`dirname $0`
 
 . $LOC/pkg-info
