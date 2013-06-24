@@ -16,7 +16,7 @@ action ()
                     devel/jsoo-build $* test/rhtmlc.ml
                     ;;
       sqc)          shift; devel/jsoo-build $* test/sqc.ml ;;
-      minc)         shift; devel/jsoo-build $* test/minc.ml ;;
+      min_htmlc)    shift; devel/jsoo-build $* test/min_htmlc.ml ;;
       doc)          shift; devel/pkg-doc $* doc/dev-api.docdir ;;
       api-doc)      shift; devel/pkg-doc $* doc/api.docdir ;;
       distrib)      devel/pkg-distrib ;;

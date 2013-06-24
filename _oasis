@@ -7,16 +7,17 @@ Copyrights: (c) 2013 Daniel C. Bünzli
 License: BSD3
 Homepage: http://erratique.ch/software/vg
 Description:
- Vg is a declarative 2D vector graphics library. It provides combinators
- to compose images: first class values denoting functions from the
- infinite plane to colors. Renderers for PDF, SVG and the HTML canvas
- element are bundled with the library and an API allows to implement
- new renderers.
+ Vg is a declarative 2D vector graphics library for OCaml. In Vg, 
+ images are values that denote functions mapping points of the 
+ cartesian plane to colors. The library provides combinators 
+ to define and compose these values.
+ .
+ Renderers for PDF, SVG and the HTML canvas are distributed with 
+ the library. An API allows to implement new renderers.
  .
  Vg depends on [Gg][1] and, *optionally*, on [js_of_ocaml][2] 
- for the HTML canvas element renderer. 
- .
- Vg is distributed under the BSD3 license.
+ for the HTML canvas renderer. It is is distributed under the BSD3 
+ license.
  .
  [1]: http://erratique.ch/software/gg
  [2]: http://ocsigen.org/js_of_ocaml/

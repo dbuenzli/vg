@@ -5,6 +5,8 @@
   ---------------------------------------------------------------------------*)
 (** Vg PDF renderer. 
 
+    {b WARNING} unimplemented do not use.
+
     Renders a sequence of renderables as a multi-page PDF/A-2
     document. Each renderable defines a page of the document.
    

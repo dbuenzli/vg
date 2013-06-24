@@ -6,14 +6,17 @@
 
 (** Declarative 2D vector graphics.
 
-    [Vg] is a declarative 2D vector graphics library. It provides
-    {{!Vg.I}combinators} to compose images: first class values
-    denoting functions from the infinite plane to colors. Renderers
-    for {{!Vgr_pdf}PDF}, {{!Vgr_svg}SVG} and the HTML
-    {{!Vgr_htmlc}canvas} element are bundled with the library and an
-    API allows to implement new renderers.
+    [Vg] is a declarative 2D vector graphics library. In Vg, images
+    are {{!Vg.image}values} that denote functions mapping points of
+    the cartesian plane to colors. The library provides
+    {{!Vg.I}combinators} to define and compose them. Renderers for
+    {{!Vgr_pdf}PDF}, {{!Vgr_svg}SVG} and the HTML {{!Vgr_htmlc}canvas}
+    are distributed with the library. An API allows to implement
+    new renderers.
+
+    Consult the {{!basics}basics}, the {{!semantics}semantics} and
+     {{!examples}examples}.
     
-    Consult the {{!basics}basics} and the {{!semantics}semantics}. 
     Open the module to use it, this defines only modules and types in 
     your scope and a single {{!(>>)}composition operator}.
 
@@ -647,7 +650,7 @@ type renderer
        {{:http://www.w3.org/TR/SVG11/}SVG 1.1} document.}
     {- {!Vgr_htmlc}, renders sequence of images on an 
        {{:http://www.w3.org/TR/2dcontext/}HTML canvas} 
-       element via {{:http://ocsigen.org/js_of_ocaml/}js_of_ocaml}.}} *) 
+       via {{:http://ocsigen.org/js_of_ocaml/}js_of_ocaml}.}} *) 
 module Vgr : sig
 
   (** {1:warnings Render warnings} 
@@ -1058,13 +1061,13 @@ let gray = I.const (Color.gray 0.5)
     concrete renderer implementation used (PDF, SVG, HTML canvas etc.).
 
     The following function outputs the unit square of [gray] on a
-    30x30 millimiters PDF target in the file [/tmp/vg-basics.pdf]:
-{[let pdf_of_usquare i = 
+    30x30 millimiters SVG target in the file [/tmp/vg-basics.svg]:
+{[let svg_of_usquare i = 
   let size = Size2.v 30. 30. in
   let view = Box2.unit in
   try
-    let oc = open_out "/tmp/vg-basics.pdf" in
-    let r = Vgr.create (Vgr_pdf.target ()) (`Channel oc) in
+    let oc = open_out "/tmp/vg-basics.svg" in
+    let r = Vgr.create (Vgr_svg.target ()) (`Channel oc) in
     try 
       ignore (Vgr.render r (`Image (size, view, i)));
       ignore (Vgr.render r `End);
@@ -1072,8 +1075,8 @@ let gray = I.const (Color.gray 0.5)
     with e -> close_out oc; raise e
   with Sys_error e -> prerr_endline e
 
-let () = pdf_of_usquare gray]}
-    The result should be a single page PDF with a gray square 
+let () = svg_of_usquare gray]}
+    The result should be a single page SVG with a gray square 
     like this:
 {%html: <img src="doc-gray-square.png" style="width:30mm; height:30mm;"/> %}
 
@@ -1107,7 +1110,7 @@ fun pt -> if inside path pt then img pt else Color.void
 let circle = P.empty >> P.circle (P2.v 0.5 0.5) 0.4 
 let gray_circle = I.cut gray circle
 ]}
-    Rendered by [pdf_of_usquare] the result is:
+    Rendered by [svg_of_usquare] the result is:
 
 {%html: <img src="doc-gray-circle.png" style="width:30mm; height:30mm;"/> %}
 
@@ -1414,6 +1417,130 @@ I.const Color.black >> I.cut ~area p
         dashes). The {e dash offset} [off] is a {e positive} offset
         that indicates where to start in the dash pattern at the
         beginning of a subpath.}}  *)
+
+(** {1:examples Examples}
+
+Many examples of images and their source can be found in the
+{{:http://erratique.ch/software/vg/demos/rhtmlc.html}online version}
+of Vg's test image database. Clicking on the title of an image brings
+you to its definition.
+
+The following examples show for each renderer the minimal code
+needed to output an image. This code can also be found in the [test]
+directory of the distribution.
+
+{2:minpdf Minimal PDF output} 
+
+The PDF renderer is TODO.
+
+{2:minsvg Minimal code for SVG output}
+
+The file [min_svg.ml] contains the following mostly self-explanatory
+code. We first define an image and then render it. For the latter
+step we define some meta-data for the image, a function to print
+rendering warnings and then render the image on stdout.  
+
+{[open Gg
+open Vg
+
+(* 1. Define your image *)
+
+let aspect = 1.618  
+let size = Size2.v (aspect *. 100.) 100. (* mm *)
+let view = Box2.v P2.o (Size2.v aspect 1.)
+let image = I.const (Color.v_srgb 0.314 0.784 0.471)
+
+(* 2. Render *)
+
+let () = 
+  let meta = Vgm.add Vgm.empty Vgm.title "Vgr_svg minimal example" in
+  let meta = Vgm.add meta Vgm.description "Emerald color" in
+  let warn w = Vgr.pp_warning Format.err_formatter w in
+  let r = Vgr.create ~warn ~meta (Vgr_svg.target ()) (`Channel stdout) in
+  ignore (Vgr.render r (`Image (size, view, image))); 
+  ignore (Vgr.render r `End)
+]}
+
+This can be compiled with:
+{[
+> ocamlfind ocamlopt -package gg -package vg \
+                     -linkpkg -o min_svg.native min_svg.ml
+]}
+
+{2:minhtmlc Minimal code for HTML canvas output}
+
+The file [min_htmlc.ml] contains the following code. Step by step we have:
+{ol
+{- Define an image.}
+{- Create and add to the DOM an anchor [a] that will parent the canvas.
+   This will allow to download a PNG file of the image.}
+{- Create a canvas element [c] and add it as a child of [a].}
+{- Create a renderer [r] targeting the canvas [c].}
+{- Render the image and set the PNG file to the link of the anchor.}}
+{[
+open Gg
+open Vg
+
+(* 1. Define your image *)
+
+let aspect = 1.618  
+let size = Size2.v (aspect *. 100.) 100. (* mm *)
+let view = Box2.v P2.o (Size2.v aspect 1.)
+let image = I.const (Color.v_srgb 0.314 0.784 0.471)
+
+(* Browser bureaucracy. *)
+
+let main _ = 
+  let d = Dom_html.window ## document in 
+  let a = (* 2 *)
+    let a = Dom_html.createA d in 
+    a ## title <- Js.string "Download PNG file";
+    a ## href <- Js.string "#"; 
+    a ## setAttribute (Js.string "download", Js.string "min_htmlc.png");
+    Dom.appendChild (d ## body) a; a
+  in 
+  let c = (* 3 *)
+    let c = Dom_html.createCanvas d in 
+    Dom.appendChild a c; c
+  in 
+  let r = Vgr.create (Vgr_htmlc.target c) `Other in   (* 4 *)
+  ignore (Vgr.render r (`Image (size, view, image))); (* 5 *)
+  ignore (Vgr.render r `End);
+  a ## href <- (c ## toDataURL ()); (* 6 *)
+  Js._false
+
+let () = Dom_html.window ## onload <- Dom_html.handler main
+]}
+
+This file needs to be compiled to byte code and then [js_of_ocaml]
+must be applied. This can be achieved with:
+{[> ocamlfind ocamlc \
+  -package js_of_ocaml -package js_of_ocaml.syntax \
+  -package gg -package vg -package vg.htmlc \
+  -syntax camlp4o -linkpkg -o min_htmlc.byte min_htmlc.ml \
+  && js_of_ocaml min_htmlc.byte]}
+
+Finally we need a minimal HTML file that references our final
+javascript [min_htmlc.js]. The following one will do:
+{v
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,
+                                 initial-scale=1.0">
+  <script type="text/javascript" defer="defer" src="min_htmlc.js"></script>
+  <style type="text/css"> body \{ background-color: black; margin: 3em; \}</style>
+  <title>Vgr_htmlc minimal example</title>
+</head>
+<body>
+  <noscript>Sorry, you need to enable JavaScript to see this page.</noscript>
+</body>
+</html>
+v}
+*)
+
+
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
