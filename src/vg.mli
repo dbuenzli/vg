@@ -1473,10 +1473,12 @@ The file [min_htmlc.ml] contains the following code. Step by step we have:
 {ol
 {- Define an image.}
 {- Create and add to the DOM an anchor [a] that will parent the canvas.
-   This will allow to download a PNG file of the image.}
+   This will allow to download a (usually PNG) file of the image.}
 {- Create a canvas element [c] and add it as a child of [a].}
 {- Create a renderer [r] targeting the canvas [c].}
-{- Render the image and set the PNG file to the link of the anchor.}}
+{- Render the image.}
+{- Ask the canvas for an image data URL and set it as the the link of the 
+   anchor.}}
 {[
 open Gg
 open Vg
