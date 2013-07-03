@@ -28,6 +28,6 @@ $ECHO "$VERSION" | $WEBGLUE set --replace $NAME s-last-version
 $ECHO "$DEPS" | $WEBGLUE set --replace $NAME s-deps
 $WEBGLUE get timestamp utc | $WEBGLUE set --replace $NAME s-updated
 
-if [ -f $LOC/pkg-www-hook ]; then
-    . $LOC/pkg-www-hook
+if [ -f $LOC/pkg-www-release-hook ]; then
+    . $LOC/pkg-www-release-hook
 fi

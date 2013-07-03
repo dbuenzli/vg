@@ -14,6 +14,9 @@ cd $CLONEDIR
 
 . $LOC/pkg-varsubsts
 ./devel/pkg-doc doc/api.docdir
+
+if [ -f $LOC/pkg-www-doc-hook ]; then
+    . $LOC/pkg-www-doc-hook
+fi
+
 cp $BUILDDIR/doc/api.docdir/* $PKGWWWROOT/doc/
-
-

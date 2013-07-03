@@ -35,7 +35,7 @@ OPAMWWWROOT=${OPAMWWWROOT:="$WWWROOT/maps/opam"}
 
 BUILDDIR=${BUILDDIR:="_build"}
 CLONEDIR=${CLONEDIR:="/tmp/$PKGDIR"}
-DEV_BUILD_ARTEFACTS=".typerex build _tags myocamlbuild.ml"
+DEV_BUILD_ARTEFACTS="_tags myocamlbuild.ml"
 
 if [ -f $LOC/pkg-info-hook ]; then
     . $LOC/pkg-info-hook

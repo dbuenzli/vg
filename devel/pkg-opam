@@ -77,6 +77,3 @@ $CD $OPAMWWWROOT
 $OPAMMKREPO --generate-checksums $OPAMPACK
 $RM -rf archives # avoid that cache
 $OPAMMKREPO --index
-
-
-

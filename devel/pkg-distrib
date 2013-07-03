@@ -3,7 +3,7 @@
 # Usage: pkg-distrib 
 # Make a distribution tarball in /tmp.
 
-set -xev
+set -e
 LOC=`dirname $0`
 
 TAR=${TAR="tar"}
@@ -11,8 +11,7 @@ TAR=${TAR="tar"}
 . $LOC/pkg-info
 
 rm -R -f $CLONEDIR
-#git clone -b master . $CLONEDIR
-cp -R . $CLONEDIR
+git clone -b master . $CLONEDIR
 cd $CLONEDIR
 
 # Substitute a few things
@@ -41,11 +40,13 @@ if [ -f $LOC/pkg-distrib-hook ]; then
     . $LOC/pkg-distrib-hook
 fi
 
+# Remove dev scripts 
+
+rm -R -f devel
+
 # Clean and wrap up the project
 ocaml setup.ml -distclean
 
 cd ..
 $TAR -cvjf $PKGDIR.tbz $PKGDIR
 rm -R $PKGDIR
-
-
