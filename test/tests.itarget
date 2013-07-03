@@ -2,3 +2,5 @@ rsvg.native
 rpdf.native
 rhtmlc.byte
 examples.native
+min_svg.native
+min_htmlc.byte
