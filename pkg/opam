@@ -1,0 +1,15 @@
+opam-version: "1"
+maintainer: "Daniel Bünzli <daniel.buenzli at erratique.ch>"
+homepage: "http://erratique.ch/software/vg"
+authors: ["Daniel Bünzli <daniel.buenzli at erratique.ch>"]
+doc: "http://erratique.ch/software/vg/doc/Vg"
+tags: [ "vector graphics" "pdf" "svg" "html canvas" "declarative" "graphics" ]
+license: "BSD3"
+build: [
+  ["./pkg/pkg-pinned" ] 
+  ["./pkg/pkg-build" true "%{js_of_ocaml:installed}%" ]
+]
+
+depends: ["ocamlfind" "gg" ]
+depopts: ["js_of_ocaml"]
+ocaml-version: [>= "4.00.0"]

@@ -1,13 +1,14 @@
-<**/*.{ml,mli}> : annot, package(gg)
-<dist> : not_hygienic
+true : package(gg)
+
+<**/*.{ml,mli}> : annot
 <src> : include
-<src/vgr_htmlc.{mli,ml}> : package(js_of_ocaml.syntax), syntax(camlp4o)
 <test> : include
 <db> : include
 
-<test/*> : debug
-<test/{rpdf,rsvg,examples,min_svg}.{byte,native}> : package(gg), package(unix)
-<test/{rhtmlc,mui}.{mli,ml,byte}> : package(gg), package(js_of_ocaml)
+<src/vgr_htmlc.{mli,ml}> : package(js_of_ocaml.syntax), syntax(camlp4o)
 
-<test/{min_htmlc,mui,sqc}.{mli,ml,byte}> : package(gg), package(js_of_ocaml), \
+<test/{rpdf,rsvg,examples,min_svg}.{byte,native}> : package(unix)
+<test/{rhtmlc,mui}.{mli,ml,byte}> : package(js_of_ocaml)
+
+<test/{min_htmlc,mui,sqc}.{mli,ml,byte}> : package(js_of_ocaml), \
                             package(js_of_ocaml.syntax), syntax(camlp4o)

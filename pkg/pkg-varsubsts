@@ -1,0 +1,24 @@
+#!/bin/sh
+
+# Usage: pkg-varsubst
+
+set -e
+LOC=`dirname $0`
+
+SED=${SED:="sed"}
+
+VARSUBSTS="$VARSUBST s|%%NAME%%|$NAME|g; \
+           s|%%VERSION%%|$VERSION|g; \
+           s|%%SYNOPSIS%%|$SYNOPSIS|g; \
+           s|%%MAINTAINER%%|$MAINTAINER|g;"
+
+for file in `git ls-files`; do
+    if [ ! -x "$file" ]; then                # skip scripts
+        $SED "$VARSUBSTS" $file > $file.tmp
+        mv -f $file.tmp $file
+    fi
+done
+
+if [ -f $LOC/pkg-varsubsts-hook ]; then
+    . $LOC/pkg-varsubsts-hook
+fi

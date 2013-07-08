@@ -1,2 +1,0 @@
-#!/bin/sh
-echo "<src/vgr_htmlc.{mli,ml}> : syntax_camlp4o\n#OASIS_START" > _tags

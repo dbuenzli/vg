@@ -1,0 +1,19 @@
+version = "%%VERSION%%"
+description = "%%SYNOPSIS%%"
+requires = "gg"
+archive(byte) = "vg.cma"
+archive(byte, plugin) = "vg.cma"
+archive(native) = "vg.cmxa"
+archive(native, plugin) = "vg.cmxs"
+exists_if = "vg.cma"
+
+package "htmlc" (
+  version = "%%VERSION%%"
+  description = "%%SYNOPSIS%%"
+  requires = "vg js_of_ocaml js_of_ocaml.syntax"
+  archive(byte) = "vg_htmlc.cma"
+  archive(byte, plugin) = "vg_htmlc.cma"
+  archive(native) = "vg_htmlc.cmxa"
+  archive(native, plugin) = "vg_htmlc.cmxs"
+  exists_if = "vg_htmlc.cma"
+)

@@ -6,9 +6,9 @@
 set -e
 LOC=`dirname $0`
 
-TAR=${TAR="tar"}
-
 . $LOC/pkg-info
+
+TAR=${TAR:="tar"}
 
 rm -R -f $CLONEDIR
 git clone -b master . $CLONEDIR
@@ -20,17 +20,6 @@ cd $CLONEDIR
 # Remove dev artefacts
 rm -R -f .git .gitignore $DEV_BUILD_ARTEFACTS
 
-if [ -f $LOC/pkg-oasis-hook ]; then
-    . $LOC/pkg-oasis-hook
-fi
-
-# Generate oasis artefacts
-oasis setup
-
-# Test oasis setup 
-ocaml setup.ml -configure
-ocaml setup.ml -build
-
 # Generate static API doc 
 . $LOC/pkg-doc -no-links -I src doc/api.docdir
 cp _build/doc/api.docdir/*.html doc/
@@ -39,13 +28,6 @@ cp _build/doc/api.docdir/*.html doc/
 if [ -f $LOC/pkg-distrib-hook ]; then
     . $LOC/pkg-distrib-hook
 fi
-
-# Remove dev scripts 
-
-rm -R -f devel
-
-# Clean and wrap up the project
-ocaml setup.ml -distclean
 
 cd ..
 $TAR -cvjf $PKGDIR.tbz $PKGDIR

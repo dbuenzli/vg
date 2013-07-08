@@ -26,19 +26,8 @@ Vg can be installed with `opam`:
 
     opam install vg
 
-Otherwise to install Vg you need at least : 
-
-    OCaml %%OCAMLVERSION%% %%PPDEPS%%
-
-If you have `findlib`, it can be installed by typing :
-
-    ocaml setup.ml -configure
-    ocaml setup.ml -build 
-    ocaml setup.ml -install
-
-If you don't the sources in `src` contain everything, the code, the
-documentation and the license. Install the dependencies and use the
-sources the way you want.
+If you don't use `opam` consult the [`pkg/opam`](pkg/opam) file for
+build instructions and a specification of the dependencies.
 
 
 ## Documentation

@@ -1,0 +1,23 @@
+#!/bin/sh
+
+# Usage: pkg-info
+# Retrieves meta data about the package and store it in variables for
+# other scripts to use.
+
+set -e
+LOC=`dirname $0`
+
+. $LOC/pkg.config
+
+PKGDIR=$NAME-$VERSION
+WWWROOT=${WWWROOT:="$HOME/sync/erratique"}
+PKGWWWROOT=${PKGWWWROOT:="$WWWROOT/maps/software/$NAME"}
+OPAMWWWROOT=${OPAMWWWROOT:="$WWWROOT/maps/opam"}
+
+BUILDDIR=${BUILDDIR:="_build"}
+CLONEDIR=${CLONEDIR:="/tmp/$PKGDIR"}
+DEV_BUILD_ARTEFACTS=${DEV_BUILD_ARTEFACTS:=""}
+
+if [ -f $LOC/pkg-info-hook ]; then
+    . $LOC/pkg-info-hook
+fi

@@ -13,10 +13,15 @@ git clone -b master . $CLONEDIR
 cd $CLONEDIR
 
 . $LOC/pkg-varsubsts
-./devel/pkg-doc doc/api.docdir
+
+if [ -f doc/api.docdir ]; then 
+  ./devel/pkg-doc doc/api.docdir
+fi
 
 if [ -f $LOC/pkg-www-doc-hook ]; then
     . $LOC/pkg-www-doc-hook
 fi
 
-cp $BUILDDIR/doc/api.docdir/* $PKGWWWROOT/doc/
+if [ -f doc/api.docdir ]; then
+  cp $BUILDDIR/doc/api.docdir/* $PKGWWWROOT/doc/
+fi

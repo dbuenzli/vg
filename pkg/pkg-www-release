@@ -16,16 +16,15 @@ WEBGLUE=${WEBGLUE:="webglue"}
 ARCHIVE=/tmp/$PKGDIR.tbz
 
 # Add the release tarball 
-$CP $ARCHIVE $PKGWWWROOT/releases/
+cp $ARCHIVE $PKGWWWROOT/releases/
 
 # Update the doc
-$RM -R $PGKWWWROOT/doc
+rm -R $PGKWWWROOT/doc
 $TAR -C $PKGWWWROOT --strip-components=1 -xvjf $ARCHIVE $PKGDIR/doc
 
 # Update the webpage
-$CD $WWWROOT
-$ECHO "$VERSION" | $WEBGLUE set --replace $NAME s-last-version
-$ECHO "$DEPS" | $WEBGLUE set --replace $NAME s-deps
+cd $WWWROOT
+echo "$VERSION" | $WEBGLUE set --replace $NAME s-last-version
 $WEBGLUE get timestamp utc | $WEBGLUE set --replace $NAME s-updated
 
 if [ -f $LOC/pkg-www-release-hook ]; then

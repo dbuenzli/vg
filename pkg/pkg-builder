@@ -1,0 +1,52 @@
+#!/bin/sh
+
+OCAMLBUILD=${OCAMLBUILD:="ocamlbuild -use-ocamlfind -classic-display"}
+B="_build"
+
+LIBS=""
+ILIBS=""
+
+BINS=""
+IBINS=""
+
+DOCS=""
+IDOCS=""
+
+add_lib () { LIBS="$LIBS $1"; ILIBS="$ILIBS \"$B/$1\""; }
+add_bin () { BINS="$BINS $1"; IBINS="$IBINS \"$B/$1\" {\"$2\"}"; }
+add_doc () { DOCS="$DOCS $1"; IDOCS="$IDOCS \"$B/$1\""; }
+add ()
+{
+    case $1 in
+        lib)
+            if [ "$NATIVE" == "true" ]; then 
+                add_lib $2
+            else
+                case $2 in
+                    *.a | *.cmx | *.cmxa | *.cmxs) ;;
+                    *) add_lib $2 ;;
+                esac
+            fi
+            ;;
+        bin)
+            if [ "$NATIVE" == "true" ]; then 
+                add_bin "$2.native" $3
+            else
+                add_bin "$2.byte" $2
+            fi
+            ;;
+        doc)
+            add_doc $2
+            ;;
+    esac
+}
+
+build () { $OCAMLBUILD $LIBS $BINS $DOCS; }
+install ()
+{
+    cat > $1.install <<EOF 
+bin: [ $IBINS ]
+lib: [ $ILIBS ]
+doc: [ $IDOCS ]
+EOF
+}

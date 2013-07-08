@@ -4,7 +4,8 @@
 
 set -e
 
-OCAMLBUILD=${OCAMLBUILD:="ocamlbuild -classic-display -use-ocamlfind"}
+OCAMLBUILD=${OCAMLBUILD:="ocamlbuild -tag debug -classic-display \
+                          -use-ocamlfind"}
 
 action () 
 {
@@ -12,23 +13,23 @@ action ()
       default)      $OCAMLBUILD vg.cmx vgr_pdf.cmx vgr_svg.cmx vgr_htmlc.cmx ;;
       tests)        $OCAMLBUILD rpdf.native rsvg.native; action rhtmlc ;;
       rhtmlc)       shift; 
-                    devel/db-locs
-                    devel/jsoo-build $* test/rhtmlc.ml
+                    pkg/db-locs
+                    pkg/jsoo-build $* test/rhtmlc.ml
                     ;;
-      sqc)          shift; devel/jsoo-build $* test/sqc.ml ;;
-      min_htmlc)    shift; devel/jsoo-build $* test/min_htmlc.ml ;;
-      doc)          shift; devel/pkg-doc $* doc/dev-api.docdir ;;
-      api-doc)      shift; devel/pkg-doc $* doc/api.docdir ;;
-      distrib)      devel/pkg-distrib ;;
-      publish)      devel/pkg-www ;;
+      sqc)          shift; pkg/jsoo-build $* test/sqc.ml ;;
+      min_htmlc)    shift; pkg/jsoo-build $* test/min_htmlc.ml ;;
+      doc)          shift; pkg/pkg-doc $* doc/dev-api.docdir ;;
+      api-doc)      shift; pkg/pkg-doc $* doc/api.docdir ;;
+      distrib)      pkg/pkg-distrib ;;
+      publish)      pkg/pkg-www ;;
       publish-demos) shift; 
                     action rhtmlc
                     action jsoo test/sqc.ml
-                    devel/pkg-www-demos 
+                    pkg/pkg-www-demos 
                     ;;
-      publish-opam) devel/pkg-opam ;;
+      publish-opam) pkg/pkg-opam ;;
       clean)        $OCAMLBUILD -clean ;;
-      jsoo)         shift; devel/jsoo-build $* ;;
+      jsoo)         shift; pkg/jsoo-build $* ;;
       *)            $OCAMLBUILD $* ;;
     esac
 } 
