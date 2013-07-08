@@ -47,8 +47,8 @@ fi
 $OCAMLBUILD -no-links $OCAMLDOCFLAGS $DOCDIRFILE/index.html
 cp doc/style.css $BUILDDIR/$DOCDIRFILE/style.css
 
-if [ -f $LOC/pkg-doc-hook ]; then
-    . $LOC/pkg-doc-hook
+if [ -f $LOC/hook-pkg-doc ]; then
+    . $LOC/hook-pkg-doc
 fi
 
 # Reload browser

@@ -20,7 +20,7 @@
     Open the module to use it, this defines only modules and types in 
     your scope and a single {{!(>>)}composition operator}.
 
-    {e Release %%VERSION%% - %%AUTHORS%% } *)
+    {e Release %%VERSION%% - %%MAINTAINER%%} *)
 
 open Gg
 
@@ -784,7 +784,7 @@ module Vgr : sig
 
       In order to provide a consistant interface for [Vg] users,
       renderer writers should follow the guidelines below.  You may
-      want to drop an email to %%AUTHORS%% for help and discussion.
+      want to drop an email to %%MAINTAINER%% for help and discussion.
       {ul
       {- If you render to "Bla", define you renderer in a module
          called [Vgr_bla] (lowercase).}

@@ -13,7 +13,7 @@
     {ul {- Rik Cabanier et al. {e {{:http://www.w3.org/TR/2dcontext/}HTML 
      Canvas 2D Context}}, 2012-12-17.}}
 
-    {e Release %%VERSION%% - %%AUTHORS%% } *)
+    {e Release %%VERSION%% - %%MAINTAINER%% } *)
 
 
 (** {1 HTML canvas render targets} *)

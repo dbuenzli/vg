@@ -1,4 +1,5 @@
 NAME=vg
 VERSION=`git describe master | sed "s/^.//"`
 SYNOPSIS="Declarative 2D vector graphics for OCaml"
+MAINTAINER="Daniel Bünzli <daniel.buenzl i\\\@erratique.ch>"
 PKGDEMOS="rhtmlc sqc"

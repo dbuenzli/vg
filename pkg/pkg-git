@@ -1,7 +1,7 @@
 #!/bin/sh
 
-## Usage: pkg-opam-git
-## Prepare build system for an opam git package.
+## Usage: pkg-git
+## Prepare package for an opam git package. 
 
 set -e
 LOC=`dirname $0`
@@ -9,6 +9,6 @@ LOC=`dirname $0`
 . $LOC/pkg-info
 . $LOC/pkg-varsubsts
 
-if [ -f $LOC/pkg-opam-git-hook ]; then
-    . $LOC/pkg-opam-git-hook
+if [ -f $LOC/hook-pkg-git ]; then
+    . $LOC/hook-pkg-git
 fi

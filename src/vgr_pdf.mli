@@ -15,7 +15,7 @@
     this renderer will be considered if it cannot be reproduced by
     Adobe Acrobat Reader 9.0 or a later version.  
 
-    {e Release %%VERSION%% - %%AUTHORS%% } *)
+    {e Release %%VERSION%% - %%MAINTAINER%% } *)
 
 (** {1 PDF render targets} *)
 

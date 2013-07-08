@@ -8,6 +8,7 @@ LOC=`dirname $0`
 
 . $LOC/pkg-info
 
+OCAMLBUILD=${OCAMLBUILD:="ocamlbuild -classic-display -use-ocamlfind"}
 TAR=${TAR:="tar"}
 
 rm -R -f $CLONEDIR
@@ -24,9 +25,11 @@ rm -R -f .git .gitignore $DEV_BUILD_ARTEFACTS
 . $LOC/pkg-doc -no-links -I src doc/api.docdir
 cp _build/doc/api.docdir/*.html doc/
 
+$OCAMLBUILD -clean
+
 # Invoke hook
-if [ -f $LOC/pkg-distrib-hook ]; then
-    . $LOC/pkg-distrib-hook
+if [ -f $LOC/hook-pkg-distrib ]; then
+    . $LOC/hook-pkg-distrib
 fi
 
 cd ..

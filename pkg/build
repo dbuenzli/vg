@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Usage: pkg-build has_native has_jsoo
+# Usage: build has_native has_jsoo
 
 set -e 
 LOC=`dirname $0`

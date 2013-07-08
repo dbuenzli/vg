@@ -1,16 +1,14 @@
 #!/bin/sh
 
+# Should be included by a script. The includer should set the variable 
+# $NATIVE to "true" if it wants native code compilation.
+
 OCAMLBUILD=${OCAMLBUILD:="ocamlbuild -use-ocamlfind -classic-display"}
 B="_build"
 
-LIBS=""
-ILIBS=""
-
-BINS=""
-IBINS=""
-
-DOCS=""
-IDOCS=""
+LIBS=""; ILIBS=""
+BINS=""; IBINS=""
+DOCS=""; IDOCS=""
 
 add_lib () { LIBS="$LIBS $1"; ILIBS="$ILIBS \"$B/$1\""; }
 add_bin () { BINS="$BINS $1"; IBINS="$IBINS \"$B/$1\" {\"$2\"}"; }
