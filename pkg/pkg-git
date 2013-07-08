@@ -6,7 +6,7 @@
 set -e
 LOC=`dirname $0`
 
-. $LOC/pkg-info
+. $LOC/config
 . $LOC/pkg-varsubsts
 
 if [ -f $LOC/hook-pkg-git ]; then

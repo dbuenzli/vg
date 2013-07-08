@@ -10,7 +10,7 @@ LOC=`dirname $0`
 NATIVE=$1
 JSOO=$2
 
-add lib src/META		
+add lib pkg/META		
 add lib src/vgr_pdf.mli	
 add lib src/vgr_pdf.cmi
 add lib src/vgr_pdf.cmx	

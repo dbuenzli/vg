@@ -17,7 +17,7 @@ HTML canvas renderer. It is is distributed under the BSD3 license.
 [2]: http://ocsigen.org/js_of_ocaml/ 
 
 Home page: http://erratique.ch/software/vg  
-Contact: Daniel Bünzli `<daniel.buenzli at erratique.ch>`
+Contact: Daniel Bünzli `<daniel.buenzl i@erratique.ch>`
 
 
 ## Installation
@@ -27,7 +27,7 @@ Vg can be installed with `opam`:
     opam install vg
 
 If you don't use `opam` consult the [`pkg/opam`](pkg/opam) file for
-build instructions and a specification of the dependencies.
+build instructions and a complete specification of the dependencies.
 
 
 ## Documentation
@@ -50,7 +50,7 @@ online rendering of the database is available [here][4].
 Sample programs are located in the `test` directory of the
 distribution. They can be built with:
 
-    ocamlbuild -use-ocamlfind test/tests.otarget
+    ocamlbuild -use-ocamlfind tests.otarget
 
 The resulting binaries are in `_build/test` :
 

@@ -1,6 +1,5 @@
 #!/bin/sh
 
-# Usage: pkg-varsubst 
 # To add other variable substitutions already predefine $VARSUBST in
 # config.
 
@@ -11,7 +10,6 @@ SED=${SED:="sed"}
 
 VARSUBSTS="$VARSUBST s|%%NAME%%|$NAME|g; \
            s|%%VERSION%%|$VERSION|g; \
-           s|%%SYNOPSIS%%|$SYNOPSIS|g; \
            s|%%MAINTAINER%%|$MAINTAINER|g;"
 
 for file in `git ls-files`; do
