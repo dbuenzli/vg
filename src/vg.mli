@@ -20,7 +20,7 @@
     Open the module to use it, this defines only modules and types in 
     your scope and a single {{!(>>)}composition operator}.
 
-    {e Release %%VERSION%% - %%MAINTAINER%%} *)
+    {e Release %%VERSION%% - %%MAINTAINER%% } *)
 
 open Gg
 
