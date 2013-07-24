@@ -5,12 +5,12 @@ authors: ["Daniel Bünzli <daniel.buenzli i@erratique.ch>"]
 doc: "http://erratique.ch/software/vg/doc/Vg"
 tags: [ "vector graphics" "pdf" "svg" "html canvas" "declarative" "graphics" ]
 license: "BSD3"
+ocaml-version: [>= "4.00.0"]
+depends: [ "gg" ]
+depopts: [ "js_of_ocaml" ]
 build: 
 [
   ["./pkg/pkg-git" ] 
   ["./pkg/build" "true" "%{js_of_ocaml:installed}%" ]
 ]
 
-depends: ["ocamlfind" "gg" ]
-depopts: ["js_of_ocaml"]
-ocaml-version: [>= "4.00.0"]
