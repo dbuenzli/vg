@@ -2,6 +2,7 @@
 # This script is only used for developement. It is removed by the 
 # distribution process. 
 
+
 set -e
 
 OCAMLBUILD=${OCAMLBUILD:="ocamlbuild -tag debug -classic-display \
@@ -18,16 +19,8 @@ action ()
                     ;;
       sqc)          shift; pkg/jsoo-build $* test/sqc.ml ;;
       min_htmlc)    shift; pkg/jsoo-build $* test/min_htmlc.ml ;;
-      doc)          shift; pkg/pkg-doc $* doc/dev-api.docdir ;;
-      api-doc)      shift; pkg/pkg-doc $* doc/api.docdir ;;
-      distrib)      pkg/pkg-distrib ;;
-      publish)      pkg/pkg-www ;;
-      publish-demos) shift; 
-                    action rhtmlc
-                    action jsoo test/sqc.ml
-                    pkg/pkg-www-demos 
-                    ;;
-      publish-opam) pkg/pkg-opam ;;
+      doc)          shift; pkg-doc $* doc/dev-api.docdir ;;
+      api-doc)      shift; pkg-doc $* doc/api.docdir ;;
       clean)        $OCAMLBUILD -clean ;;
       jsoo)         shift; pkg/jsoo-build $* ;;
       *)            $OCAMLBUILD $* ;;

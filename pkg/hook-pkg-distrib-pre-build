@@ -1,0 +1,7 @@
+#!/bin/sh
+
+set -e
+LOC=`dirname $0`
+
+db-locs
+
