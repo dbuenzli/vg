@@ -10,7 +10,7 @@
 #              suffix .ml substituted by .html is reloaded.
 
 set -e
-LOC=`dirname $0`
+LOC=`pwd`
 
 OCAMLBUILD=${OCAMLBUILD:="ocamlbuild -classic-display -use-ocamlfind"}
 JSOO=${JSOO:="js_of_ocaml"}
@@ -69,5 +69,5 @@ if [ "$RELOAD_BROWSER" == "true" ]; then
     if [ "$RELOAD_URI" == "" ]; then 
         RELOAD_URI="file://$PWD/$BUILDDIR/$BASE.html"
     fi
-    $LOC/reload-browser $THE_BROWSER $RELOAD_URI
+    reload-browser $THE_BROWSER $RELOAD_URI
 fi

@@ -35,8 +35,6 @@ if [ "$JSOO" == "true" ]; then
     add lib src/vg_htmlc.cmxs
 fi
 
-add bin test/rsvg rsvg
-
 add doc README.md
 add doc CHANGES.md
 
