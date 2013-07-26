@@ -26,7 +26,7 @@ Vg can be installed with `opam`:
 
     opam install vg
 
-If you don't use `opam` consult the [`pkg/opam`](pkg/opam) file for
+If you don't use `opam` consult the [`opam`](opam) file for
 build instructions and a complete specification of the dependencies.
 
 
