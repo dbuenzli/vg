@@ -1005,7 +1005,7 @@ open Vg
     It is also very clear from a specification point of view, both
     mathematically and metaphorically. This cannot be said from the
     painter model where the semantics of an operation like stroking a
-    self-interesting translucent path —  which usually applies the
+    self-intersecting translucent path —  which usually applies the
     paint only once —  doesn't directly map to the underlying paint
     stroke metaphor. The collage model is also more economical from a
     conceptual point view since image cuts and blends naturally unify
