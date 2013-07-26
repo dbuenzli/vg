@@ -25,7 +25,7 @@ add lib src/vg.a
 add lib src/vg.cmxa
 add lib src/vg.cmxs
 
-if [ "$JSOO" == "true" ]; then 
+if [ "$JSOO" = "true" ]; then 
     add lib src/vgr_htmlc.mli	
     add lib src/vgr_htmlc.cmx 
     add lib src/vgr_htmlc.cmi

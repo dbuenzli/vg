@@ -29,12 +29,12 @@ add ()
 {
     SRC=$2
     DST=$3
-    if [ "$DST" == "" ]; then 
+    if [ "$DST" = "" ]; then 
         DST=`basename $SRC`
     fi
     case $1 in
         lib)
-            if [ "$NATIVE" == "true" ]; then 
+            if [ "$NATIVE" = "true" ]; then 
                 add_lib $SRC $DST
             else
                 case $2 in
@@ -44,7 +44,7 @@ add ()
             fi
             ;;
         bin)
-            if [ "$NATIVE" == "true" ]; then 
+            if [ "$NATIVE" = "true" ]; then 
                 add_bin $SRC.native $DST
             else
                 add_bin $SRC.byte $DST
