@@ -15,14 +15,14 @@ action ()
       tests)        $OCAMLBUILD rpdf.native rsvg.native; action rhtmlc ;;
       rhtmlc)       shift; 
                     pkg/db-locs
-                    pkg/jsoo-build $* test/rhtmlc.ml
+                    jsoo-build $* test/rhtmlc.ml
                     ;;
-      sqc)          shift; pkg/jsoo-build $* test/sqc.ml ;;
-      min_htmlc)    shift; pkg/jsoo-build $* test/min_htmlc.ml ;;
+      sqc)          shift; jsoo-build $* test/sqc.ml ;;
+      min_htmlc)    shift; jsoo-build $* test/min_htmlc.ml ;;
       doc)          shift; pkg-doc $* doc/dev-api.docdir ;;
       api-doc)      shift; pkg-doc $* doc/api.docdir ;;
       clean)        $OCAMLBUILD -clean ;;
-      jsoo)         shift; pkg/jsoo-build $* ;;
+      jsoo)         shift; jsoo-build $* ;;
       *)            $OCAMLBUILD $* ;;
     esac
 } 
