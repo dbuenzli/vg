@@ -1108,7 +1108,7 @@ fun pt -> if inside path pt then img pt else Color.void
     unit square in the [gray] image defined before.
 {[
 let circle = P.empty >> P.circle (P2.v 0.5 0.5) 0.4 
-let gray_circle = I.cut gray circle
+let gray_circle = I.cut circle gray 
 ]}
     Rendered by [svg_of_usquare] the result is:
 
