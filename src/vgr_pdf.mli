@@ -5,37 +5,47 @@
   ---------------------------------------------------------------------------*)
 (** Vg PDF renderer. 
 
-    {b WARNING} unimplemented do not use.
-
-    Renders a sequence of renderables as a multi-page PDF/A-2
+    Renders a sequence of renderables as a multi-page PDF
     document. Each renderable defines a page of the document.
-   
+
     {b Bug reports.}  PDF being an insane standard, rendering
     abilities of PDF readers vary wildly. No rendering bug report for
-    this renderer will be considered if it cannot be reproduced by
-    Adobe Acrobat Reader 9.0 or a later version.  
+    this renderer will be considered if it cannot be reproduced in the
+    latest Adobe Acrobat Reader.
 
     {e Release %%VERSION%% - %%MAINTAINER%% } *)
 
 (** {1 PDF render targets} *)
 
-val target : unit -> Vg.Vgr.dst_stored Vg.Vgr.target
+val target : ?share:int -> unit -> Vg.Vgr.dst_stored Vg.Vgr.target
 (** [target ()] is a PDF render target for rendering to the stored
-    destination given to {!Vg.Vgr.create}. *)
+    destination given to {!Vg.Vgr.create}. 
+
+    {ul 
+    {- [share] indicates the number of consecutive pages that share
+       resources. If unspecified all pages share resources.  This
+       implies a minimal file size but also that paths and outline
+       specifications of the images given to {!Vg.render} are kept in
+       memory until [`End] is rendered.}}
+
+    @raise Invalid_argument if [share] is not strictly positive. *)
 
 (** {1 Render metadata}
 
     The following standard metadata keys are supported and
     used to fill the PDF document's information dictionary. 
     {ul
-    {- {!Vg.Vgm.author}, the document's author.}
+    {- {!Vg.Vgm.authors}, the document's authors.}
     {- {!Vg.Vgm.creator}, name of the application creating the document.}
-    {- {!Vg.Vgm.date}, name of the application creating the document.}
+    {- {!Vg.Vgm.creation_date}, name of the application creating the document.}
     {- {!Vg.Vgm.keywords}, list of keywords for the document.}
     {- {!Vg.Vgm.title}, title of the document.}
     {- {!Vg.Vgm.subject}, subject of the document.}} *)
 
+
 (** {1 Render warnings} *)
+
+(** {1 Text rendering support} *)
 
 (** {1 Multiple images} 
 

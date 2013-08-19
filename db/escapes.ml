@@ -21,6 +21,19 @@ Db.image "escape-svg" ~author:Db.dbuenzli
     I.const (Color.gray 0.3) >> I.cut (P.empty >> P.rect Box2.unit)
   end;
 
+Db.image "escape-pdf" ~author:Db.dbuenzli
+  ~title:"PDF metadata escape )()(\\n"
+  ~tags:["escape"; ]
+  ~note:"These delimiter ()((( should not pose problem and and these
+         escapes \\\\ \\n \\r should not be escapes. The image 
+         is just a gray square."
+  ~size:(Size2.v 50. 50.)
+  ~view:Box2.unit
+  begin fun _ -> 
+    I.const (Color.gray 0.3) >> I.cut (P.empty >> P.rect Box2.unit)
+  end;
+
+
 
 
 

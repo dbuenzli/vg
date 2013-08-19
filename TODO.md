@@ -2,6 +2,7 @@
 
 ## Before first release
 
+* Remove Vgm ? 
 
 ### Path
 
@@ -31,6 +32,8 @@ Do we actually have a renderer that supports arbitrary outline cut ?
 ### PDF renderer 
 
 Implement !
+
+* Remove subject key, drop the info dict. unify metadata under XMP.
 
 ### Misc
 
@@ -82,12 +85,14 @@ renderers for resolution.
 * The IEEE 754 double floating point grid vs the real plane
 * How many doubles between 10 and 11, 100 and 101, 1000 and 1001, etc.
   or 2 ** n and 2 ** n+1.
-* Pies, better to eat them than use them.
-  http://en.wikipedia.org/wiki/File:Piecharts.svg 
 * Rectangle, area cut of w = 0 or s = 0 is nothing but outline cut
   is segment. 
 
 ##  After first release
+
+### Meta data 
+
+* Use XMP in both pdf and svg ?
 
 ### Path
 
@@ -139,24 +144,4 @@ I.blend : ?a:float -> ?blender:blender -> image -> image -> image
 * Be more clever in state changes and stack push/pop. I guess
   this means maintaining the state in the renderer.
 * Alpha handling.
-* Pretty print dictionnary output.
 * Blue color seems strange. I'm doing the right thing ?
-* escape string metadata in o_pdf_str.
-* ~date not very friendly and D: prefix.
-* /Producer OCaml Vg module %%VERSION%%
-* %F or %f ?
-
-Page 65 of the PDF spec shows how, with an indirect object, we can
-write a stream without knowing its length in advance. Instead of
-buffering the stream in memory we could do that. However deflate
-callback integration becomes tricky (remove deflates and use simple
-compression).
-
-The user should write the compressed stream using
-the first function, we will call the second one to output the stream.
-
-(string -> int) -> (string -> int -> unit) -> unit
-
-The compress function should reapeatedly call the first one
-to get data and call the first one to output. Hard to integrate
-I think (input).

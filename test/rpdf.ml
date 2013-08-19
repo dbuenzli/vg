@@ -16,6 +16,9 @@ let renderer dst is =
   in
   let meta = Vgm.add meta Vgm.creator "rpdf"  in
   let meta = Vgm.add meta Vgm.creation_date (Rstored.timestamp ()) in
+  let meta = match Vgm.find meta Vgm.description with 
+  | None -> meta | Some d -> Vgm.add meta Vgm.subject d
+  in
   Vgr.create (Vgr_pdf.target ()) ~meta dst
 
 let () = Rstored.main "PDF" "pdf" renderer

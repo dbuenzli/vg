@@ -334,7 +334,7 @@ let rec w_transforms s acc i k r =    (* collapses nested Tr in single <g>. *)
 let rec w_cut_glyphs s a run i k r = match i with 
 | Primitive (Raster _) | Tr _ | Blend _ | Cut _ | Cut_glyphs _ as i -> 
     warn s (`Unsupported_glyph_cut (a, image i)); k r
-| Primitive p as i ->
+| Primitive p ->
     begin match run.text with 
     | None -> warn s (`Other "No text specified in glyph cut"); k r
     | Some text ->
