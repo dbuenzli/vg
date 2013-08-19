@@ -17,7 +17,8 @@
 
 (** {1 PDF render targets} *)
 
-val target : ?share:int -> unit -> Vg.Vgr.dst_stored Vg.Vgr.target
+val target : ?share:int -> ?xmp:string -> unit -> 
+  Vg.Vgr.dst_stored Vg.Vgr.target
 (** [target ()] is a PDF render target for rendering to the stored
     destination given to {!Vg.Vgr.create}. 
 
@@ -26,22 +27,14 @@ val target : ?share:int -> unit -> Vg.Vgr.dst_stored Vg.Vgr.target
        resources. If unspecified all pages share resources.  This
        implies a minimal file size but also that paths and outline
        specifications of the images given to {!Vg.render} are kept in
-       memory until [`End] is rendered.}}
+       memory until [`End] is rendered.}
+    {- [xmp] is an optional UTF-8 encoded XML XMP metadata packet
+       describing the PDF document
+       (see ISO 16684-1 or the 
+        {{:http://www.adobe.com/devnet/xmp.html}Adobe spec.}).
+}}
 
     @raise Invalid_argument if [share] is not strictly positive. *)
-
-(** {1 Render metadata}
-
-    The following standard metadata keys are supported and
-    used to fill the PDF document's information dictionary. 
-    {ul
-    {- {!Vg.Vgm.authors}, the document's authors.}
-    {- {!Vg.Vgm.creator}, name of the application creating the document.}
-    {- {!Vg.Vgm.creation_date}, name of the application creating the document.}
-    {- {!Vg.Vgm.keywords}, list of keywords for the document.}
-    {- {!Vg.Vgm.title}, title of the document.}
-    {- {!Vg.Vgm.subject}, subject of the document.}} *)
-
 
 (** {1 Render warnings} *)
 

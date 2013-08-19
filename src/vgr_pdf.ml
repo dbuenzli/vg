@@ -250,31 +250,6 @@ let w_page_tree s k r =
   b_obj_end s;
   w_buf s k r
    
-let w_info s k r = 
-  let m = Vgr.Private.meta s.r in 
-  let b_opt_date s k = function
-  | None -> ()
-  | Some ((yy, mm, dd), (h, m, ss)) -> 
-      b_fmt s "%s (D:%04d%02d%02d%02d%02d%02dZ0000)\n" k yy mm dd h m ss
-  in
-  let list = function None -> None | Some l -> Some (String.concat ", " l) in
-  let b_opt s k = function
-  | None -> () 
-  | Some v -> b_fmt s "%s (" k; b_str_text s v; b_str s ")\n";
-  in
-  b_obj_start s id_info;
-  b_str s "<<\n";
-  b_opt_date s "/CreationDate" (Vgm.find m Vgm.creation_date);
-  b_opt s "/Title" (Vgm.find m Vgm.title);
-  b_opt s "/Author" (list (Vgm.find m Vgm.authors));
-  b_opt s "/Creator" (Vgm.find m Vgm.creator);
-  b_opt s "/Producer" (Some "OCaml Vg library %%VERSION%%");
-  b_opt s "/Subject" (Vgm.find m Vgm.subject);
-  b_opt s "/Keywords" (list (Vgm.find m Vgm.keywords));
-  b_str s ">>\n";
-  b_obj_end s;
-  w_buf s k r
-
 let w_catalog s k r =
   b_obj_start s id_catalog; 
   b_fmt s "<< /Type /Catalog /Pages %d 0 R >>\n" id_page_tree; 
@@ -282,6 +257,10 @@ let w_catalog s k r =
   w_buf s k r
 
 let w_end s k r =                                  (* xref table and trailer *)
+  let id_info = new_id s in
+  b_obj_start s id_info;
+  b_str s "<< /Producer (OCaml Vg library %%VERSION%%) >>\n"; 
+  b_obj_end s;  
   let b_offset (_, offset) = b_fmt s "%010d 00000 n\n" offset in
   let xref_offset = byte_offset s in
   let obj_count = s.id + 1 in
@@ -306,7 +285,6 @@ let render s v k r = match v with
 (*      w_linear_srgb s @@*)
       w_resources s @@
       w_page_tree s @@
-      w_info s @@
       w_catalog s @@ 
       w_end s @@
       flush s @@
@@ -325,7 +303,7 @@ let render s v k r = match v with
     | n -> w_page size s k r
     end
     
-let target ?(share = max_int) () = 
+let target ?(share = max_int) ?xmp () = 
   let target r _ = 
     true, render { r; 
                    share;
