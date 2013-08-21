@@ -10,16 +10,18 @@ open Vg
 include Db_pdf
 
 let renderer dst is =
-  let meta = match is with 
-  | [i] -> Db.render_meta i 
-  | _ -> Vgm.empty 
+  let create_date = Unix.gettimeofday () in
+  let xmp = match is with 
+  | [i] -> Db.xmp_metadata ~create_date ~creator_tool:"rpdf" i
+  | _ -> Vgr.xmp_metadata ~create_date ()
   in
-  let meta = Vgm.add meta Vgm.creator "rpdf"  in
+(*  let meta = Vgm.add meta Vgm.creator "rpdf"  in
   let meta = Vgm.add meta Vgm.creation_date (Rstored.timestamp ()) in
   let meta = match Vgm.find meta Vgm.description with 
   | None -> meta | Some d -> Vgm.add meta Vgm.subject d
   in
-  Vgr.create (Vgr_pdf.target ()) ~meta dst
+*)
+  Vgr.create (Vgr_pdf.target ~xmp ()) dst
 
 let () = Rstored.main "PDF" "pdf" renderer
 

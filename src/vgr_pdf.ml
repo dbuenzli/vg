@@ -33,6 +33,7 @@ type cmd = Pop of g_state | Draw of Vgr.Private.Data.image
 type state = 
   { r : Vgr.Private.renderer;                    (* corresponding renderer. *)
     share : int;                            (* page resource sharing limit. *)
+    xmp : string option;                            (* XMP metadata packet. *)
     buf : Buffer.t;                                   (* formatting buffer. *) 
     mutable cost : int;                          (* cost counter for limit. *) 
     mutable view : Gg.box2;           (* current renderable view rectangle. *)
@@ -42,7 +43,7 @@ type state =
     mutable                  (* length obj id and offset of current stream. *) 
       stream_info : int * int;   
     mutable index : (int * int) list;      (* object id, byte offset index. *)
-    mutable id_resources : int;               (* current ressources object. *) 
+    mutable page_nodes : int list;                 (* page node object ids. *) 
     mutable page_objs : int list;                      (* pages object ids. *)
     paths : (P.t, id) Hashtbl.t;                      
     prims : (Vgr.Private.Data.primitive, id) Hashtbl.t;
@@ -58,17 +59,18 @@ let warn s w = Vgr.Private.warn s.r w
 let image i = Vgr.Private.I.of_data i 
 
 let n_linear_srgb = "/cs_linear_srgb" 
-let id_page_tree = 1
-let id_info = 2
-let id_catalog = 3 
-let id_resources = 4
-let id_linear_srgb = 5
-let init_new_id = id_linear_srgb
+let id_page_root = 1
+let id_linear_srgb = 2
+let id_first_page_node = 3
 
 let max_buf = 65536 
 let byte_offset s = s.bytes + Buffer.length s.buf
-let new_id s = s.id <- s.id + 1; s.id
-let new_page s = let id = new_id s in (s.page_objs <- id :: s.page_objs; id)
+let new_obj_id s = s.id <- s.id + 1; s.id
+let obj_count s = s.id + 1
+let new_page s = 
+  let id = new_obj_id s in 
+  (s.page_objs <- id :: s.page_objs; id)
+
 let pop_gstate s = Pop { g_tr = s.s_tr }
 let set_gstate s g = s.s_tr <- g.g_tr 
 let uncut_bounds s = 
@@ -83,6 +85,9 @@ let flush s k r =
 let w_buf s k r = 
   if Buffer.length s.buf > max_buf then flush s k r else 
   k r
+
+let rec pr_id_list b = function 
+| [] -> () | id :: ids -> Printf.bprintf b " %d 0 R" id; pr_id_list b ids
 
 let b_fmt s fmt = Printf.bprintf s.buf fmt
 let b_str s str = Buffer.add_string s.buf str
@@ -205,7 +210,7 @@ let rec w_image s k r =
       w_image s k r
       
 let w_contents s id k r = 
-  let obj_len_id = new_id s in 
+  let obj_len_id = new_obj_id s in 
   b_obj_start s id;
   b_fmt s "<< /Length %d 0 R >>\nstream\n" obj_len_id;
   s.stream_info <- (obj_len_id, byte_offset s);
@@ -215,7 +220,7 @@ let w_contents s id k r =
 
 let w_page size s k r = 
   let id = new_page s in 
-  let contents_id = new_id s in
+  let contents_id = new_obj_id s in
   b_obj_start s id;
   b_fmt s "<<\n\
            /Type /Page\n\
@@ -223,51 +228,107 @@ let w_page size s k r =
            /MediaBox [0 0 %f %f]\n\
            /Contents %d 0 R\n\
            >>\n" 
-    id_page_tree
+    (List.hd s.page_nodes)
     (V2.x size *. mm_to_pt) (V2.y size *. mm_to_pt)
     contents_id;
   b_obj_end s;
   w_contents s contents_id k r
 
-let w_resources s k r =
+let w_linear_srgb s k r = 
+  b_obj_start s id_linear_srgb;
+  b_obj_end s;
+  w_buf s k r
+
+let w_resources s id_resources k r =
   let b_form p id = b_fmt s "/o%d %d 0 R\n" id id in
   b_obj_start s id_resources;
-  b_fmt s "<<\n\ 
+  b_fmt s "<<\n\
            /ColorSpace << %s %d 0 R >>\n\
            /XObject <<>>>>\n" n_linear_srgb id_linear_srgb; 
   b_obj_end s; 
   w_buf s k r
 
-let w_page_tree s k r =
-  b_obj_start s id_page_tree; 
+let w_page_node_and_resources ?(last = false) s  k r =
+  let page_count = List.length s.page_objs in 
+  let pages = List.rev s.page_objs in
+  let id_resources = new_obj_id s in
+  b_obj_start s (List.hd s.page_nodes); 
   b_fmt s "<<\n\
            /Type /Pages\n\
            /Resources %d 0 R\n\
            /Count %d\n\
-           /Kids [" id_resources (List.length s.page_objs); 
-  List.iter (fun id -> b_fmt s " %d 0 R" id) (List.rev s.page_objs); 
-  b_str s "]\n>>\n";
+           /Kids [%a]\n\
+           >>\n" id_resources page_count pr_id_list pages;
   b_obj_end s;
+  s.page_objs <- [];
+  if not last then s.page_nodes <- new_obj_id s :: s.page_nodes;
+  w_buf s (w_resources s id_resources k) r
+
+let w_page_root s k r = 
+  let node_count = List.length s.page_nodes in 
+  let nodes = List.rev s.page_nodes in
+  b_obj_start s id_page_root; 
+  b_fmt s "<<\n\
+           /Type /Pages\n\
+           /Count %d\n\
+           /Kids [%a]\n\
+           >>\n" node_count pr_id_list nodes;
+  b_obj_end s; 
   w_buf s k r
-   
-let w_catalog s k r =
-  b_obj_start s id_catalog; 
-  b_fmt s "<< /Type /Catalog /Pages %d 0 R >>\n" id_page_tree; 
+  
+let w_catalog s id_catalog id_meta k r =
+  let b_meta b = function 
+  | None -> () 
+  | Some id -> Printf.bprintf b "/Metadata %d 0 R\n" id
+  in
+  b_obj_start s id_catalog;
+  b_fmt s "<<\n\
+           /Type /Catalog\n\
+           /Pages %d 0 R\n\
+           %a\
+           >>\n" 
+    id_page_root b_meta id_meta; 
   b_obj_end s;
   w_buf s k r
 
-let w_end s k r =                                  (* xref table and trailer *)
-  let id_info = new_id s in
+let w_xmp_metadata s id_meta k r = match id_meta with 
+| None -> k r 
+| Some id -> 
+    let xmp = match s.xmp with Some xmp -> xmp | None -> assert false in
+    let obj_len_id = new_obj_id s in 
+    b_obj_start s id;
+    b_fmt s "<< /Type /Metadata /Subtype /XML /Length %d 0 R >>\nstream\n" 
+      obj_len_id;
+    let stream_start = byte_offset s in 
+    b_fmt s "<?xpacket begin=\"\xEF\xBB\xBF\" \
+                       id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n\
+             %s\n\
+             <?xpacket end=\"w\"?>\n" xmp;
+    let len = byte_offset s - stream_start in
+    b_str s "endstream\n"; 
+    b_obj_end s;  
+    b_obj_start s obj_len_id;                 (* Write object stream length. *) 
+    b_fmt s "%i\n" len; 
+    b_obj_end s; 
+    w_buf s k r
+
+let w_info s id_info k r =       (* just /Producer, rest is handled by XMP. *) 
   b_obj_start s id_info;
   b_str s "<< /Producer (OCaml Vg library %%VERSION%%) >>\n"; 
-  b_obj_end s;  
+  b_obj_end s; 
+  w_buf s k r
+
+let w_xref_table s k r =                           (* cross reference table *)
   let b_offset (_, offset) = b_fmt s "%010d 00000 n\n" offset in
   let xref_offset = byte_offset s in
   let obj_count = s.id + 1 in
   b_fmt s "xref\n\
            0 %d\n\
            0000000000 65535 f\n" obj_count; 
-  List.iter b_offset (List.sort compare s.index); (* TODO this can be huge *)
+  List.iter b_offset (List.sort compare s.index);
+  w_buf s (k xref_offset) r
+
+let w_trailer s id_catalog id_info k xref_offset r =
   b_fmt s "trailer\n\
            <<\n\
            /Size %d\n\
@@ -276,20 +337,24 @@ let w_end s k r =                                  (* xref table and trailer *)
            >>\n\
            startxref\n\
            %d\n\
-           %%EOF" obj_count id_catalog id_info xref_offset;
+           %%EOF" (obj_count s) id_catalog id_info xref_offset;
   w_buf s k r
+   
+let w_end s k r =                                  
+  let id_info = new_obj_id s in
+  let id_catalog = new_obj_id s in 
+  let id_meta = match s.xmp with None -> None | Some _ -> Some (new_obj_id s) in
+  r >> 
+  w_page_node_and_resources ~last:true s @@
+  w_page_root s @@
+  w_info s id_info @@
+  w_catalog s id_catalog id_meta @@ 
+  w_xmp_metadata s id_meta @@ 
+  w_xref_table s @@
+  w_trailer s id_catalog id_info @@ k 
 
 let render s v k r = match v with 
-| `End ->
-    begin 
-(*      w_linear_srgb s @@*)
-      w_resources s @@
-      w_page_tree s @@
-      w_catalog s @@ 
-      w_end s @@
-      flush s @@
-      Vgr.Private.flush k
-    end r
+| `End -> w_end s (flush s (Vgr.Private.flush k)) r 
 | `Image (size, view, img) ->
     s.todo <- [Draw img]; 
     s.view <- view; 
@@ -299,7 +364,8 @@ let render s v k r = match v with
     s.s_outline <- P.o;
     begin match List.length s.page_objs with 
     | 0 -> b_start s; w_page size s k r
-    | n when n mod s.share = 0 -> w_resources s (w_page size s k) r
+    | n when n mod s.share = 0 -> 
+        w_page_node_and_resources s (w_page size s k) r
     | n -> w_page size s k r
     end
     
@@ -307,15 +373,16 @@ let target ?(share = max_int) ?xmp () =
   let target r _ = 
     true, render { r; 
                    share;
+                   xmp;
                    buf = Buffer.create 2048;
                    cost = 0; 
                    view = Box2.empty; 
                    todo = []; 
-                   id = init_new_id; 
-                   id_resources = init_new_id;
+                   id = id_first_page_node; 
                    stream_info = (0, 0);
                    bytes = 0; 
                    index = []; 
+                   page_nodes = [id_first_page_node];
                    page_objs = []; 
                    paths = Hashtbl.create 255; 
                    prims = Hashtbl.create 255; 
