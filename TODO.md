@@ -2,6 +2,8 @@
 
 ## Before first release
 
+* Add copyright to metadata.
+
 ### Path
 
 * Review ellipse things. There are a few TODOs and wrong things in there.

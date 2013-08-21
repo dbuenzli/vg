@@ -5,7 +5,7 @@
   ---------------------------------------------------------------------------*)
 (** Vg PDF renderer. 
 
-    Renders a sequence of renderables as a multi-page PDF
+    Renders a sequence of renderables as a multi-page PDF 1.7
     document. Each renderable defines a page of the document.
 
     {b Bug reports.}  PDF being an insane standard, rendering
@@ -19,21 +19,19 @@
 
 val target : ?share:int -> ?xmp:string -> unit -> 
   Vg.Vgr.dst_stored Vg.Vgr.target
-(** [target ()] is a PDF render target for rendering to the stored
+(** [target share xmp ()] is a PDF render target for rendering to the stored
     destination given to {!Vg.Vgr.create}. 
-
     {ul 
     {- [share] indicates the number of consecutive pages that share
        resources. If unspecified all pages share resources.  This
-       implies a minimal file size but also that paths and outline
-       specifications of the images given to {!Vg.render} are kept in
+       results in smaller file sizes but paths and outline
+       specifications of the images given to {!Vg.Vgr.render} are kept in
        memory until [`End] is rendered.}
-    {- [xmp] is an optional UTF-8 encoded XML XMP metadata packet
-       describing the PDF document
-       (see ISO 16684-1 or the 
-        {{:http://www.adobe.com/devnet/xmp.html}Adobe spec.}).
-}}
-
+    {- [xmp] is an optional UTF-8 encoded XML XMP metadata packet describing
+       the SVG document (see ISO 16684-1 or the equivalent
+        {{:http://www.adobe.com/devnet/xmp.html}Adobe spec.}). 
+       The convenience function {!Vg.Vgr.xmp_metadata} can be used to 
+       generate a packet.}}
     @raise Invalid_argument if [share] is not strictly positive. *)
 
 (** {1 Render warnings} *)

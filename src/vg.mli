@@ -531,7 +531,7 @@ type renderer
     rectangular targets. The following renderers are distributed with
     the library:
     {ul 
-    {- {!Vgr_pdf}, renders sequence of images as a multi-page PDF/A document.}
+    {- {!Vgr_pdf}, renders sequence of images as a multi-page PDF 1.7 document.}
     {- {!Vgr_svg}, renders a single image as an 
        {{:http://www.w3.org/TR/SVG11/}SVG 1.1} document.}
     {- {!Vgr_htmlc}, renders sequence of images on an 

@@ -22,8 +22,8 @@ val target : ?xml_decl:bool -> ?xmp:string ->unit ->
     {- [xml_decl], if [true] (default) the
        {{:http://www.w3.org/TR/REC-xml/#NT-XMLDecl}XML declaration} is
        output.} 
-    {- [xmp], an optional UTF-8 encoded XML XMP metadata packet describing
-       the SVG document (see ISO 16684-1 or the 
+    {- [xmp] is an optional UTF-8 encoded XML XMP metadata packet describing
+       the SVG document (see ISO 16684-1 or the equivalent
         {{:http://www.adobe.com/devnet/xmp.html}Adobe spec.}). 
        The convenience function {!Vg.Vgr.xmp_metadata} can be used to 
        generate a packet.}} *)
