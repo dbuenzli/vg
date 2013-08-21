@@ -286,7 +286,6 @@ let tr_primitive i =
   | Primitive (Raster _) | Blend _ | Cut _ | Cut_glyphs _ -> None
   | Primitive p -> Some (p, List.rev acc) 
   | Tr (tr, i) -> loop (tr :: acc) i
-  | Meta (_, i) -> loop acc i
   in
   loop [] i 
 
@@ -305,7 +304,6 @@ let rec w_cut s a i k path_id r = match i with
     | Some p_trs -> w_primitive s p_trs (w_primitive_cut s a path_id k) r
     end
 | Blend _ | Cut _ | Cut_glyphs _ as i -> w_clip s a i path_id k r
-| Meta (_, i) -> w_cut s a i k path_id r
 
 let rec w_transforms s acc i k r =    (* collapses nested Tr in single <g>. *)
   if s.cost > limit s then (s.cost <- 0; partial (w_transforms s acc i k) r)else
@@ -315,8 +313,6 @@ let rec w_transforms s acc i k r =    (* collapses nested Tr in single <g>. *)
     | Tr (tr, i') -> 
         let tr = badd_transform s tr in
         w_buf s (w_transforms s (M3.mul acc tr) i' k) r
-    | Meta (_, i) -> 
-        w_transforms s acc i k r
     | i ->
         badd_str s "\">"; 
         s.todo <- (Draw i) :: pop_gstate s :: s.todo;
@@ -345,8 +341,6 @@ let rec w_cut_glyphs s a run i k r = match i with
           w_buf s k r
         end r
     end
-| Meta (_, i) -> w_cut_glyphs s a run i k r
-
 
 let rec w_image s k r =
   if s.cost > limit s then (s.cost <- 0; partial (w_image s k) r) else
@@ -376,9 +370,6 @@ let rec w_image s k r =
           s.todo <- todo;
           badd_str s "<g transform=\""; 
           w_transforms s M3.id i (w_image s k) r
-      | Meta (m, i) -> 
-          s.todo <- (Draw i) :: todo; 
-          w_image s k r
             
 let render xml_decl s v k r = match v with 
 | `End -> w_str "</g></svg>" (Vgr.Private.flush k) r

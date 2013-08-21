@@ -17,7 +17,6 @@ type image =
     author : author;                                     (** image author. *)
     tags : string list;                          (** descriptive tag list. *)
     note : string option;                        (** note about the image. *)
-    meta : Vg.meta;                                   (** render metadata. *)
     size : Gg.size2;                              (** render surface size. *)
     view : Gg.box2;                              (** image view rectangle. *)
     image : Gg.box2 -> Vg.image; }    (** image definition, arg is [view]. *) 
@@ -25,8 +24,7 @@ type image =
 
 
 val image : string -> title:string -> author:author -> ?tags:string list -> 
-  ?note:string -> ?meta:Vg.meta -> size:Gg.size2 -> 
-  view:Gg.box2 -> (Gg.box2 -> Vg.image) -> unit
+  ?note:string -> size:Gg.size2 -> view:Gg.box2 -> (Gg.box2 -> Vg.image) -> unit
 (** [image id authors title subject note tags meta size view fimg]
     adds an image to the database. *)
 
@@ -52,10 +50,6 @@ val search : ?ids:string list -> ?prefixes:string list -> ?tags:string list ->
 val indexes : unit -> string list * string list
 (** [indexes ()] is the lexicographically sorted lists of ids and
     tags present in the database. *)
-
-val render_meta : image -> Vg.meta
-(** [render_meta i] is metadata with {{!Vg.Vgm.stdkeys}standard} keys 
-    added followed by those of [i.meta]. *)
 
 val xmp_metadata : create_date:float -> creator_tool:string -> image -> string
 (** [xmp_meta create_date creator_tool i] is an XMP metadata packet for [i] *)

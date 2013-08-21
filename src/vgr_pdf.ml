@@ -240,7 +240,7 @@ let w_linear_srgb s k r =
   w_buf s k r
 
 let w_resources s id_resources k r =
-  let b_form p id = b_fmt s "/o%d %d 0 R\n" id id in
+  (* let b_form p id = b_fmt s "/o%d %d 0 R\n" id id in *)
   b_obj_start s id_resources;
   b_fmt s "<<\n\
            /ColorSpace << %s %d 0 R >>\n\

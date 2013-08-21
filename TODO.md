@@ -2,8 +2,6 @@
 
 ## Before first release
 
-* Remove Vgm ? 
-
 ### Path
 
 * Review ellipse things. There are a few TODOs and wrong things in there.
@@ -21,7 +19,6 @@ Do we actually have a renderer that supports arbitrary outline cut ?
 ### SVG renderer 
 
 * Try to handle more glyph cuts.
-* Use dublin core for metadata ? Look into inkscape. 
 * Outlines should be output to a <defs><g id="id" /></defs> for reuse. 
   Or is that impossible ? 
 
@@ -33,12 +30,9 @@ Do we actually have a renderer that supports arbitrary outline cut ?
 
 Implement !
 
-* Remove subject key, drop the info dict. unify metadata under XMP.
-
 ### Misc
 
 * Final code review. 
-* Review doc of Vgm now that we removed I.meta.
 * grep TODO
 * Add minc to examples.
 
@@ -89,10 +83,6 @@ renderers for resolution.
   is segment. 
 
 ##  After first release
-
-### Meta data 
-
-* Use XMP in both pdf and svg ?
 
 ### Path
 

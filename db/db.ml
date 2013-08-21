@@ -16,20 +16,18 @@ type image =
     title : string;
     author : author; 
     tags : string list;
-    note : string option; 
-    meta : Vg.meta;
+    note : string option;
     size : Gg.size2;
     view : Gg.box2;
     image : Gg.box2 -> Vg.image; }
 
 let images = Hashtbl.create 537
-let image id ~title ~author ?(tags = []) ?note ?(meta = Vgm.empty) 
-    ~size ~view image = 
+let image id ~title ~author ?(tags = []) ?note ~size ~view image = 
   let id = String.lowercase id in
   try ignore (Hashtbl.find images id); invalid_arg (err_id id) with
   | Not_found ->
       Hashtbl.add images id 
-        { id; author; title; note; tags; meta; size; view; image; }
+        { id; author; title; note; tags; size; view; image; }
 
 let mem id = Hashtbl.mem images id
 let find id = try Some (Hashtbl.find images id) with Not_found -> None
@@ -62,14 +60,6 @@ let indexes () =
   in
   let ids, tags = Hashtbl.fold add images ([],[]) in
   List.sort compare ids, List.sort compare tags
-
-let render_meta i =
-  let m = Vgm.empty in 
-  let m = Vgm.add m Vgm.title i.title in
-  let m = Vgm.add m Vgm.authors [fst i.author] in 
-  let m = Vgm.add m Vgm.keywords i.tags in 
-  let m = match i.note with None -> m | Some n -> Vgm.add m Vgm.description n in
-  Vgm.add_meta m i.meta
 
 let xmp_metadata ~create_date ~creator_tool i = 
   Vgr.xmp_metadata ~title:i.title ~authors:[fst i.author] ~subjects:i.tags 

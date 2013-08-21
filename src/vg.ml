@@ -9,7 +9,6 @@ open Gg
 (* Invalid_arg strings *)
 
 let err_empty = "empty path"
-let err_meta_unbound = "key unbound in metadata"
 let err_bounds j l = Printf.sprintf "invalid bounds (index %d, length %d)" j l 
 let err_exp_await = "`Await expected"
 let err_end = "`End rendered, render can't be used on renderer"
@@ -47,103 +46,6 @@ let rec pp_list ?(pp_sep = Format.pp_print_cut) pp_v ppf = function
 let to_string_of_formatter pp v =                       (* NOT thread safe. *)
   Format.fprintf Format.str_formatter "%a" pp v; 
   Format.flush_str_formatter ()
-
-(* Render metadata 
-
-   The type for metadata is an heterogeneous dictionary, for the tricks
-   see http://mlton.org/PropertyList. Map keys are augmented to allow
-   key value comparison and pretty printing. *)
-
-module Vgm = struct
-
-  let uid =               (* thread-safe UID, don't use Oo.id (object end). *) 
-    let c = ref min_int in
-    fun () ->
-      let id = !c in
-      incr c; if id > !c then assert false (* too many ids *) else id
-  
-  (* Keys *)
-
-  type key_u =                                   (* concrete Map.Make keys. *)
-    { id : int;                   (* key identifier, defines the key order. *)
-      name : string;                                           (* key name. *)
-      pp : Format.formatter -> exn -> unit;    (* key value pretty-printer. *)
-      cmp : exn -> exn -> int; }                   (* key value comparison. *)
-
-  module Key = struct
-    type t = key_u
-    let compare k0 k1 = Pervasives.compare k0.id k1.id
-  end
-
-  type 'a key =                                     (* typed metadata keys. *)
-    { k : key_u;                                                (* map key. *)
-      set : 'a -> exn;                                 (* key value setter. *)
-      get : exn -> 'a; }                               (* key value getter. *)
-
-  let key (type v) ?(cmp = Pervasives.compare) name pp =
-    let module Store = struct exception V of v end in
-    let set = fun v -> Store.V v in 
-    let get = function Store.V v -> v | _ -> assert false in
-    let pp ppf = function Store.V v -> pp ppf v | _ -> assert false in
-    let cmp e e' = match e, e' with 
-    | Store.V v, Store.V v' -> cmp v v' 
-    | _, _ -> assert false
-    in
-    let k = { id = uid (); name; pp; cmp } in
-    { k; set; get}
-
-  (* Metadata *)
-      
-  module M = (Map.Make (Key) : Map.S with type key = Key.t)
-  type t = exn M.t
-      
-  let empty = M.empty 
-  let is_empty = M.is_empty
-  let mem m k = M.mem k.k m
-  let add m k v = M.add k.k (k.set v) m
-  let rem m k = M.remove k.k m
-  let find m k = try Some (k.get (M.find k.k m)) with Not_found -> None
-  let get ?absent m k = try k.get (M.find k.k m) with 
-  | Not_found -> 
-      match absent with 
-      | Some d -> d
-      | None -> invalid_arg err_meta_unbound
-
-  let add_meta m m' = M.fold M.add m' m 
-  let compare m0 m1 = 
-    let rec loop b0 b1 = match b0, b1 with 
-    | (k0, v0) :: b0, (k1, v1) :: b1 ->
-        let c = Pervasives.compare k0.id k1.id in 
-        if c <> 0 then c else
-        let c = k0.cmp v0 v1 in 
-        if c <> 0 then c else 
-        loop b0 b1
-    | [], [] -> 0 
-    | [], _ :: _ -> -1 
-    | _ :: _, [] -> 1
-    in
-    loop (M.bindings m0) (M.bindings m1)
-        
-  let equal m m' = compare m m' = 0 
-  let pp ppf m =
-    let pp_kv ppf (k, v) = pp ppf "@[(%s@ %a)@]" k.name k.pp v in
-    let bs = M.bindings m in 
-    pp ppf "@[(meta@ %a)@]" (pp_list ~pp_sep:Format.pp_print_space pp_kv) bs
-
-  (* Standard keys *)
-      
-  let resolution = key "resolution" ~cmp:V2.compare V2.pp
-  let title = key "title" pp_str
-  let authors = key "authors" (pp_list ~pp_sep:pp_comma pp_str)
-  let creator = key "creator" pp_str
-  let keywords = key "keywords" (pp_list ~pp_sep:pp_comma pp_str)
-  let subject = key "subject" pp_str
-  let description = key "description" pp_str
-  let creation_date = key "creation_date" pp_date
-end
-
-type meta = Vgm.t
-type 'a key = 'a Vgm.key
 
 (* Fonts *)
 
@@ -1014,7 +916,6 @@ module I = struct
     | Cut_glyphs of P.area * glyph_run * t
     | Blend of blender * float option * t * t
     | Tr of tr * t
-    | Meta of meta * t
 
   (* Primitive images *)
 
@@ -1045,10 +946,6 @@ module I = struct
   let scale s i = Tr (Scale s, i)
   let tr m i = Tr (Matrix m, i)
 
-  (* Adding metadata to images *)
-
-  let meta m i = Meta (m, i)
-
   (* Predicates and comparisons *)  
 
   let is_void i = i == void 
@@ -1073,8 +970,6 @@ module I = struct
             b = b' && eq_alpha eq a a' && loop ((i1, i1') :: (i2, i2') :: acc)
         | Tr (tr, i), Tr (tr', i') -> 
             eq_tr eq tr tr' && loop ((i, i') :: acc)
-        | Meta (m, i), Meta (m', i') -> 
-            Vgm.equal m m' && loop ((i, i') :: acc)
         | _, _ -> false
     in
     loop [(i, i')]
@@ -1111,10 +1006,6 @@ module I = struct
             let c = compare_tr cmp tr tr' in 
             if c <> 0 then c else 
             loop ((i, i') :: acc)
-        | Meta (m, i), Meta (m', i') -> 
-            let c = Vgm.compare m m' in 
-            if c <> 0 then c else 
-            loop ((i, i') :: acc)
         | i, i' -> Pervasives.compare i i'
     in
     loop [(i, i')]
@@ -1146,9 +1037,6 @@ module I = struct
             loop (`I i :: `Sep :: `I i' :: `Pop :: todo)
         | Tr (tr, i) ->
             pp ppf "@[<1>(i-tr@ %a@ " (pp_tr pp_f) tr; 
-            loop (`I i :: `Pop :: todo)
-        | Meta (m, i) -> 
-            pp ppf "@[<1>(i-meta@ %a@ " Vgm.pp m; 
             loop (`I i :: `Pop :: todo)
     in
     loop [`I i]
@@ -1310,7 +1198,6 @@ module Vgr = struct
       mutable o_max : int;             (* maximal output position to write. *)
       limit : int;                                         (* render limit. *)
       warn : warn;                                     (* warning callback. *)
-      meta : meta;                                      (* render metadata. *)
       mutable k :                                   (* render continuation. *)
         [`Await | `End | `Image of size2 * box2 * image ] -> t -> 
         [ `Ok | `Partial ] }
@@ -1344,22 +1231,20 @@ module Vgr = struct
   | `Image _ as i -> rfun i (ok (r_loop rfun)) r
   | `Await -> ok (r_loop rfun) r
 
-  let create ?(limit = max_int) ?(warn = fun _ -> ()) ?(meta = Vgm.empty) 
-      target dst = 
+  let create ?(limit = max_int) ?(warn = fun _ -> ()) target dst = 
     let o, o_pos, o_max = match dst with 
     | `Manual | `Other -> "", 1, 0          (* implies [o_rem e = 0]. *)
     | `Buffer _ 
     | `Channel _ -> String.create io_buffer_size, 0, io_buffer_size - 1
     in
     let k _ _ = assert false in
-    let r = { dst = (dst :> dst); o; o_pos; o_max; limit; warn; meta; k} in
+    let r = { dst = (dst :> dst); o; o_pos; o_max; limit; warn; k} in
     let multi, rfun = target r dst in 
     r.k <- if multi then r_loop rfun else r_once rfun; 
     r
                                               
   let render r v = r.k (v :> [ `Await | `End | `Image of renderable ]) r
   let renderer_dst r = r.dst
-  let renderer_meta r = r.meta
   let renderer_limit r = r.limit 
 
   (* Manual rendering destinations *)
@@ -1426,7 +1311,6 @@ module Vgr = struct
         | Cut_glyphs of P.area * glyph_run * image
         | Blend of I.blender * float option * image * image
         | Tr of tr * image
-        | Meta of meta * image
 
       external of_image : I.t -> image = "%identity"
     end
@@ -1471,7 +1355,6 @@ module Vgr = struct
 
     let renderer r = r
     let create_target t = t
-    let meta r = r.meta
     let limit r = r.limit
     let warn r w = r.warn w
     let partial = partial 

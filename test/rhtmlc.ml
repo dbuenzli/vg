@@ -12,6 +12,8 @@ open Mui
 
 include Db_htmlc
 
+let app_name = "rhtmlc" 
+
 let str = Format.sprintf
 let pp = Format.fprintf
 let pp_str = Format.pp_print_string 
@@ -82,10 +84,9 @@ end
 
 let renderers = [ `CNV; `SVG; `TXT ]
 
-let render ?limit ?warn ?(meta = Vgm.empty) target dst i finish = 
+let render ?limit ?warn target dst i finish = 
   Log.msg "Render: %s" i.Db.id;
-  let meta = Vgm.add_meta (Db.render_meta i) meta in
-  let r = Vgr.create ?limit ?warn ~meta target dst in 
+  let r = Vgr.create ?limit ?warn target dst in 
   let warn w = match warn with None -> () | Some warn -> warn w in
   let start = Time.now () in
   let rec loop steps v = match Vgr.render r v with 
@@ -221,9 +222,8 @@ let ui_render_targets () =
           finish dur steps; 
           show_target i `CNV;
         in
-        let res = s.S.resolution in 
-        let meta = Vgm.add Vgm.empty Vgm.resolution (V2.v res res) in
-        render ~warn ~meta (Vgr_htmlc.target canvas) `Other i finish
+        let resolution = (V2.v s.S.resolution s.S.resolution) in
+        render ~warn (Vgr_htmlc.target ~resolution canvas) `Other i finish
     | `SVG -> 
         let b = Buffer.create 2048 in
         let finish ~exn dur steps = 
@@ -240,7 +240,9 @@ let ui_render_targets () =
           finish dur steps; 
           show_target i `SVG
         in
-        let t = Vgr_svg.target ~xml_decl:true () in
+        let create_date, creator_tool = Time.now (), app_name in
+        let xmp = Db.xmp_metadata ~create_date ~creator_tool i in
+        let t = Vgr_svg.target ~xml_decl:true ~xmp () in
         render ~limit:20 ~warn t (`Buffer b) i finish;
     | `TXT -> 
         let b = Buffer.create 2048 in
@@ -383,7 +385,7 @@ let ui () =
   in
   link (); init (); layout ()
 
-let main () = Log.msg "rhtmlc loaded"; Ui.show (ui ())
+let main () = Log.msg "%s loaded" app_name; Ui.show (ui ())
 let () = Ui.main main
 
 (*---------------------------------------------------------------------------

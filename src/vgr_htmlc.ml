@@ -44,10 +44,10 @@ type gstate =    (* Subset of the graphics state saved by a ctx ## save (). *)
 type cmd = Pop of gstate | Draw of Vgr.Private.Data.image
 type state = 
   { r : Vgr.Private.renderer;                    (* corresponding renderer. *)
+    resolution : Gg.v2;                        (* resolution of the canvas. *)
     c : Dom_html.canvasElement Js.t;         (* canvas element rendered to. *)
     ctx : Dom_html.canvasRenderingContext2D Js.t; (* canvas context of [c]. *)
     dash_support : bool;               (* [true] if [ctx] has dash support. *)
-    resolution : Gg.v2;                        (* resolution of the canvas. *)
     mutable cost : int;                          (* cost counter for limit. *)
     mutable view : Gg.box2;           (* current renderable view rectangle. *)
     mutable view_tr : M3.t;                    (* view to canvas transform. *)
@@ -277,7 +277,6 @@ let rec r_cut_glyphs s a run = function
             set_fill s p; s.ctx ## fillText (text, 0., 0.)
         end;
     end
-| Meta (_, i) -> r_cut_glyphs s a run i 
 
 let rec r_cut s a = function 
 | Primitive (Raster _) as i -> 
@@ -309,7 +308,6 @@ let rec r_cut s a = function
     s.ctx ## save ();
     (Js.Unsafe.coerce s.ctx : ctx_ext Js.t) ## clip (area_str a);
     s.todo <- (Draw i) :: (pop_gstate s) :: s.todo
-| Meta (_, i) -> r_cut s a i
 
 let rec r_image s k r =
   if s.cost > limit s then (s.cost <- 0; partial (r_image s k) r) else 
@@ -343,9 +341,6 @@ let rec r_image s k r =
           s.ctx ## save ();
           s.todo <- (Draw i) :: (pop_gstate s) :: todo; 
           push_transform s tr; 
-          r_image s k r;
-      | Meta (m, i) -> 
-          s.todo <- (Draw i) :: todo;
           r_image s k r
 
 let render s v k r = match v with 
@@ -381,14 +376,12 @@ let render s v k r = match v with
     r_image s k r
 
 let ppi_300 = V2.v 11811. 11811.             (* 300 ppi in pixel per meters. *)
-let target c =
-  let target r _ = 
-    let meta = Vgr.Private.meta r in
-    let resolution = Vgm.get ~absent:ppi_300 meta Vgm.resolution in
+let target ?(resolution = ppi_300) c =
+  let target r _ =
     let ctx = c ## getContext (Dom_html._2d_) in
     true, render { r; c; ctx; 
+                   resolution;
                    dash_support = dash_support ctx; 
-                   resolution; 
                    cost = 0; 
                    view = Box2.empty; 
                    view_tr = M3.id;

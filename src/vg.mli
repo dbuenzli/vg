@@ -24,120 +24,6 @@
 
 open Gg
 
-(** {1:meta Metadata} *)
-
-type meta 
-(** The type for metadata. *)
-  
-type 'a key
-(** The type for metadata keys whose lookup value is ['a]. *)
-    
-(** Renderer and image metadata.  
-
-    A metadata value is set of {{!keys}keys} mapping to typed values.
-    
-    Metadata values provide a uniform interface to specify additional
-    information to renderers or to embed renderer specific information
-    in images.  The same key may be used by more than one renderer,
-    see the {{!stdkeys}standard} keys. The documentation of renderers
-    lists the key they support.  *)
-module Vgm : sig
-  (** {1:keys Keys} *)
-  
-  val key : ?cmp:('a -> 'a -> int) -> string -> 
-    (Format.formatter -> 'a -> unit) -> 'a key 
-  (** [key ?cmp name pp] is a new metadata key. [cmp] is used to
-      compare the key values, defaults to {!Pervasives.compare}. The
-      [name] and [pp] arguments are convenience arguments used for
-      pretty-printing purposes.  *)
-
-  (** {1:metadata Metadata} *)    
-      
-  type t = meta
-  (** The type for metadata. *)
-    
-  val empty : meta
-  (** [empty] is the empty metadata. *)
-    
-  val is_empty : meta -> bool 
-  (** [is_empty m] is [true] iff [m] is empty. *)
-    
-  val mem : meta -> 'a key -> bool 
-  (** [mem m k]  is [true] iff [k] has a mapping in [m]. *)
-    
-  val add : meta -> 'a key -> 'a -> t
-  (** [add m k v] is [m] with [k] mapping to [v]. *)
-    
-  val rem : meta -> 'a key -> t
-  (** [rem m k] is [m] with [k] unbound. *)
-    
-  val find : meta -> 'a key -> 'a option
-  (** [find m k] is [k]'s mapping in [m], if any. *)
-      
-  val get : ?absent:'a -> meta -> 'a key -> 'a
-  (** [get m k] is [k]'s mapping in [m]. If [absent] is 
-      provided and [m] has no binding for [k], [absent] is returned.
-      
-      @raise Invalid_argument if [k] is not bound in [m] and 
-      [absent] is [None]. *)
- 
-  val add_meta : meta -> meta -> meta
-  (** [add_meta m m'] is [m] with all the mappings of [m']. *)
-
-  val equal : meta -> meta -> bool 
-  (** [equal m m'] is [true] iff [m] and [m'] have the same bindings. *)
-
-  val compare : meta -> meta -> int 
-  (** [compare m m'] is a total ordering of [m] and [m']. *)
-
-  val pp : Format.formatter -> meta -> unit 
-  (** [pp ppf m] prints a textual representation of [m] on [ppf]. *)
-
-  (** {1:stdkeys Standard keys} 
-      
-      {b Note.} All string values must be UTF-8 encoded. *)
-    
-  (** {2:rendermeta Render metadata} *)
-    
-  val resolution : v2 key
-  (** [resolution] specifies a rendering resolution in samples per
-      meters for raster renderers. *) 
-      
-  (** {2:imagemeta Document metadata} 
-
-      Document metadata is usually specified as renderer metadata as
-      it applies to more than one image (e.g in the case of a
-      multiple page PDF render). *)
-
-  val title : string key 
-  (** [title] is the title of the document. *)
-      
-  val authors : string list key 
-  (** [authors] are the authors of the document. *)
-
-  val creator : string key 
-  (** [creator] is the name of the application creating the document. *)
-      
-  val subject : string key 
-  (** [subject] is the subject of the document. *)
-
-  val keywords : string list key 
-  (** [keywords] is a list of keywords for the document. *)      
-
-  val description : string key 
-  (** [description] is a description for the document. *)
-      
-  val creation_date : ((int * int * int) * (int * int * int)) key
-  (** [creation_date] is the date of creation of the document. 
-      
-      The first triple is the year (0-9999), the month (1-12) and
-      the day (1-31). The second triple is the time in UTC, the hour
-      (0-23), minutes (0-59) and seconds (0-59). 
-      
-      {b Warning.} The date should be valid. Numerical constraints 
-      are not checked by renderers. *)
-end
-
 (** {1 Fonts} *)
 
 type glyph = int
@@ -695,7 +581,8 @@ module Vgr : sig
       {- [subjects] is mapped to dc:subject.} 
       {- [description] is mapped to dc:description.} 
       {- [creator_tool] is mapped to xmp:CreatorTool.}
-      {- [create_date] (a POSIX timestamp) is mapped to xmp:CreateDate.}} 
+      {- [create_date] (a POSIX timestamp in seconds) is mapped to 
+         xmp:CreateDate.}} 
 
       {b Note.} All strings must be UTF-8 encoded and must not contain the 
       ASCII control characters [U+0000..U+001F], except tab ([U+0009]), 
@@ -733,12 +620,11 @@ module Vgr : sig
   type t = renderer
   (** The type for renderers. *)
 
-  val create : ?limit:int -> ?warn:warn -> ?meta:meta ->
+  val create : ?limit:int -> ?warn:warn ->
     ([< dst] as 'dst) target -> 'dst -> renderer
-  (** [create limit warn meta target dst] is a renderer with metadata
-      [meta] and using [target] to render images to [dst]. [warn] is
-      called whenever the renderer lacks a capability, see
-      {{!warnings}warnings}.
+  (** [create limit warn target dst] is a renderer using [target] to render 
+      images to [dst]. [warn] is called whenever the renderer lacks a 
+      capability, see {{!warnings}warnings}.
 
       [limit] limits the time spent in the {!render} function (defaults to
       [max_int], unlimited).  The cost model may change in a future
@@ -773,9 +659,6 @@ module Vgr : sig
        
   val renderer_dst : renderer -> dst
   (** [render_dst r] is [r]'s destination. *)
-
-  val renderer_meta : renderer -> meta 
-  (** [renderer_meta r] is [r]'s renderer metadata. *)
 
   val renderer_limit : renderer -> int 
   (** [renderer_limit r] is [r]'s limit. *)
@@ -818,8 +701,8 @@ module Vgr : sig
       {- Images must be rendered via the {!render} function. If you 
          are writing a batch renderer provide support for each of the 
          {!dst} types and especially the non-blocking interface.}
-      {- Whenever possible reuse the the existing 
-         {{!Vgm.stdkeys}standard} keys for renderer metadata.}
+      {- Whenever possible use an XMP metadata packet for metadata, 
+         see {!Vgr.xmp_metadata}.}
       {- The renderer should implement the rendering cost model, 
          see the [limit] parameter of {!render}.} 
       {- Follow [Vg]'s 
@@ -897,7 +780,6 @@ module Vgr : sig
         | Cut_glyphs of P.area * glyph_run * image 
         | Blend of blender * float option * image * image
         | Tr of tr * image
-        | Meta of meta * image
                     
       val of_image : I.t -> image 
       (** [of_image i] is the internal representation of [i]. *)
@@ -967,9 +849,6 @@ module Vgr : sig
 
     val renderer : t -> renderer
     (** [renderer r] is [r]'s internal representation. *)
-
-    val meta : renderer -> meta
-    (** [meta r] is [r]'s render metadata. *)
             
     val limit : renderer -> int
     (** [limit r] is [r]'s render limit. *)
@@ -1484,10 +1363,11 @@ let image = I.const (Color.v_srgb 0.314 0.784 0.471)
 (* 2. Render *)
 
 let () = 
-  let meta = Vgm.add Vgm.empty Vgm.title "Vgr_svg minimal example" in
-  let meta = Vgm.add meta Vgm.description "Emerald color" in
+  let title = "Vgr_svg minimal example" in 
+  let description = "Emerald Color" in 
+  let xmp = Vgr.xmp_metadata ~title ~description () in
   let warn w = Vgr.pp_warning Format.err_formatter w in
-  let r = Vgr.create ~warn ~meta (Vgr_svg.target ()) (`Channel stdout) in
+  let r = Vgr.create ~warn (Vgr_svg.target ~xmp ()) (`Channel stdout) in
   ignore (Vgr.render r (`Image (size, view, image))); 
   ignore (Vgr.render r `End)
 ]}

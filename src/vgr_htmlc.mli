@@ -18,17 +18,16 @@
 
 (** {1 HTML canvas render targets} *)
 
-val target : Dom_html.canvasElement Js.t -> [`Other] Vg.Vgr.target
-(** [target c] is a render target for rendering to the canvas element 
-    [c]. *)
-
-(** {1 Render metadata}  
-
-    The following standard render keys are supported:
+val target : ?resolution:Gg.v2 -> Dom_html.canvasElement Js.t -> 
+  [`Other] Vg.Vgr.target
+(** [target resolution c] is a render target for rendering to the canvas 
+    element [c]. 
+    
     {ul 
-    {- {!Vg.Vgm.resolution}, specifies the rendering resolution.
-       If unspecified 11811 pixels per meters (300 ppi) is used in both 
+    {- [resolution], specifies the rendering resolution in samples per 
+       meters. If unspecified 11811 pixels per meters (300 ppi) is used in both 
        dimensions.}} *)
+
 
 (** {1 Render warnings} 
     
