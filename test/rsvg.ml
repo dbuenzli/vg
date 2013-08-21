@@ -10,10 +10,8 @@ open Vg
 include Db_svg
 
 let renderer dst is =
-  let meta = match is with [i] -> Db.render_meta i | _ -> assert false in
-  let meta = Vgm.add meta Vgm.creator "rsvg"  in
-  let meta = Vgm.add meta Vgm.creation_date (Rstored.timestamp ()) in
-  Vgr.create (Vgr_svg.target ()) ~meta dst
+  let xmp = Rstored.xmp_metadata is in 
+  Vgr.create (Vgr_svg.target ~xmp ()) dst
 
 let () = Rstored.main ~no_pack:true "SVG" "svg" renderer
 

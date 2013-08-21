@@ -14,24 +14,19 @@
 
 (** {1 SVG render targets} *)
 
-val target : ?xml_decl:bool -> unit -> Vg.Vgr.dst_stored Vg.Vgr.target
-(** [target ?xml_decl ()] is an SVG render target for rendering to the
-    stored destination given to {!Vg.Vgr.create}. If [xml_decl] is
-    [true] (default) the
-    {{:http://www.w3.org/TR/REC-xml/#NT-XMLDecl}XML declaration} is
-    output. *)
-
-(** {1 Render metadata} 
-
-    The following standard render keys are supported:
+val target : ?xml_decl:bool -> ?xmp:string ->unit -> 
+  Vg.Vgr.dst_stored Vg.Vgr.target
+(** [target xml_decl xmp ()] is an SVG render target for rendering to the
+    stored destination given to {!Vg.Vgr.create}.
     {ul
-    {- {!Vg.Vgm.title}, used for the SVG document's 
-       {{:http://www.w3.org/TR/SVG11/struct.html#TitleElement}title 
-       element}.}
-    {- {!Vg.Vgm.description}, used for the SVG document's 
-       {{:http://www.w3.org/TR/SVG11/struct.html#DescElement}desc
-       element}.} 
-    {- TODO add dublin core metadata.}} *)
+    {- [xml_decl], if [true] (default) the
+       {{:http://www.w3.org/TR/REC-xml/#NT-XMLDecl}XML declaration} is
+       output.} 
+    {- [xmp], an optional UTF-8 encoded XML XMP metadata packet describing
+       the SVG document (see ISO 16684-1 or the 
+        {{:http://www.adobe.com/devnet/xmp.html}Adobe spec.}). 
+       The convenience function {!Vg.Vgr.xmp_metadata} can be used to 
+       generate a packet.}} *)
 
 (** {1 Render warnings} 
    

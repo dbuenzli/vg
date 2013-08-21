@@ -40,11 +40,15 @@ let duration f x =
   let start = Unix.gettimeofday () in 
   f x; Unix.gettimeofday () -. start
 
-let timestamp () = 
-  let tm = Unix.gmtime (Unix.gettimeofday ()) in 
-  (tm.Unix.tm_year + 1900, (tm.Unix.tm_mon + 1), tm.Unix.tm_mday),
-  (tm.Unix.tm_hour, tm.Unix.tm_min, tm.Unix.tm_sec)
+(* Metadata *)
 
+let xmp_metadata is = 
+  let create_date = Unix.gettimeofday () in
+  let creator_tool = exec in
+  match is with 
+  | [i] -> Db.xmp_metadata ~create_date ~creator_tool i
+  | _ -> Vgr.xmp_metadata ~create_date ~creator_tool ()
+  
 (* Render *)
 
 let unix_buffer_size = 65536                      (* UNIX_BUFFER_SIZE 4.0.0 *)

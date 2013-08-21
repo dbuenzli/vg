@@ -23,6 +23,7 @@ type cmd = Pop of g_state | Draw of Vgr.Private.Data.image
 
 type state = 
   { r : Vgr.Private.renderer;                    (* corresponding renderer. *)
+    xmp : string option;
     buf : Buffer.t;                                   (* formatting buffer. *)
     mutable cost : int;                          (* cost counter for limit. *)
     mutable view : Gg.box2;           (* current renderable view rectangle. *)
@@ -105,6 +106,16 @@ let badd_svg s xml_decl size =
     >"
     (if xml_decl then "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" else "") 
     (Size2.w size) (Size2.h size) (Size2.w size) (Size2.h size)
+
+let badd_xmp s = match s.xmp with 
+| None -> () 
+| Some xmp ->
+    badd_fmt s "<?xpacket begin=\"\xEF\xBB\xBF\" \
+                          id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\
+                <x:xmpmeta xmlns:x=\"adobe:ns:meta/\">
+                %s\
+                </x:xmpmeta>
+                <?xpacket end=\"w\"?>" xmp
 
 let badd_init s size view = 
   let sx = Size2.w size /. Box2.w view in 
@@ -371,20 +382,19 @@ let rec w_image s k r =
             
 let render xml_decl s v k r = match v with 
 | `End -> w_str "</g></svg>" (Vgr.Private.flush k) r
-| `Image (size, view, i) -> 
-    let m = Vgr.Private.meta r in
+| `Image (size, view, i) ->
     badd_svg s xml_decl size;
-    badd_title s (Vgm.find m Vgm.title); 
-    badd_descr s (Vgm.find m Vgm.description);
+    badd_xmp s;
     badd_init s size view;
     s.todo <- [Draw i];
     s.view <- view;
     w_buf s (w_image s k) r
 
-let target ?(xml_decl = true) () = 
+let target ?(xml_decl = true) ?xmp () = 
   let target r _ = 
     false, 
     render xml_decl { r;
+                      xmp;
                       buf = Buffer.create 2048;
                       cost = 0;
                       view = Box2.empty; 
