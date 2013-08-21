@@ -65,25 +65,7 @@ let w_buf s k r =
 
 let badd_fmt s fmt = Printf.bprintf s.buf fmt
 let badd_str s str = Buffer.add_string s.buf str 
-let badd_esc_str s str = 
-  let len = String.length str in
-  let start = ref 0 in 
-  let last = ref 0 in 
-  let escape e = 
-    Buffer.add_substring s.buf str !start (!last - !start);
-    Buffer.add_string s.buf e; 
-    incr last; 
-    start := !last
-  in
-  while (!last < len) do match String.get str !last with 
-  | '<' -> escape "&lt;"         (* Escape markup delimiters. *)
-  | '>' -> escape "&gt;"
-  | '&' -> escape "&amp;"
-  (* | '\'' -> escape "&apos;" *) (* Not needed we use \x22 for attributes. *)
-  | '\x22' -> escape "&quot;"
-  | _ -> incr last
-  done;
-  Buffer.add_substring s.buf str !start (!last - !start)
+let badd_esc_str s str = Vgr.Private.add_xml_data s.buf str 
 
 (* Warning the following uses s.buf *)
 let bget_font s font = try Hashtbl.find s.fonts font with 

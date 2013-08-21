@@ -148,7 +148,6 @@ let pp_image_info ppf i =
   pp ppf "* @[<v>%s%a@,@," i.Db.id pp_tags i.Db.tags; 
   pp ppf "@[%a@]@," pp_text i.Db.title;
   pp ppf "@[%a, %s@]@," pp_text (fst i.Db.author) (snd i.Db.author);
-  pp_opt_text_field "subj" ppf i.Db.subject; 
   pp_opt_text_field "note" ppf i.Db.note;
   pp ppf "@]"
 

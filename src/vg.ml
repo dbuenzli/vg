@@ -1187,6 +1187,111 @@ module Vgr = struct
     | `Unsupported_glyph_cut (a, _) -> 
         pp ppf "Unsupported glyph cut: %a" pp_area a
 
+  (* Render metadata *) 
+
+  let decompose_posix_time pt =              (* (YYYY, MM, DD), (hh, mm, ss) *)
+    let mjd_origin_jd = 2_400_001 in         (* origin of mjd in julian day. *)
+    let posix_epoch = 40587 in              (* origin of posix epoch in mjd. *)
+    let day = 86_400_000. in
+    let hour = 3600_000 in
+    let minute = 60_000 in
+    let sec = 1_000 in
+    let to_gregorian mjd =                             (* cf. calendar FAQ. *)
+      let jd = mjd + mjd_origin_jd in                      (* to julian day *)
+      let a = jd + 32044 in
+      let b = (4 * a + 3) / 146097 in 
+      let c = a - ((146097 * b) / 4) in
+      let d = (4 * c + 3) / 1461 in
+      let e = c - ((1461 * d) / 4) in 
+      let m = (5 * e + 2) / 153 in 
+      let gd = e - ((153 * m + 2) / 5) + 1 in 
+      let gm = m + 3 - (12 * (m / 10)) in
+      let gy = 100 * b + d - 4800 + (m / 10) in
+      (gy, gm, gd)
+    in
+    let to_hhmmss dt = 
+      let hh = dt / hour in
+      let rem = dt mod hour in
+      let mm = rem / minute in 
+      let ss = (rem mod minute) / sec in
+      (hh, mm, ss)
+    in
+    let ms = floor (pt *. 1000.) in              (* work with milliseconds. *)
+    if ms >= 0. then 
+      let days = truncate (ms /. day) in
+      let dt = truncate (mod_float ms day) in 
+      (to_gregorian (posix_epoch + days), (to_hhmmss dt)) 
+    else
+      let ms = ms +. 1. in 
+      let days = truncate (ms /. day) - 1 in 
+      let dt = truncate (day +. (mod_float ms day)) - 1 in 
+      (to_gregorian (posix_epoch + days), (to_hhmmss dt))
+
+  let add_xml_data b str = 
+    let len = String.length str in
+    let start = ref 0 in 
+    let last = ref 0 in 
+    let escape e = 
+      Buffer.add_substring b str !start (!last - !start);
+      Buffer.add_string b e; 
+      incr last; 
+      start := !last
+    in
+    while (!last < len) do match String.get str !last with 
+    | '<' -> escape "&lt;"         (* Escape markup delimiters. *)
+    | '>' -> escape "&gt;"
+    | '&' -> escape "&amp;"
+    (* | '\'' -> escape "&apos;" *) (* Not needed we use \x22 for attributes. *)
+    | '\x22' -> escape "&quot;"
+    | _ -> incr last
+    done;
+    Buffer.add_substring b str !start (!last - !start)
+      
+  let xmp_metadata ?title ?authors ?subjects ?description ?creator_tool 
+      ?create_date () =
+    let fmt = Printf.bprintf in
+    let esc = add_xml_data in
+    let rec b_list b = function 
+    | [] -> () | v :: vs -> fmt b "<r:li>%a</r:li>" esc v; b_list b vs in 
+    let b_title b = function 
+    | None -> () 
+    | Some t -> fmt b "<d:title><r:Alt><r:li xml:lang=\"x-default\">%a\
+                       </r:li></r:Alt></d:title>" esc t
+    in
+    let b_authors b = function 
+    | None | Some [] -> () 
+    | Some l -> fmt b "<d:creator><r:Seq>%a</r:Seq></d:creator>" b_list l
+    in
+    let b_subjects b = function 
+    | None | Some [] -> () 
+    | Some l -> fmt b "<d:subject><r:Bag>%a</r:Bag></d:subject>" b_list l
+    in
+    let b_description b = function 
+    | None -> () 
+    | Some d -> fmt b "<d:description><r:Alt><r:li xml:lang=\"x-default\">%a\
+                       </r:li></r:Alt></d:description>" esc d
+    in
+    let b_creator_tool b = function 
+    | None -> () 
+    | Some c -> fmt b "<x:CreatorTool>%a</x:CreatorTool>" esc c
+    in
+    let b_create_date b = function 
+    | None -> () 
+    | Some t ->
+        let (y, m, d), (hh, mm, ss) = decompose_posix_time t in
+        fmt b "<x:CreateDate>%04d-%02d-%02dT%02d:%02d:%02dZ\
+               </x:CreateDate>" y m d hh mm ss
+    in
+    let b = Buffer.create 1024 in 
+    fmt b "<r:RDF xmlns:r=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\" \
+                xmlns:d=\"http://purl.org/dc/elements/1.1/\" \
+                xmlns:x=\"http://ns.adobe.com/xap/1.0/\">\
+            <r:Description>%a%a%a%a%a%a</r:Description>\
+           </r:RDF>" 
+      b_title title b_authors authors b_subjects subjects b_description 
+      description b_creator_tool creator_tool b_create_date create_date; 
+    Buffer.contents b
+      
   (* Renderable *)
 
   type renderable = size2 * box2 * image
@@ -1355,8 +1460,6 @@ module Vgr = struct
       external of_data : Data.image -> I.t = "%identity"
     end
 
-    
-
     (* Renderers *)
 
     type renderer = t
@@ -1401,6 +1504,8 @@ module Vgr = struct
         Buffer.blit buf j r.o r.o_pos rem; r.o_pos <- r.o_pos + rem; 
         flush (writebuf buf (j + rem) (l - rem) k) r
       end 
+
+    let add_xml_data = add_xml_data
   end
 end
 

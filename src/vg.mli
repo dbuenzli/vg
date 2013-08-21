@@ -676,6 +676,31 @@ module Vgr : sig
   type warn = warning -> unit 
   (** The type for warning callbacks. *)
 
+  (** {1:metadata Render metadata} 
+
+      Some renderers support the specification of metadata as an XML
+      {{:http://www.adobe.com/devnet/xmp.html}XMP metadata} packet 
+      (ISO 16684-1).
+      The following convenience function returns a well-formed, correctly 
+      escaped, metadata packet according to the information you provide. *)
+
+  val xmp_metadata : ?title:string -> ?authors:string list -> 
+    ?subjects:string list -> ?description:string -> ?creator_tool:string -> 
+      ?create_date:float -> unit -> string
+  (** [xmp_medata title authors creator_tool subject description create_date]
+      is an XML XMP metadata packet. 
+      {ul 
+      {- [title] is mapped to dc:title.}
+      {- [authors] is mapped to dc:creator.} 
+      {- [subjects] is mapped to dc:subject.} 
+      {- [description] is mapped to dc:description.} 
+      {- [creator_tool] is mapped to xmp:CreatorTool.}
+      {- [create_date] (a POSIX timestamp) is mapped to xmp:CreateDate.}} 
+
+      {b Note.} All strings must be UTF-8 encoded and must not contain the 
+      ASCII control characters [U+0000..U+001F], except tab ([U+0009]), 
+      linefeed ([U+000A]) or cariage return ([U+000D]). *)
+      
   (** {1:renderable Renderable} 
 
       A renderable specifies a finite view rectangle and a physical
@@ -973,6 +998,12 @@ module Vgr : sig
     val writebuf : Buffer.t -> int -> int -> k -> renderer -> [`Ok | `Partial ]
     (** [writebuf buf j l k r] write [l] bytes from [buf] starting at [j]
         and [k]ontinues. *)
+
+    (** {1 Miscellaneous} *) 
+
+    val add_xml_data : Buffer.t -> string -> unit 
+    (** [add_xml_data b s] adds [s] to [b] and escapes 
+        ['<', '>', '&'] and ['"'] (but {b not} single quotes).*)
   end
 end
 

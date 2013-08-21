@@ -16,7 +16,6 @@ type image =
     title : string;
     author : author; 
     tags : string list;
-    subject : string option; 
     note : string option; 
     meta : Vg.meta;
     size : Gg.size2;
@@ -24,13 +23,13 @@ type image =
     image : Gg.box2 -> Vg.image; }
 
 let images = Hashtbl.create 537
-let image id ~title ~author ?(tags = []) ?subject ?note ?(meta = Vgm.empty) 
+let image id ~title ~author ?(tags = []) ?note ?(meta = Vgm.empty) 
     ~size ~view image = 
   let id = String.lowercase id in
   try ignore (Hashtbl.find images id); invalid_arg (err_id id) with
   | Not_found ->
       Hashtbl.add images id 
-        { id; author; title; subject; note; tags; meta; size; view; image; }
+        { id; author; title; note; tags; meta; size; view; image; }
 
 let mem id = Hashtbl.mem images id
 let find id = try Some (Hashtbl.find images id) with Not_found -> None
@@ -69,9 +68,12 @@ let render_meta i =
   let m = Vgm.add m Vgm.title i.title in
   let m = Vgm.add m Vgm.authors [fst i.author] in 
   let m = Vgm.add m Vgm.keywords i.tags in 
-  let m = match i.subject with None -> m | Some s -> Vgm.add m Vgm.subject s in
   let m = match i.note with None -> m | Some n -> Vgm.add m Vgm.description n in
   Vgm.add_meta m i.meta
+
+let xmp_metadata ~create_date ~creator_tool i = 
+  Vgr.xmp_metadata ~title:i.title ~authors:[fst i.author] ~subjects:i.tags 
+    ?description:i.note ~creator_tool ~create_date () 
 
 let renderable i = i.size, i.view, i.image i.view
 let find_loc id locs = 
