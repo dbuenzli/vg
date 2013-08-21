@@ -1,6 +1,6 @@
 true : package(gg)
 
-<**/*.{ml,mli}> : annot
+<**/*.{ml,mli}> : bin_annot, annot
 <src> : include
 <test> : include
 <db> : include
