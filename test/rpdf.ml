@@ -11,7 +11,7 @@ include Db_pdf
 
 let renderer dst is =
   let xmp = Rstored.xmp_metadata is in
-  Vgr.create (Vgr_pdf.target ~xmp ()) dst
+  Vgr.create (Vgr_pdf.target ~share:1 ~xmp ()) dst
 
 let () = Rstored.main "PDF" "pdf" renderer
 

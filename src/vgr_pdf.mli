@@ -7,11 +7,12 @@
 
     Renders a sequence of renderables as a multi-page PDF 1.7
     document. Each renderable defines a page of the document.
-
+    
     {b Bug reports.}  PDF being an insane standard, rendering
     abilities of PDF readers vary wildly. No rendering bug report for
     this renderer will be considered if it cannot be reproduced in the
     latest Adobe Acrobat Reader.
+    
 
     {e Release %%VERSION%% - %%MAINTAINER%% } *)
 
@@ -34,14 +35,24 @@ val target : ?share:int -> ?xmp:string -> unit ->
        generate a packet.}}
     @raise Invalid_argument if [share] is not strictly positive. *)
 
-(** {1 Render warnings} *)
+(** {1:warnings Render warnings} *)
 
-(** {1 Text rendering support} *)
+(** {1:text Text rendering support} *)
 
-(** {1 Multiple images} 
+(** {1:multi Multiple images} 
 
     Rendering multiple images is supported. Each image defines 
     a page of the PDF file. *)
+
+(** {1:limitations Limitations}
+
+    The streams in the PDF files are uncompressed. This will be lifted
+    in future versions of the library. If you need to reduce the size
+    generated PDF you can make it go through ghostscript with:
+{[
+gs -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=output.pdf input.pdf
+]}
+*)
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

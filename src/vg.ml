@@ -83,7 +83,6 @@ module Font = struct
     let c = Pervasives.compare font.slant font'.slant in 
     c
 
-
   (* Printers *)
 
   let weight_to_str = function 
@@ -364,7 +363,7 @@ module P = struct
                  e1y e2y
     in
     Some ((P2.v cx cy), m, t0, t1)
-
+      
   let casteljau pt c c' pt' t =
     let b00 = V2.mix pt c t in
     let b01 = V2.mix c c' t in
@@ -461,7 +460,7 @@ module P = struct
 	    update_z V2.x; update_z V2.y; update pt; seg l
 	| `Earc (large, cw, angle, radii, pt) :: l ->
 	    let last = last_pt l in
-	    begin match earc_params last large cw angle radii pt with
+     begin match earc_params last large cw angle radii pt with
 	    | None -> update pt; seg l
 	    | Some (c, m, a1, a2) ->
 		(* TODO wrong in general. *)
@@ -614,42 +613,6 @@ module P = struct
     in
     let acc, _, _ = linear_fold ?tol sample (acc, P2.o, 0.) p in
     acc
-
-  (* TODO This is needed by the PDF renderer to approximate elliptical arcs. 
-     Do we add something like Vg.P.cubic_fold or just move that to 
-     the pdf renderer ? *)
-  
-  let one_div_3 = 1. /. 3. 
-  let two_div_3 = 2. /. 3. 
-  let cubic_earc tol cubic acc p0 large cw r a p1 = (* TODO tailrec *)
-    match earc_params p0 large cw a r p1 with
-    | None -> (* line with a cubic *)
-	let c = V2.add (V2.smul two_div_3 p0) (V2.smul one_div_3 p1) in
-        let c' = V2.add (V2.smul one_div_3 p0) (V2.smul two_div_3 p1) in
-        cubic c c' p1 acc
-    | Some (c, m, t0, t1) -> 
-	let mt = (* TODO something better *)
-	  M2.v (-. (M2.e00 m)) (M2.e10 m) (* gives the tngt to a point *)
-	       (-. (M2.e01 m)) (M2.e11 m)
-	in
-	let tol = tol /. max (V2.x r) (V2.y r) in
-	let rec loop tol cubic acc p0 t0 p1 t1 = 
-	  let dt = t1 -. t0 in
-	  let a = 0.25 *. dt in
-	  let is_flat = (2.*. (sin a) ** 6.) /. (27.*. (cos a) ** 2.) <= tol in
-	  if is_flat then 
-	    let l = (4. *. tan a) /. 3. in
-	    let c = V2.add p0 (V2.smul l (V2.ltr mt (V2.v (sin t0) (cos t0)))) 
-            in
-	    let c' = V2.sub p1 (V2.smul l (V2.ltr mt (V2.v (sin t1) (cos t1))))
-            in
-	    cubic c c' p1 acc
-	  else
-	    let t = (t0 +. t1) /. 2. in
-	    let b = V2.(c + ltr m (V2.v (cos t) (sin t))) in
-	    loop tol cubic (loop tol cubic acc p0 t0 b t) b t p1 t1
-      in
-      loop tol cubic acc p0 t0 p1 t1
 
   (* Predicates and comparisons *)
 
