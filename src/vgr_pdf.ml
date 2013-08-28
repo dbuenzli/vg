@@ -21,8 +21,19 @@ let unsafe_array_get = Array.unsafe_get
 let unsafe_chr = Char.unsafe_chr
 
 type id = int (* PDF object ids *) 
-type g_state = { g_tr : M3.t } 
-type cmd = Pop of g_state | Draw of Vgr.Private.Data.image
+type gstate =                  (* Subset of the graphics state saved by a q. *) 
+  { mutable g_tr : M3.t;
+    mutable g_scolor : Gg.color; 
+    mutable g_fcolor : Gg.color; 
+    mutable g_outline : P.outline;
+    mutable g_alpha : float;                              (* unused for now. *) 
+    mutable g_blender : Vgr.Private.Data.blender; }       (* unused for now. *)
+
+let init_gstate = 
+  { g_tr = M3.id; g_scolor = Color.black; g_fcolor = Color.black;
+    g_outline = P.o; g_alpha = 1.0; g_blender = `Over } 
+  
+type cmd = Set of gstate | Draw of Vgr.Private.Data.image
 
 type state = 
   { r : Vgr.Private.renderer;                    (* corresponding renderer. *)
@@ -39,14 +50,9 @@ type state =
     mutable index : (int * int) list;      (* object id, byte offset index. *)
     mutable id_resources : int;                (* current resource dict id. *) 
     mutable page_objs : int list;                      (* pages object ids. *)
-    paths : (Vgr.Private.Data.path, id) Hashtbl.t;                      
     prims : (Vgr.Private.Data.primitive, id) Hashtbl.t;
-    outlines : (P.outline, id) Hashtbl.t; 
-    alphas : (float, id) Hashtbl.t;
-    mutable s_tr : M3.t;  (* current transformation without view transform. *)
-    mutable s_alpha : float; 
-    mutable s_blender : Vgr.Private.Data.blender; (* current blending mode. *)
-    mutable s_outline : P.outline; }       (* current outline stroke state. *) 
+    alphas : (float * [`S | `F], id) Hashtbl.t;
+    mutable gstate : gstate; }                    (* current graphic state. *) 
 
 let partial = Vgr.Private.partial
 let limit s = Vgr.Private.limit s.r 
@@ -62,7 +68,7 @@ let max_buf = 65528
 let byte_offset s = s.bytes + Buffer.length s.buf
 let new_obj_id s = s.id <- s.id + 1; s.id
 let obj_count s = s.id + 1
-let new_page s = 
+let new_page s =
   let id = new_obj_id s in 
   s.page_objs <- id :: s.page_objs; id
 
@@ -71,14 +77,10 @@ let get_id s h v = try Hashtbl.find h v with
     let id = new_obj_id s in 
     Hashtbl.add h v id; id
 
-let get_path_id s p = get_id s s.paths p 
-let get_outline_id s o = get_id s s.outlines o
 let get_alpha_id s alpha = get_id s s.alphas alpha
-
-let pop_gstate s = Pop { g_tr = s.s_tr }
-let set_gstate s g = s.s_tr <- g.g_tr 
 let uncut_bounds s = 
-  Vgr.Private.Data.of_path (P.empty >> P.rect (Box2.tr (M3.inv s.s_tr) s.view))
+  Vgr.Private.Data.of_path 
+    (P.empty >> P.rect (Box2.tr (M3.inv s.gstate.g_tr) s.view))
 
 let rec b_id_list b = function 
 | [] -> () | id :: ids -> Printf.bprintf b " %d 0 R" id; b_id_list b ids
@@ -192,195 +194,102 @@ let flush s k r =
   Vgr.Private.writebuf s.buf 0 len (clear k) r
 
 let w_buf s k r = if Buffer.length s.buf >= max_buf then flush s k r else k r
-let w_clip s a i path_id k r =  
-  s.todo <- (Draw i) :: s.todo; k r
 
-let w_primitive_cut s a (p, trs) path_id k r = match p with 
-| Const c ->
-    let alpha_id = get_alpha_id s (Color.a c) in
-    b_fmt s "\n/gs%d gs" alpha_id;
-    begin match a with
-    | `Anz -> 
-        b_fmt s "\n%f %f %f sc" (Color.r c) (Color.g c) (Color.b c);
-        b_fmt s "\n/p%d Do f" path_id;
-    | `Aeo ->
-        b_fmt s "\n%f %f %f sc" (Color.r c) (Color.g c) (Color.b c);
-        b_fmt s "\n/p%d Do f*" path_id;
-    | `O o ->
-        let outline_id = get_outline_id s o in
-        b_fmt s "\n%f %f %f SC" (Color.r c) (Color.g c) (Color.b c);
-        b_fmt s "\n/gs%d gs" outline_id; 
-        b_fmt s "\n/p%d Do S" path_id      
-    end; 
-    w_buf s k r
-| Axial (stops, p1, p2) -> k r
-| Radial (stops, f, c, radius) -> k r
-| Raster _ -> assert false 
+let save_gstate s = 
+  b_fmt s "\nq"; Set { s.gstate with g_tr = s.gstate.g_tr (* copy *) } 
 
-let w_transform s tr k r = 
-  begin match tr with 
-  | Move pt -> 
-      b_fmt s "\n1 0 0 1 %f %f cm" (V2.x pt) (V2.y pt)
+let set_gstate s g = b_fmt s "\nQ"; s.gstate <- g
+
+let b_miter_limit s o = b_fmt s "\n%f M" (Vgr.Private.P.miter_limit o)
+let b_dashes s = function
+| None -> b_fmt s "\n[] 0 d"
+| Some (off, pat) ->
+    let rec b_pat b = function 
+    | [] -> () | p :: ps -> Printf.bprintf b " %f" p; b_pat b ps 
+    in
+    b_fmt s "\n[%a] %f d" b_pat pat off
+
+let set_fcolor s c = 
+  if s.gstate.g_fcolor = c then () else 
+  let alpha_id = get_alpha_id s (Color.a c, `F) in 
+  b_fmt s "\n/gs%d gs" alpha_id; 
+  b_fmt s "\n%f %f %f sc" (Color.r c) (Color.g c) (Color.b c);
+  s.gstate.g_fcolor <- c
+    
+let set_scolor s c = 
+  if s.gstate.g_scolor = c then () else
+  let alpha_id = get_alpha_id s (Color.a c, `S) in 
+  b_fmt s "\n/gs%d gs" alpha_id; 
+  b_fmt s "\n%f %f %f SC" (Color.r c) (Color.g c) (Color.b c); 
+  s.gstate.g_scolor <- c
+    
+let set_outline s ot = 
+  let open P in
+  let cap_c = function `Butt -> '0' | `Round -> '1' | `Square -> '2' in
+  let join_c = function `Miter -> '0' | `Round -> '1' | `Bevel -> '2' in
+  let c = s.gstate.g_outline in
+  if c.width <> ot.width then b_fmt s "\n%f w" ot.width; 
+  if c.cap <> ot.cap then b_fmt s "\n%c J" (cap_c ot.cap); 
+  if c.join <> ot.join then b_fmt s "\n%c j" (join_c ot.join); 
+  if c.dashes <> ot.dashes then b_dashes s ot.dashes; 
+  if c.miter_angle <> ot.miter_angle then b_miter_limit s ot; 
+  s.gstate.g_outline <- ot
+      
+let push_transform s tr = 
+  let m = match tr with 
+  | Move v -> 
+      b_fmt s "\n1 0 0 1 %f %f cm" (V2.x v) (V2.y v); 
+      M3.move2 v
   | Rot a ->
-      let cos = cos a in 
-      let sin = sin a in 
-      b_fmt s "\n%f %f %f %f 0 0 cm" cos sin (-. sin) cos
+      let m = M3.rot2 a in
+      let open M3 in
+      b_fmt s "\n%f %f %f %f 0 0 cm" (e00 m) (e10 m) (e01 m) (e11 m);
+      m
   | Scale sv -> 
-      b_fmt s "\n%f 0 0 %f 0 0 cm" (V2.x sv) (V2.y sv)
+      b_fmt s "\n%f 0 0 %f 0 0 cm" (V2.x sv) (V2.y sv); 
+      M3.scale2 sv
   | Matrix m ->
-      M3.(b_fmt s "\n%f %f %f %f %f %f cm"
-            (e00 m) (e10 m) (e01 m) (e11 m) (e02 m) (e12 m))
-  end;
-  w_buf s k r
-
-(*
-let rec w_transforms s trs k r = function
-| [] -> k r | tr :: trs -> w_transform s tr (s trs (k 
-*)
-
-let tr_primitive i = 
-  let rec loop acc = function 
-  | Primitive (Raster _) | Blend _ | Cut _ | Cut_glyphs _ -> None 
-  | Primitive p -> Some (p, List.rev acc) 
-  | Tr (tr, i) -> loop (tr :: acc) i 
+      let open M3 in
+      b_fmt s "\n%f %f %f %f %f %f cm" 
+        (e00 m) (e10 m) (e01 m) (e11 m) (e02 m) (e12 m); 
+      m
   in
-  loop [] i
-
-let w_cut s a p i k r =
-  let path_id = get_path_id s p in
-  match i with 
-  | Primitive (Raster _) -> 
-      warn s (`Other ("TODO raster unimplemented")); k r
-  | Primitive p -> 
-      w_primitive_cut s a (p, []) path_id k r
-  | Tr _ as i -> 
-      begin match tr_primitive i with 
-      | None -> w_clip s a i path_id k r 
-      | Some p_trs ->     
-          w_primitive_cut s a p_trs path_id k r 
-      end
-  | Blend _ | Cut _ | Cut_glyphs _ as i -> 
-      w_clip s a i path_id k r
-  
-let rec w_image s k r = 
-  if s.cost > limit s then (s.cost <- 0; partial (w_image s k) r) else 
-  match s.todo with 
-  | [] -> 
-      let len_id, stream_start = s.stream_info in
-      let len = byte_offset s - stream_start in
-      b_str s "\nendstream\n"; 
-      b_obj_end s;  
-      b_obj_start s len_id;                   (* Write object stream length. *) 
-      b_fmt s "%i\n" len; 
-      b_obj_end s; 
-      w_buf s k r
-  | Pop gs :: todo ->
-      set_gstate s gs; 
-      s.todo <- todo; 
-      b_fmt s "\nQ"; 
-      w_image s k r
-  | (Draw i) :: todo -> 
-      s.cost <- s.cost + 1; 
-      match i with 
-      | Primitive _ as i -> (* Uncut primitive just cut to view. *)
-          let p = uncut_bounds s in 
-          s.todo <- (Draw (Cut (`Anz, p, i))) :: todo; 
-          w_image s k r
-      | Cut (a, p, i) ->
-          s.todo <- todo;
-          w_cut s a p i (w_image s k) r
-      | Cut_glyphs (a, run, i) -> 
-          s.todo <- todo; 
-          (* TODO *) 
-          w_image s k r
-      | Blend (_, _, i, i') -> 
-          s.todo <- (Draw i') :: (Draw i) :: todo; 
-          w_image s k r
-      | Tr (tr, i) -> 
-          s.todo <- (Draw i) :: pop_gstate s :: todo;
-          b_fmt s "q\n";
-          w_transform s tr (w_image s k) r
-            
-let w_contents s id size k r = 
-  let sx = (Size2.w size *. mm_to_pt) /. Box2.w s.view in 
-  let sy = (Size2.h size *. mm_to_pt) /. Box2.h s.view in 
-  let dx = -. sx *. Box2.ox s.view in 
-  let dy = -. sy *. Box2.oy s.view in
-  let obj_len_id = new_obj_id s in 
-  b_obj_start s id;
-  b_fmt s "<< /Length %d 0 R >>\nstream\n" obj_len_id;
-  s.stream_info <- (obj_len_id, byte_offset s);
-  b_fmt s "%s CS" n_linear_srgb; 
-  b_fmt s "\n%s cs" n_linear_srgb; 
-  b_fmt s "\n%f 0 0 %f %f %f cm" sx sy dx dy;
-  w_image s k r
-
-let w_page size s k r =
-  let id = new_page s in 
-  let contents_id = new_obj_id s in
-  b_obj_start s id;
-  b_fmt s "<<\n\
-           /Type /Page\n\
-           /Parent %d 0 R\n\
-           /Resources %d 0 R\n\
-           /MediaBox [0 0 %f %f]\n\
-           /Contents %d 0 R\n\
-           >>\n" 
-    id_page_root s.id_resources
-    (V2.x size *. mm_to_pt) (V2.y size *. mm_to_pt)
-    contents_id;
-  b_obj_end s;
-  w_contents s contents_id size k r
-
-let w_linear_srgb s k r = 
-  let id_icc_stream = new_obj_id s in
-  let icc = Color.profile_to_icc Color.p_rgb_l in
-  b_obj_start s id_linear_srgb;
-  b_fmt s "[/ICCBased %d 0 R]\n" id_icc_stream; 
-  b_obj_end s;
-  b_obj_start s id_icc_stream; 
-  b_fmt s "<<\n\
-           /N 3 /Alternate /DeviceRGB\n\
-           /Length %d\n\
-           >>\nstream\n%s\nendstream\n" (String.length icc) icc;
-  b_obj_end s;
-  w_buf s k r
+  s.gstate.g_tr <- m
 
 let one_div_3 = 1. /. 3. 
 let two_div_3 = 2. /. 3. 
-
-let cubic_earc tol cubic acc p0 large cw a r p1 = (* TODO tailrec *)
+let cubic_earc tol cubic acc p0 large cw a r p1 =
   match Vgr.Private.P.earc_params p0 large cw a r p1 with
   | None -> (* line with a cubic *)
       let c0 = V2.add (V2.smul two_div_3 p0) (V2.smul one_div_3 p1) in
       let c1 = V2.add (V2.smul one_div_3 p0) (V2.smul two_div_3 p1) in
       cubic c0 c1 p1 acc
   | Some (c, m, t0, t1) -> 
-      let mt = (* TODO something better *)
-	M2.v (-. (M2.e00 m)) (M2.e10 m) (* gives the tngt to a point *)
-             (-. (M2.e01 m)) (M2.e11 m)
+      let mt = M2.v (* TODO something better *)
+          (-. (M2.e00 m)) (M2.e10 m) (* gives the tngt to a point *)
+          (-. (M2.e01 m)) (M2.e11 m)
       in
       let tol = tol /. max (V2.x r) (V2.y r) in
       let rec loop tol cubic acc p0 t0 p1 t1 = 
-      let dt = t1 -. t0 in
-      let a = 0.25 *. dt in
-      let is_flat = (2.*. (sin a) ** 6.) /. (27.*. (cos a) ** 2.) <= tol in
-      if is_flat then 
-	let l = (4. *. tan a) /. 3. in
-        let c0 = V2.add p0 (V2.smul l (V2.ltr mt (V2.v (sin t0) (cos t0)))) in
-        let c1 = V2.sub p1 (V2.smul l (V2.ltr mt (V2.v (sin t1) (cos t1)))) in
-        cubic c0 c1 p1 acc
-      else
+        let dt = t1 -. t0 in
+        let a = 0.25 *. dt in
+        let is_flat = (2.*. (sin a) ** 6.) /. (27.*. (cos a) ** 2.) <= tol in
+        if is_flat then 
+	        let l = (4. *. tan a) /. 3. in
+         let c0 = V2.add p0 (V2.smul l (V2.ltr mt (V2.v (sin t0) (cos t0)))) in
+         let c1 = V2.sub p1 (V2.smul l (V2.ltr mt (V2.v (sin t1) (cos t1)))) in
+         cubic c0 c1 p1 acc
+        else
         let t = (t0 +. t1) /. 2. in
-	let b = V2.(c + ltr m (V2.v (cos t) (sin t))) in
-	loop tol cubic (loop tol cubic acc p0 t0 b t) b t p1 t1
+	      let b = V2.(c + ltr m (V2.v (cos t) (sin t))) in
+	      loop tol cubic (loop tol cubic acc p0 t0 b t) b t p1 t1
       in
       loop tol cubic acc p0 t0 p1 t1
-
-let w_path s (p, pid) k r =                     (* written in a Form XObject *)
-  let b_cubic c0 c1 pt () = 
-    V2.(b_fmt s "\n%f %f %f %f %f %f c" 
-          (x c0) (y c0) (x c1) (y c1) (x pt) (y pt))
+        
+let w_path s p k r =
+  let b_cubic c0 c1 pt () =
+    let open V2 in
+    b_fmt s "\n%f %f %f %f %f %f c" (x c0) (y c0) (x c1) (y c1) (x pt) (y pt)
   in
   let rec b_seg last = function 
   | `Sub pt -> 
@@ -399,93 +308,150 @@ let w_path s (p, pid) k r =                     (* written in a Form XObject *)
   | `Close -> 
       b_fmt s "\nh"; last
   in
-  let b = P.bounds ~ctrl:true (Vgr.Private.P.of_data p) in  (* TODO *)
-  let len_id = new_obj_id s in
-  b_obj_start s pid;
-  b_fmt s "<< /Subtype /Form /BBox [ %f %f %f %f ] /Length %d 0 R >>\nstream"
-    (Box2.minx b) (Box2.miny b) (Box2.maxx b) (Box2.maxy b)
-    len_id;
-  let stream_start = byte_offset s in 
   ignore (List.fold_left b_seg P2.o (List.rev p));
-  let len = byte_offset s - stream_start - 1 (* first NL *) in
-  b_fmt s "\nendstream\n";
-  b_obj_end s;
-  b_length_obj s len_id len;
   w_buf s k r
 
-let rec w_paths s ps k r = match ps with 
-| [] -> k r | p :: ps -> w_path s p (w_paths s ps k) r
-
-let w_outline s (o, id) k r = 
-  let b_cap b = function 
-    | `Butt -> Buffer.add_char b '0' 
-    | `Round -> Buffer.add_char b '1' 
-    | `Square -> Buffer.add_char b '2'
-  in
-  let b_join b = function 
-  | `Miter -> Buffer.add_char b '0' 
-  | `Round -> Buffer.add_char b '1'
-  | `Bevel -> Buffer.add_char b '2'
-  in
-  let b_dashes b = function
-  | None -> Buffer.add_string b "[] 0"
-  | Some (off, pat) -> 
-      let rec b_pat b = function 
-      | [] -> () | p :: ps -> Printf.bprintf b " %f" p; b_pat b ps 
-      in
-      Printf.bprintf b "[%a] %f" b_pat pat off
-  in
-  b_obj_start s id; 
-  b_fmt s "<< /Type /ExtGState\n\
-           /LW %f /LC %a /LJ %a /ML %f /D [%a] >>\n" 
-    o.P.width b_cap o.P.cap b_join o.P.join (Vgr.Private.P.miter_limit o) 
-    b_dashes o.P.dashes;
-  b_obj_end s; 
-  w_buf s k r
+let rec w_cut s a i k r = match i with 
+| Primitive p ->
+    begin match p with
+    | Const c ->
+        begin match a with
+        | `Anz -> set_fcolor s c; b_fmt s "\nf"; w_buf s k r
+        | `Aeo -> set_fcolor s c; b_fmt s "\nf*"; w_buf s k r
+        | `O o -> set_scolor s c; set_outline s o; b_fmt s "\nS"; w_buf s k r
+        end
+    | Axial (stops, p1, p2) -> 
+        warn s (`Other ("TODO axial unimplemented")); w_buf s k r 
+    | Radial (stops, f, c, radius) -> 
+        warn s (`Other ("TODO radial unimplemented")); w_buf s k r 
+    | Raster _ -> 
+        warn s (`Other ("TODO raster unimplemented")); w_buf s k r
+    end
+| Tr (tr, i) ->
+    s.todo <- save_gstate s :: s.todo;
+    push_transform s tr;
+    w_cut s a i k r
+| Blend _ | Cut _ | Cut_glyphs _ as i ->
+    s.todo <- (Draw i) :: save_gstate s :: s.todo;
+    begin match a with 
+    | `Anz -> b_fmt s "\nW n"
+    | `Aeo -> b_fmt s "\nW* n"
+    | `O _ -> warn s (`Unsupported_cut (a, image i)); b_fmt s "\nW"
+    end;
+    w_buf s k r
       
-let rec w_outlines s os k r = match os with 
-| [] -> k r | o :: os -> w_outline s o (w_outlines s os k) r
+let rec w_image s k r = 
+  if s.cost > limit s then (s.cost <- 0; partial (w_image s k) r) else 
+  match s.todo with 
+  | [] ->  
+      let len_id, stream_start = s.stream_info in
+      let len = byte_offset s - stream_start in
+      b_str s "\nendstream\n"; 
+      b_obj_end s;  
+      b_length_obj s len_id len;
+      w_buf s k r
+  | Set gstate :: todo ->
+      s.todo <- todo;
+      set_gstate s gstate; 
+      w_image s k r
+  | (Draw i) :: todo -> 
+      s.cost <- s.cost + 1; 
+      match i with 
+      | Primitive _ as i -> (* Uncut primitive just cut to view. *)
+          let p = uncut_bounds s in 
+          s.todo <- (Draw (Cut (`Anz, p, i))) :: todo; 
+          w_image s k r
+      | Cut (a, p, i) ->
+          s.todo <- todo;
+          w_path s p (w_cut s a i (w_image s k)) r
+      | Cut_glyphs (a, run, i) -> 
+          s.todo <- todo; 
+          (* TODO *) 
+          w_image s k r
+      | Blend (_, _, i, i') -> 
+          s.todo <- (Draw i') :: (Draw i) :: todo; 
+          w_image s k r
+      | Tr (tr, i) -> 
+          s.todo <- (Draw i) :: save_gstate s :: todo;
+          push_transform s tr;
+          w_image s k r
+  
+let w_page size s k r =
+  let id = new_page s in 
+  let contents_id = new_obj_id s in
+  let contents_len_id = new_obj_id s in
+  b_obj_start s id;
+  b_fmt s "<<\n\
+           /Type /Page\n\
+           /Parent %d 0 R\n\
+           /Resources %d 0 R\n\
+           /MediaBox [0 0 %f %f]\n\
+           /Contents %d 0 R\n\
+           >>\n" 
+    id_page_root s.id_resources
+    (V2.x size *. mm_to_pt) (V2.y size *. mm_to_pt)
+    contents_id;
+  b_obj_end s;
+  b_obj_start s contents_id;
+  b_fmt s "<< /Length %d 0 R >>\nstream\n" contents_len_id;
+  s.stream_info <- (contents_len_id, byte_offset s);
+  b_fmt s "%s CS" n_linear_srgb; 
+  b_fmt s "\n%s cs" n_linear_srgb; 
+  (* Init. PDF stroke color is opaque black, so is init_gstate.g_scolor *)
+  (* Init. PDF fill color is opaque black, so is init_gstate.g_fcolor *) 
+  (* Init. PDF line width is 1.0, so is init_gstate.g_outline.width *)
+  (* Init. PDF cap is butt, so is init_gstate.g_outline.cap *)
+  (* Init. PDF join is miter, so is init_gstate.g_outline.join *) 
+  (* Init. PDF dashes is a solid line, so is init_gstate.g_outline.dashes *)
+  b_miter_limit s s.gstate.g_outline;
+  let sx = (Size2.w size *. mm_to_pt) /. Box2.w s.view in 
+  let sy = (Size2.h size *. mm_to_pt) /. Box2.h s.view in 
+  let dx = -. sx *. Box2.ox s.view in 
+  let dy = -. sy *. Box2.oy s.view in
+  b_fmt s "\n%f 0 0 %f %f %f cm" sx sy dx dy;
+  w_image s k r
 
-let w_alpha s (a, id) k r = 
-  b_obj_start s id; 
-  b_fmt s "<< /Type /ExtGState /ca %f /CA %f >>\n" a a; 
-  b_obj_end s; 
+let w_linear_srgb s k r = 
+  let id_icc_stream = new_obj_id s in
+  let icc = Color.profile_to_icc Color.p_rgb_l in
+  b_obj_start s id_linear_srgb;
+  b_fmt s "[/ICCBased %d 0 R]\n" id_icc_stream; 
+  b_obj_end s;
+  b_obj_start s id_icc_stream; 
+  b_fmt s "<<\n\
+           /N 3 /Alternate /DeviceRGB\n\
+           /Length %d\n\
+           >>\nstream\n%s\nendstream\n" (String.length icc) icc;
+  b_obj_end s;
+  w_buf s k r
+
+let w_alpha s ((a, op), id) k r = 
+  let op = match op with `S -> "CA" | `F -> "ca" in
+  b_obj_start s id;
+  b_fmt s "<< /Type /ExtGState /%s %f >>\n" op a;
+  b_obj_end s;
   w_buf s k r
 
 let rec w_alphas s alphas k r = match alphas with 
 | [] -> k r | alpha :: alphas -> w_alpha s alpha (w_alphas s alphas k) r
-
-let b_paths_refs b paths = 
-  let path_ref (_, id) = Printf.bprintf b "/p%d %d 0 R " id id in
-  List.iter path_ref paths
 
 let b_gstate_refs b gss = 
   let gs_ref (_, id) = Printf.bprintf b "/gs%d %d 0 R " id id in 
   List.iter gs_ref gss
 
 let w_resources ?(last = false) s k r =
-  let release s k r = 
-    Hashtbl.clear s.paths; Hashtbl.clear s.prims; Hashtbl.clear s.outlines; 
-    Hashtbl.clear s.alphas;
-    k r
-  in
+  let release s k r = Hashtbl.clear s.prims; Hashtbl.clear s.alphas; k r in
   let to_list h = Hashtbl.fold (fun v id acc -> (v, id) :: acc) h [] in
-  let paths = to_list s.paths in
-  let outlines = to_list s.outlines in
-  let alphas = to_list s.alphas in 
+  let alphas = to_list s.alphas in
   b_obj_start s s.id_resources;
   b_fmt s "<<\n\
            /ColorSpace << %s %d 0 R >>\n\
-           /XObject << %a>>\n\
-           /ExtGState << %a%a>>\n\
+           /ExtGState << %a>>\n\
            >>\n" 
-    n_linear_srgb id_linear_srgb b_paths_refs paths b_gstate_refs outlines
-    b_gstate_refs alphas;
-  b_obj_end s; 
+    n_linear_srgb id_linear_srgb b_gstate_refs alphas;
+  b_obj_end s;
   if not last then s.id_resources <- new_obj_id s;
   r >>
-  w_paths s paths @@
-  w_outlines s outlines @@
   w_alphas s alphas @@
   release s @@
   k
@@ -516,7 +482,7 @@ let w_catalog s id_catalog id_meta k r =
     id_page_root b_meta id_meta; 
   b_obj_end s;
   w_buf s k r
-
+    
 let w_xmp_metadata s id_meta k r = match id_meta with 
 | None -> k r 
 | Some id -> 
@@ -527,7 +493,7 @@ let w_xmp_metadata s id_meta k r = match id_meta with
       "<< /Type /Metadata /Subtype /XML /Length %d 0 R >>\nstream\n" len_id;
     let stream_start = byte_offset s in 
     b_fmt s "<?xpacket begin=\"\xEF\xBB\xBF\" \
-                       id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n\
+             id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n\
              %s\n\
              <?xpacket end=\"w\"?>" xmp;
     let len = byte_offset s - stream_start in
@@ -565,7 +531,7 @@ let w_trailer s id_catalog id_info k xref_offset r =
            %d\n\
            %%%%EOF" (obj_count s) id_catalog id_info xref_offset;
   w_buf s k r
-   
+    
 let w_end s k r =                                  
   let id_info = new_obj_id s in
   let id_catalog = new_obj_id s in 
@@ -585,11 +551,8 @@ let render s v k r = match v with
 | `End -> w_end s (flush s (Vgr.Private.flush k)) r 
 | `Image (size, view, img) ->
     s.todo <- [Draw img]; 
-    s.view <- view; 
-    s.s_tr <- M3.id;
-    s.s_alpha <- 1.0; 
-    s.s_blender <- `Over;
-    s.s_outline <- P.o;
+    s.view <- view;
+    s.gstate <- { init_gstate with g_tr = init_gstate.g_tr }; (* copy *) 
     begin match List.length s.page_objs with 
     | 0 -> b_start s; w_page size s k r
     | n when n mod s.share = 0 -> w_resources s (w_page size s k) r
@@ -611,14 +574,9 @@ let target ?(share = max_int) ?xmp () =
                    index = []; 
                    id_resources = id_first_resources;
                    page_objs = []; 
-                   paths = Hashtbl.create 255; 
                    prims = Hashtbl.create 255; 
-                   outlines = Hashtbl.create 255; 
                    alphas = Hashtbl.create 255;
-                   s_tr = M3.id; 
-                   s_alpha = 1.; 
-                   s_blender = `Over; 
-                   s_outline = P.o }
+                   gstate = init_gstate; }
   in
   Vgr.Private.create_target target
   

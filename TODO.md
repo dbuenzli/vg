@@ -3,6 +3,7 @@
 ## Before first release
 
 * Add copyright to metadata.
+* check fill open path semantics 
 
 ### Path
 
