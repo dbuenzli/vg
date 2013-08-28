@@ -82,7 +82,7 @@ end
 
 (* Render *)
 
-let renderers = [ `CNV; `SVG; `TXT ]
+let renderers = [ `CNV; `SVG; `PDF; `TXT ]
 
 let render ?limit ?warn target dst i finish = 
   Log.msg "Render: %s" i.Db.id;
@@ -110,6 +110,8 @@ let render ?limit ?warn target dst i finish =
       finish ~exn:true (Time.now () -. start) 0
 
 (* User interface *)
+
+let pdf_pad = 5.
 
 (* Does this have to be so ugly ? *)
 
@@ -178,24 +180,30 @@ let ui_log ppf : 'a Ui.t * ('b -> unit) * (unit -> unit) * (unit -> unit) =
 let ui_render_targets () = 
   let targets = Ui.group ~id:"r-targets" () in
   let activity, activate = ui_activity () in 
-  let cnv, canvas = Ui.canvas ~id:"r-canvas" () in
   let txt = Ui.group ~id:"r-txt" () in 
+  let cnv, canvas = Ui.canvas ~id:"r-canvas" () in
   let cnv_link, conf_cnv_link = 
     Ui.link ~id:"cnv-link" ~title:"Download PNG file" ~href:"#" "" 
   in
   let svg_link, conf_svg_link = 
     Ui.link ~id:"svg-link" ~title:"Download SVG file" ~href:"#" "" 
   in
-  let uis = [`CNV, cnv_link; `SVG, svg_link; `TXT, txt ] in
+  let pdf, conf_pdf = Ui.object_ ~id:"r-pdf" () in
+  let pdf_link, conf_pdf_link = 
+    Ui.link ~id:"pdf-link" ~title:"Download PDF file" ~href:"#" 
+      "No viewer: Download PDF"
+  in
+  let uis = [`CNV, cnv_link; `SVG, svg_link; `PDF, pdf; `TXT, txt ] in
   let show_target i t = 
     let set (t', ui) = Ui.visible ~relayout:true ui (t = t') in
     List.iter set uis;
     let height = match t with  (* adjust height to baseline *)
-    | `CNV | `SVG -> 
+    | `CNV | `SVG | `PDF -> 
+        let pad = if t = `PDF then pdf_pad else 0. in
         let baseline = 18 (* from the style sheet..., getting dynamically
                              problem at init time. If you delay, flickers. *) 
         in
-        let height = (Size2.h i.Db.size) /. 0.2646 in 
+        let height = (pad +. Size2.h i.Db.size) /. 0.2646 in 
         let adjust = Float.int_of_round (height /. (float baseline)) in
         str "%dpx" (adjust * baseline)
     | _ -> "auto" 
@@ -261,10 +269,33 @@ let ui_render_targets () =
             show_target i `TXT
           end
         end
-    | `PDF -> assert false
+    | `PDF ->
+        let b = Buffer.create 2048 in
+        let finish ~exn dur steps = 
+          if not (valid s) then () (* user moved on *) else
+          if exn then (activate false; finish dur steps; show_target i `N) else
+          let u = "data:application/pdf," ^ 
+                    (Ui.escape_binary (Buffer.contents b))          
+          in
+          let size = V2.(i.Db.size + (v pdf_pad pdf_pad)) in
+          let file = str "%s.pdf" i.Db.id in
+          conf_pdf_link (`Href u);
+          conf_pdf_link (`Download file);
+          conf_pdf (`Name file);
+          conf_pdf (`Data u);
+          conf_pdf (`Size (V2.to_tuple size));
+          activate false;
+          finish dur steps; 
+          show_target i `PDF
+        in
+        let create_date, creator_tool = Time.now (), app_name in
+        let xmp = Db.xmp_metadata ~create_date ~creator_tool i in
+        let t = Vgr_pdf.target ~share:1 ~xmp () in
+        render ~limit:20 ~warn t (`Buffer b) i finish;
   in
   List.iter (fun (_, ui) -> Ui.visible ~relayout:true ui false) uis;
-  (targets *> (cnv_link *> cnv) *> svg_link *> txt), render, activity
+  (targets *> (cnv_link *> cnv) *> (pdf *> pdf_link) *> svg_link *> txt), 
+  render, activity
 
 let ui_ids s = 
   let db_ids, db_tags = Db.indexes () in
@@ -281,7 +312,7 @@ let ui_ids s =
     let ids = S.ids s in
     let ts = s.S.tags in
     let sel = if List.mem s.S.id ids then Some s.S.id else None in
-    let tag_count = if ts = [] then "" else str "(%d)" (List.length ts) in
+    let tag_count = (* if ts = [] then "" else *) str "(%d)" (List.length ts) in
     let id_count = str "(%d)" (List.length ids) in
     set_tag_count tag_count;
     set_id_count id_count;

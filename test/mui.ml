@@ -283,6 +283,29 @@ module Ui = struct
     let ui = { n = (c :> Dom_html.element Js.t); on_change = nop } in 
     ui, c
 
+  type object_conf = 
+    [ `Data of string | `Size of float * float | `Name of string ] 
+
+  let c_object = Js.string "mu-object"
+  let object_ ?id () = 
+    let o = el ?id Dom_html.createObject [ c_object ] in
+    let ui = { n = (o :> Dom_html.element Js.t); on_change = nop } in 
+    let conf = function 
+    | `Data d -> o ## data <- Js.string d
+    | `Name n -> 
+        o ## name <- Js.string n;
+        o ## setAttribute (a_download, Js.string n);
+    | `Size (w, h) -> 
+        let of_mm mm = 
+          Printf.sprintf "%d" (truncate (ceil (mm *. 3.78)))
+        in
+        o ## width <- Js.string (of_mm w); 
+        o ## height <- Js.string (of_mm h);
+        o ## style ## width <- Js.string (of_mm w); 
+        o ## style ## height <- Js.string (of_mm h);
+    in
+    ui, conf
+
   let classify_js ui c is_c = 
     if is_c then ui.n ## classList ## add (c) else 
     ui.n ## classList ## remove (c)

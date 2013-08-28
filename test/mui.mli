@@ -60,6 +60,12 @@ module Ui : sig
   val canvas_data : Dom_html.canvasElement Js.t -> string
 (*  val canvas_blob : Dom_html.canvasElement Js.t -> File.blob Js.t *)
 
+
+  type object_conf = 
+    [ `Data of string | `Size of float * float | `Name of string]
+
+  val object_ : ?id:string -> unit -> (unit, object_conf) conf
+
   type 'a menu_conf = [ `Select of 'a | `List of 'a list ]
   val menu : ?id:string -> 'a printer -> 'a -> 'a list -> 
     ('a, 'a menu_conf) conf 
