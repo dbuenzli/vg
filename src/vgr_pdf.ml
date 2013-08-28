@@ -78,6 +78,8 @@ let get_id s h v = try Hashtbl.find h v with
     Hashtbl.add h v id; id
 
 let get_alpha_id s alpha = get_id s s.alphas alpha
+let get_prim_id s prim = get_id s s.prims prim 
+
 let uncut_bounds s = 
   Vgr.Private.Data.of_path 
     (P.empty >> P.rect (Box2.tr (M3.inv s.gstate.g_tr) s.view))
@@ -286,7 +288,7 @@ let cubic_earc tol cubic acc p0 large cw a r p1 =
       in
       loop tol cubic acc p0 t0 p1 t1
         
-let w_path s p k r =
+let w_path s p op k r =
   let b_cubic c0 c1 pt () =
     let open V2 in
     b_fmt s "\n%f %f %f %f %f %f c" (x c0) (y c0) (x c1) (y c1) (x pt) (y pt)
@@ -309,36 +311,44 @@ let w_path s p k r =
       b_fmt s "\nh"; last
   in
   ignore (List.fold_left b_seg P2.o (List.rev p));
+  b_str s op;
   w_buf s k r
 
-let rec w_cut s a i k r = match i with 
-| Primitive p ->
-    begin match p with
-    | Const c ->
-        begin match a with
-        | `Anz -> set_fcolor s c; b_fmt s "\nf"; w_buf s k r
-        | `Aeo -> set_fcolor s c; b_fmt s "\nf*"; w_buf s k r
-        | `O o -> set_scolor s c; set_outline s o; b_fmt s "\nS"; w_buf s k r
-        end
-    | Axial (stops, p1, p2) -> 
-        warn s (`Other ("TODO axial unimplemented")); w_buf s k r 
-    | Radial (stops, f, c, radius) -> 
-        warn s (`Other ("TODO radial unimplemented")); w_buf s k r 
-    | Raster _ -> 
-        warn s (`Other ("TODO raster unimplemented")); w_buf s k r
+let rec w_cut s a p i k r = match i with 
+| Primitive prim ->
+    begin match a with
+    | `Anz | `Aeo ->
+        let op = if a = `Anz then " f" else " f*" in
+        begin match prim with
+        | Const c -> set_fcolor s c
+        | Axial _ | Radial _ as i -> 
+            warn s (`Other ("TODO axial unimplemented"));
+        | Raster _ -> 
+            warn s (`Other ("TODO raster unimplemented"))
+        end;      
+        w_path s p op k r
+    | `O o -> 
+        begin match prim with 
+        | Const c -> set_scolor s c
+        | Axial _ | Radial _ as i -> 
+            warn s (`Other ("TODO axial unimplemented"));
+        | Raster _ -> 
+            warn s (`Other ("TODO raster unimplemented"))
+        end;
+        set_outline s o;
+        w_path s p "\nS" k r
     end
 | Tr (tr, i) ->
     s.todo <- save_gstate s :: s.todo;
     push_transform s tr;
-    w_cut s a i k r
+    w_cut s a p i k r
 | Blend _ | Cut _ | Cut_glyphs _ as i ->
     s.todo <- (Draw i) :: save_gstate s :: s.todo;
-    begin match a with 
-    | `Anz -> b_fmt s "\nW n"
-    | `Aeo -> b_fmt s "\nW* n"
-    | `O _ -> warn s (`Unsupported_cut (a, image i)); b_fmt s "\nW"
-    end;
-    w_buf s k r
+    let op = match a with 
+    | `Anz -> " W n" | `Aeo -> " W* n"
+    | `O _ -> warn s (`Unsupported_cut (a, image i)); " W n"
+    in
+    w_path s p op k r 
       
 let rec w_image s k r = 
   if s.cost > limit s then (s.cost <- 0; partial (w_image s k) r) else 
@@ -363,7 +373,7 @@ let rec w_image s k r =
           w_image s k r
       | Cut (a, p, i) ->
           s.todo <- todo;
-          w_path s p (w_cut s a i (w_image s k)) r
+          w_cut s a p i (w_image s k) r
       | Cut_glyphs (a, run, i) -> 
           s.todo <- todo; 
           (* TODO *) 
