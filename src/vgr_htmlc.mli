@@ -6,9 +6,6 @@
 
 (** Vg HTML canvas renderer.
 
-    {b Note.} The even-odd area rule is supported according to the
-    latest whatwg spec. This may not work in all browsers.
-
     {b References.} 
     {ul {- Rik Cabanier et al. {e {{:http://www.w3.org/TR/2dcontext/}HTML 
      Canvas 2D Context}}, 2012-12-17.}}
@@ -26,19 +23,11 @@ val target : ?resolution:Gg.v2 -> Dom_html.canvasElement Js.t ->
     {ul 
     {- [resolution], specifies the rendering resolution in samples per 
        meters. If unspecified 11811 pixels per meters (300 ppi) is used in both 
-       dimensions.}} *)
-
-
-(** {1 Render warnings} 
+       dimensions.}} 
     
-    The following render warnings are reported:
-    {ul
-    {- [`Unsupported_cut ((`O o), i)], outline cuts can be performed only on 
-       (possibly transformed) {!I.const}, {!I.axial} and {!I.radial} 
-       primitive images.}
-    {- [`Unsupported_glyph_cut (a, i)], glyph cuts can be performed only
-       on bare {!I.const} primitive images and outline cuts are currently
-       unsupported.}} *)
+    {b Multiple images.} Multiple images render on the target is supported. 
+    Each new render clears the HTML canvas.
+*)
 
 (** {1 Text rendering support} 
 
@@ -55,10 +44,23 @@ val target : ?resolution:Gg.v2 -> Dom_html.canvasElement Js.t ->
     browser bug which means that glyphs cut are currently limited to
     non-outline area cuts in constant images.  *)
 
-(** {1 Multiple images} 
+(** {1 Render warnings and limitations} 
+    
+    The following render warnings are reported.
+    {ul
+    {- [`Unsupported_cut ((`O o), i)], outline cuts can be performed only on 
+       (possibly transformed) {!I.const}, {!I.axial} and {!I.radial} 
+       primitive images.}
+    {- [`Unsupported_glyph_cut (a, i)], glyph cuts can be performed only
+       on bare {!I.const} primitive images and outline cuts are currently
+       unsupported.}} 
 
-    Rendering multiple images is supported. Each new render 
-    clears the HTML canvas. *)
+    The following limitations should be taken into account. 
+    {ul 
+    {- The even-odd area rule is supported according to the
+       latest whatwg spec. This may not work in all browsers.}
+    {- In the canvas gradient color interpolation is performed 
+       in (non-linear) sRGB space. This doesn't respect Vg's semantics.}} *)
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

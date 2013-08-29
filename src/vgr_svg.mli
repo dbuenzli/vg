@@ -26,16 +26,11 @@ val target : ?xml_decl:bool -> ?xmp:string ->unit ->
        the SVG document (see ISO 16684-1 or the equivalent
         {{:http://www.adobe.com/devnet/xmp.html}Adobe spec.}). 
        The convenience function {!Vg.Vgr.xmp_metadata} can be used to 
-       generate a packet.}} *)
+       generate a packet.}} 
 
-(** {1 Render warnings} 
-   
-    The following render warnings are reported:
-    {ul 
-    {- [`Unsupported_cut (`O o)], outline cuts can be performed 
-       only on [I.const], [I.axial] and [I.radial] primitive images.}
-    {- [`Unspported_glyph_cut (a, i)], glyph cuts can be performed
-       only on bare {!Vg.I.const} primitive images.}} *)
+    {b Multiple images.} Multiple image renders on the target are not 
+    supported. [Invalid_argument] is raised by {!Vg.Vgr.render} if multiple 
+    images are rendered. *)
 
 (** {1 Text rendering support} 
 
@@ -49,10 +44,21 @@ val target : ?xml_decl:bool -> ?xmp:string ->unit ->
 
     Glyph cuts are currently limited to areas cuts in constant images. *)
 
-(** {1 Multiple images} 
+(** {1 Render warnings and limitations} 
+   
+    The following render warnings are reported.
+    {ul 
+    {- [`Unsupported_cut (`O o)], outline cuts can be performed 
+       only on [I.const], [I.axial] and [I.radial] primitive images.}
+    {- [`Unspported_glyph_cut (a, i)], glyph cuts can be performed
+       only on bare {!Vg.I.const} primitive images.}}
 
-    Multiple image renders are not supported. [Invalid_argument] is raised
-    if multiple images are rendered. *)
+    The following limitations should be taken into account. 
+    {ul 
+    {- The generated file do specify that gradient interpolation 
+       must be done in linear sRGB space, however many SVG viewers
+       to not respect that directive (e.g. most browsers).}} *)
+
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
