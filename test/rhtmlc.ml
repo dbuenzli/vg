@@ -111,7 +111,7 @@ let render ?limit ?warn target dst i finish =
 
 (* User interface *)
 
-let pdf_pad = 5.
+let pdf_pad = 2.
 
 (* Does this have to be so ugly ? *)
 

@@ -22,15 +22,15 @@ let unsafe_chr = Char.unsafe_chr
 
 type id = int (* PDF object ids *) 
 type gstate =                  (* Subset of the graphics state saved by a q. *) 
-  { mutable g_tr : M3.t;
-    mutable g_scolor : Gg.color; 
-    mutable g_fcolor : Gg.color; 
+  { mutable g_tr : M3.t;           (* current transform with view transform. *) 
+    mutable g_scolor : Vgr.Private.Data.primitive; 
+    mutable g_fcolor : Vgr.Private.Data.primitive; 
     mutable g_outline : P.outline;
     mutable g_alpha : float;                              (* unused for now. *) 
     mutable g_blender : Vgr.Private.Data.blender; }       (* unused for now. *)
 
 let init_gstate = 
-  { g_tr = M3.id; g_scolor = Color.black; g_fcolor = Color.black;
+  { g_tr = M3.id; g_scolor = Const Color.black; g_fcolor = Const Color.black;
     g_outline = P.o; g_alpha = 1.0; g_blender = `Over } 
   
 type cmd = Set of gstate | Draw of Vgr.Private.Data.image
@@ -42,6 +42,7 @@ type state =
     buf : Buffer.t;                                   (* formatting buffer. *) 
     mutable cost : int;                          (* cost counter for limit. *) 
     mutable view : Gg.box2;           (* current renderable view rectangle. *)
+    mutable inv_view_tr : M3.t;      (* view to mediabox inverse transform. *) 
     mutable todo : cmd list;                        (* commands to perform. *) 
     mutable id : int;                (* PDF object id (and name) generator. *) 
     mutable bytes : int;                     (* current output byte offset. *) 
@@ -50,7 +51,7 @@ type state =
     mutable index : (int * int) list;      (* object id, byte offset index. *)
     mutable id_resources : int;                (* current resource dict id. *) 
     mutable page_objs : int list;                      (* pages object ids. *)
-    prims : (Vgr.Private.Data.primitive, id) Hashtbl.t;
+    prims : (Vgr.Private.Data.primitive, (m3 * id) list) Hashtbl.t;
     alphas : (float * [`S | `F], id) Hashtbl.t;
     mutable gstate : gstate; }                    (* current graphic state. *) 
 
@@ -59,7 +60,7 @@ let limit s = Vgr.Private.limit s.r
 let warn s w = Vgr.Private.warn s.r w 
 let image i = Vgr.Private.I.of_data i 
 
-let n_linear_srgb = "/cs_linear_srgb" 
+let n_linear_srgb = "/srgb_l" 
 let id_page_root = 1
 let id_linear_srgb = 2
 let id_first_resources = 3
@@ -78,11 +79,24 @@ let get_id s h v = try Hashtbl.find h v with
     Hashtbl.add h v id; id
 
 let get_alpha_id s alpha = get_id s s.alphas alpha
-let get_prim_id s prim = get_id s s.prims prim 
+let get_prim_id s ctm prim = 
+  let patts = try Hashtbl.find s.prims prim with 
+  | Not_found -> [] 
+  in
+  let id = new_obj_id s in
+  Hashtbl.replace s.prims prim ((ctm, id) :: patts); 
+  id
 
-let uncut_bounds s = 
+let uncut_bounds s =
+  let userspace = M3.mul s.inv_view_tr s.gstate.g_tr in    (* remove view tr *)
   Vgr.Private.Data.of_path 
-    (P.empty >> P.rect (Box2.tr (M3.inv s.gstate.g_tr) s.view))
+    (P.empty >> P.rect (Box2.tr (M3.inv userspace) s.view))
+
+let b_c3 b c = Printf.bprintf b "%f %f %f" (Color.r c) (Color.g c) (Color.b c)
+let b_v2 b v = Printf.bprintf b "%f %f" (V2.x v) (V2.y v)
+let b_m3 b m = 
+  Printf.bprintf b "%f %f %f %f %f %f" 
+    (M3.e00 m) (M3.e10 m) (M3.e01 m) (M3.e11 m) (M3.e02 m) (M3.e12 m)
 
 let rec b_id_list b = function 
 | [] -> () | id :: ids -> Printf.bprintf b " %d 0 R" id; b_id_list b ids
@@ -211,19 +225,29 @@ let b_dashes s = function
     in
     b_fmt s "\n[%a] %f d" b_pat pat off
 
-let set_fcolor s c = 
-  if s.gstate.g_fcolor = c then () else 
-  let alpha_id = get_alpha_id s (Color.a c, `F) in 
-  b_fmt s "\n/gs%d gs" alpha_id; 
-  b_fmt s "\n%f %f %f sc" (Color.r c) (Color.g c) (Color.b c);
-  s.gstate.g_fcolor <- c
+let rec set_color s ctm old fill c = match c with 
+| Const c -> 
+    let set_cs = match old with Const _ -> false | _ -> true in
+    let cs_op, c_op, a_op = if fill then "cs", "sc", `F else "CS", "SC", `S in
+    let alpha_id = get_alpha_id s (Color.a c, a_op) in 
+    if set_cs then b_fmt s "\n%s %s" n_linear_srgb cs_op; 
+    b_fmt s "\n/gs%d gs" alpha_id;
+    b_fmt s "\n%f %f %f %s" (Color.r c) (Color.g c) (Color.b c) c_op
+| Axial (stops, _, _) | Radial (stops, _, _, _) as i -> 
+    if stops = [] then set_color s ctm old fill (Const Color.void) else
+    let cs_op, op = if fill then "cs", "scn" else "CS", "SCN" in
+    let id = get_prim_id s ctm i in
+    b_fmt s "\n/Pattern %s" cs_op;
+    b_fmt s "\n/sh%d %s" id op
+| Raster _ -> assert false
     
-let set_scolor s c = 
-  if s.gstate.g_scolor = c then () else
-  let alpha_id = get_alpha_id s (Color.a c, `S) in 
-  b_fmt s "\n/gs%d gs" alpha_id; 
-  b_fmt s "\n%f %f %f SC" (Color.r c) (Color.g c) (Color.b c); 
-  s.gstate.g_scolor <- c
+let set_fcolor s ctm c =
+  let old = s.gstate.g_fcolor in
+  if  old <> c then (s.gstate.g_fcolor <- c; set_color s ctm old true c)
+    
+let set_scolor s ctm c = 
+  let old = s.gstate.g_scolor in
+  if old <> c then (s.gstate.g_scolor <- c; set_color s ctm old false c)
     
 let set_outline s ot = 
   let open P in
@@ -240,7 +264,7 @@ let set_outline s ot =
 let push_transform s tr = 
   let m = match tr with 
   | Move v -> 
-      b_fmt s "\n1 0 0 1 %f %f cm" (V2.x v) (V2.y v); 
+      b_fmt s "\n1 0 0 1 %a cm" b_v2 v; 
       M3.move2 v
   | Rot a ->
       let m = M3.rot2 a in
@@ -251,12 +275,10 @@ let push_transform s tr =
       b_fmt s "\n%f 0 0 %f 0 0 cm" (V2.x sv) (V2.y sv); 
       M3.scale2 sv
   | Matrix m ->
-      let open M3 in
-      b_fmt s "\n%f %f %f %f %f %f cm" 
-        (e00 m) (e10 m) (e01 m) (e11 m) (e02 m) (e12 m); 
+      b_fmt s "\n%a cm" b_m3 m;
       m
   in
-  s.gstate.g_tr <- m
+  s.gstate.g_tr <- M3.mul s.gstate.g_tr m
 
 let one_div_3 = 1. /. 3. 
 let two_div_3 = 2. /. 3. 
@@ -289,15 +311,12 @@ let cubic_earc tol cubic acc p0 large cw a r p1 =
       loop tol cubic acc p0 t0 p1 t1
         
 let w_path s p op k r =
-  let b_cubic c0 c1 pt () =
-    let open V2 in
-    b_fmt s "\n%f %f %f %f %f %f c" (x c0) (y c0) (x c1) (y c1) (x pt) (y pt)
-  in
+  let b_cubic c0 c1 pt () = b_fmt s "\n%a %a %a c" b_v2 c0 b_v2 c1 b_v2 pt in
   let rec b_seg last = function 
   | `Sub pt -> 
-      b_fmt s "\n%f %f m" (V2.x pt) (V2.y pt); pt
+      b_fmt s "\n%a m" b_v2 pt; pt
   | `Line pt -> 
-      b_fmt s "\n%f %f l" (V2.x pt) (V2.y pt); pt 
+      b_fmt s "\n%a l" b_v2 pt; pt 
   | `Qcurve (c, pt) -> 
       (* Degree elevation *) 
       let c0 = V2.add (V2.smul one_div_3 last) (V2.smul two_div_3 c) in 
@@ -314,42 +333,37 @@ let w_path s p op k r =
   b_str s op;
   w_buf s k r
 
+let tr_primitive ctm i = 
+  let rec loop ctm = function
+  | Primitive (Raster _) | Blend _ | Cut _ | Cut_glyphs _ -> None
+  | Primitive p -> Some (p, ctm) 
+  | Tr (tr, i) -> loop (M3.mul ctm (Vgr.Private.Data.tr_to_m3 tr)) i
+  in
+  loop ctm i
+
+let w_clip s a p i k r = 
+  s.todo <- (Draw i) :: save_gstate s :: s.todo;
+  let op = match a with 
+  | `Anz -> " W n" | `Aeo -> " W* n"
+  | `O _ -> warn s (`Unsupported_cut (a, image i)); " W n"
+  in
+  w_path s p op k r 
+    
+let w_primitive_cut s ctm a p prim k r= match a with
+| `Anz -> set_fcolor s ctm prim; w_path s p " f"  k r
+| `Aeo -> set_fcolor s ctm prim; w_path s p " f*" k r
+| `O o -> set_scolor s ctm prim; set_outline s o; w_path s p " S" k r
+
 let rec w_cut s a p i k r = match i with 
-| Primitive prim ->
-    begin match a with
-    | `Anz | `Aeo ->
-        let op = if a = `Anz then " f" else " f*" in
-        begin match prim with
-        | Const c -> set_fcolor s c
-        | Axial _ | Radial _ as i -> 
-            warn s (`Other ("TODO axial unimplemented"));
-        | Raster _ -> 
-            warn s (`Other ("TODO raster unimplemented"))
-        end;      
-        w_path s p op k r
-    | `O o -> 
-        begin match prim with 
-        | Const c -> set_scolor s c
-        | Axial _ | Radial _ as i -> 
-            warn s (`Other ("TODO axial unimplemented"));
-        | Raster _ -> 
-            warn s (`Other ("TODO raster unimplemented"))
-        end;
-        set_outline s o;
-        w_path s p "\nS" k r
-    end
+| Primitive (Raster _ ) -> warn s (`Other ("TODO raster unimplemented")); k r 
+| Primitive prim -> w_primitive_cut s s.gstate.g_tr a p prim k r
+| Blend _ | Cut _ | Cut_glyphs _ as i -> w_clip s a p i k r
 | Tr (tr, i) ->
-    s.todo <- save_gstate s :: s.todo;
-    push_transform s tr;
-    w_cut s a p i k r
-| Blend _ | Cut _ | Cut_glyphs _ as i ->
-    s.todo <- (Draw i) :: save_gstate s :: s.todo;
-    let op = match a with 
-    | `Anz -> " W n" | `Aeo -> " W* n"
-    | `O _ -> warn s (`Unsupported_cut (a, image i)); " W n"
-    in
-    w_path s p op k r 
-      
+    begin match tr_primitive s.gstate.g_tr i with
+    | None -> w_clip s a p i k r 
+    | Some (prim, tr) -> w_primitive_cut s tr a p prim k r
+    end
+
 let rec w_image s k r = 
   if s.cost > limit s then (s.cost <- 0; partial (w_image s k) r) else 
   match s.todo with 
@@ -369,8 +383,8 @@ let rec w_image s k r =
       match i with 
       | Primitive _ as i -> (* Uncut primitive just cut to view. *)
           let p = uncut_bounds s in 
-          s.todo <- (Draw (Cut (`Anz, p, i))) :: todo; 
-          w_image s k r
+          s.todo <- todo;
+          w_cut s `Anz p i (w_image s k) r
       | Cut (a, p, i) ->
           s.todo <- todo;
           w_cut s a p i (w_image s k) r
@@ -418,7 +432,12 @@ let w_page size s k r =
   let sy = (Size2.h size *. mm_to_pt) /. Box2.h s.view in 
   let dx = -. sx *. Box2.ox s.view in 
   let dy = -. sy *. Box2.oy s.view in
-  b_fmt s "\n%f 0 0 %f %f %f cm" sx sy dx dy;
+  let m = M3.v sx 0. dx
+               0. sy dy
+               0. 0. 1. 
+  in
+  s.inv_view_tr <- (M3.inv m);
+  push_transform s (Matrix m);
   w_image s k r
 
 let w_linear_srgb s k r = 
@@ -435,36 +454,126 @@ let w_linear_srgb s k r =
   b_obj_end s;
   w_buf s k r
 
-let w_alpha s ((a, op), id) k r = 
-  let op = match op with `S -> "CA" | `F -> "ca" in
-  b_obj_start s id;
-  b_fmt s "<< /Type /ExtGState /%s %f >>\n" op a;
-  b_obj_end s;
+
+let rec w_alphas s k r = 
+  let b_alpha (a, op) id = 
+    let op = match op with `S -> "CA" | `F -> "ca" in
+    b_obj_start s id;
+    b_fmt s "<< /Type /ExtGState /%s %f >>\n" op a;
+    b_obj_end s;
+  in
+  Hashtbl.iter b_alpha s.alphas;
+  Hashtbl.clear s.alphas; 
   w_buf s k r
 
-let rec w_alphas s alphas k r = match alphas with 
-| [] -> k r | alpha :: alphas -> w_alpha s alpha (w_alphas s alphas k) r
+let b_pattern s shade_id (m, id) = 
+  b_obj_start s id; 
+  b_fmt s "<<\n\
+           /PatternType 2\n\
+           /Shading %d 0 R\n\
+           /Matrix [%a]\n\
+           >>\n" shade_id b_m3 m;
+  b_obj_end s
 
-let b_gstate_refs b gss = 
-  let gs_ref (_, id) = Printf.bprintf b "/gs%d %d 0 R " id id in 
-  List.iter gs_ref gss
+let b_shadefun b stops = 
+  let bounds = 
+    let add_start = function 
+    | (0., _) :: _ as stops -> stops
+    | (t, c) :: _ as stops -> (0., c) :: stops
+    | [] -> assert false
+    in
+    let rec add_end acc = function 
+    | (1., _) as stop :: [] -> List.rev (stop :: acc)
+    | (t, c) as stop :: [] -> List.rev ((1., c) :: stop :: acc)
+    | stop :: stops -> add_end (stop :: acc) stops 
+    | [] -> assert false
+    in
+    add_start (add_end [] stops)
+  in
+  let rec b_funs b = function 
+  | (_, c0) :: ((_, c1) :: _ as next) -> 
+      Printf.bprintf b 
+        "<< /FunctionType 2 /N 1 /Domain [0 1] /C0 [%a] /C1 [%a] >> "
+        b_c3 c0 b_c3 c1;
+      b_funs b next 
+  | _ -> () 
+  in
+  let rec b_bounds b = function 
+  | (_, _) :: [] -> () 
+  | (t, _) :: next -> Printf.bprintf b "%f " t; b_bounds b next
+  | _ -> assert false
+  in
+  let rec b_encode b = function 
+  | (_, c0) :: ((_, c1) :: _ as next) -> 
+      Printf.bprintf b "0 1 "; b_encode b next 
+  | _ -> () 
+  in
+  Printf.bprintf b "<<\n\
+                    /FunctionType 3\n\
+                    /Domain [0 1]\n\
+                    /Functions [%a]\n\
+                    /Bounds [%a]\n\
+                    /Encode [%a]\n\
+                    >>"
+    b_funs bounds b_bounds (List.tl bounds) b_encode bounds
+
+
+let b_shade s shade_id prim = 
+  b_obj_start s shade_id; 
+  begin match prim with 
+  | Axial (stops, p0, p1) ->
+      b_fmt s "<<\n\ 
+               /ColorSpace %d 0 R\n\
+               /ShadingType 2\n\
+               /Function %a\n\
+               /Coords [%a %a]\n\
+               /Extend [true true]\n\
+               >>\n"
+        id_linear_srgb b_shadefun stops b_v2 p0 b_v2 p1
+  | Radial (stops, f, c, r) -> 
+      b_fmt s "<<\n\
+               /ColorSpace %d 0 R\n\
+               /ShadingType 3\n\
+               /Function %a\n\
+               /Coords [%a 0 %a %f]
+               /Extend [true true]\n\
+               >>\n"
+        id_linear_srgb b_shadefun stops b_v2 f b_v2 c r
+  | _ -> assert false
+  end;
+  b_obj_end s
+
+let rec w_prims s k r = 
+  let prims = Hashtbl.fold (fun p shs acc -> (p, shs) :: acc) s.prims [] in
+  let rec loop s prims k r = match prims with
+  | [] -> Hashtbl.clear s.prims; k r
+  | (prim, patts) :: prims -> 
+      let shade_id = new_obj_id s in
+      b_shade s shade_id prim;
+      List.iter (b_pattern s shade_id) patts;
+      w_buf s (loop s prims k) r
+  in
+  loop s prims k r
+  
+let b_refs op b refs = 
+  let ref id = Printf.bprintf b "/%s%d %d 0 R " op id id in 
+  List.iter ref refs
 
 let w_resources ?(last = false) s k r =
-  let release s k r = Hashtbl.clear s.prims; Hashtbl.clear s.alphas; k r in
-  let to_list h = Hashtbl.fold (fun v id acc -> (v, id) :: acc) h [] in
-  let alphas = to_list s.alphas in
+  let alpha_ids = Hashtbl.fold (fun _ id acc -> id :: acc) s.alphas [] in
+  let ids _ shs acc = List.fold_left (fun acc (_, id) -> id :: acc) acc shs in
+  let prim_ids = Hashtbl.fold ids s.prims [] in
   b_obj_start s s.id_resources;
   b_fmt s "<<\n\
            /ColorSpace << %s %d 0 R >>\n\
            /ExtGState << %a>>\n\
+           /Pattern << %a>>\n\
            >>\n" 
-    n_linear_srgb id_linear_srgb b_gstate_refs alphas;
+    n_linear_srgb id_linear_srgb (b_refs "gs") alpha_ids (b_refs "sh") prim_ids;
   b_obj_end s;
   if not last then s.id_resources <- new_obj_id s;
-  r >>
-  w_alphas s alphas @@
-  release s @@
-  k
+  w_alphas s (w_prims s k) r
+
 
 let w_page_root s k r = 
   let page_count = List.length s.page_objs in 
@@ -577,6 +686,7 @@ let target ?(share = max_int) ?xmp () =
                    buf = Buffer.create (max_buf + 8);
                    cost = 0; 
                    view = Box2.empty; 
+                   inv_view_tr = M3.id;
                    todo = []; 
                    id = id_first_resources; 
                    stream_info = (0, 0);

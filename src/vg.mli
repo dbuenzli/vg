@@ -753,8 +753,11 @@ module Vgr : sig
           transforms. *)
       type tr = Move of v2 | Rot of float | Scale of v2 | Matrix of m3
     
-      val tr_inv : tr -> M3.t 
-      (** [tr_inv tr] is the matrix inverse of [tr]. *)
+      val tr_to_m3 : tr -> M3.t
+      (** [tr_to_m3 tr] is the matrix of [tr]. *)
+
+      val inv_tr_to_m3 : tr -> M3.t 
+      (** [inv_tr_to_m3 tr] is the matrix inverse of [tr]. *)
 
       type blender = [ `Atop | `In | `Out | `Over | `Plus | `Copy | `Xor ] 
 
