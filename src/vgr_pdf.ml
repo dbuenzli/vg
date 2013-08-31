@@ -322,7 +322,7 @@ let w_path s p op k r =
 let tr_primitive ctm i = 
   let rec loop ctm = function
   | Primitive (Raster _) | Blend _ | Cut _ | Cut_glyphs _ -> None
-  | Primitive p -> Some (p, ctm) 
+  | Primitive p -> Some (ctm, p) 
   | Tr (tr, i) -> loop (M3.mul ctm (Vgr.Private.Data.tr_to_m3 tr)) i
   in
   loop ctm i
@@ -344,10 +344,10 @@ let rec w_cut s a p i k r = match i with
 | Primitive (Raster _ ) -> warn s (`Other ("TODO raster unimplemented")); k r 
 | Primitive prim -> w_primitive_cut s s.gstate.g_tr a p prim k r
 | Blend _ | Cut _ | Cut_glyphs _ as i -> w_clip s a p i k r
-| Tr (tr, i) ->
+| Tr (tr, tr_i) as i ->
     begin match tr_primitive s.gstate.g_tr i with
-    | None -> w_clip s a p i k r 
-    | Some (prim, tr) -> w_primitive_cut s tr a p prim k r
+    | None -> w_clip s a p tr_i k r 
+    | Some (tr, prim) -> w_primitive_cut s tr a p prim k r
     end
 
 let rec w_image s k r = 
