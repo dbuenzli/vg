@@ -261,23 +261,9 @@ let set_outline s ot =
   if c.miter_angle <> ot.miter_angle then b_miter_limit s ot; 
   s.gstate.g_outline <- ot
       
-let push_transform s tr = 
-  let m = match tr with 
-  | Move v -> 
-      b_fmt s "\n1 0 0 1 %a cm" b_v2 v; 
-      M3.move2 v
-  | Rot a ->
-      let m = M3.rot2 a in
-      let open M3 in
-      b_fmt s "\n%f %f %f %f 0 0 cm" (e00 m) (e10 m) (e01 m) (e11 m);
-      m
-  | Scale sv -> 
-      b_fmt s "\n%f 0 0 %f 0 0 cm" (V2.x sv) (V2.y sv); 
-      M3.scale2 sv
-  | Matrix m ->
-      b_fmt s "\n%a cm" b_m3 m;
-      m
-  in
+let push_transform s tr =
+  let m = Vgr.Private.Data.tr_to_m3 tr in
+  b_fmt s "\n%a cm" b_m3 m;
   s.gstate.g_tr <- M3.mul s.gstate.g_tr m
 
 let one_div_3 = 1. /. 3. 
