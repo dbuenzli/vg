@@ -1309,7 +1309,8 @@ module Vgr = struct
       external of_data : Data.path -> P.t = "%identity"
       let earc_params = P.earc_params
       let miter_limit o = 
-        let l = 1. /. sin (o.P.miter_angle /. 2.) in 
+        let angle = Float.clamp ~min:0. ~max:Float.pi o.P.miter_angle in
+        let l = 1. /. sin (angle /. 2.) in 
         if l = infinity then max_float else l
     end
 

@@ -2,7 +2,6 @@
 
 ## Before first release
 
-* Reader what's wrong with image 31 ?
 * Check fill open path semantics
 
 ### Path
