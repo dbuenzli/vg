@@ -118,7 +118,7 @@ Db.image "path-cantor-dashes" ~author:Db.dbuenzli
   ~note:"The Cantor set is drawn with dashes to represent its elements. \
          Maximal dash pattern size is a largely undocumented parameter of \
          the renderer backends, the line renderings may quickly become \
-         incorrect."
+         incorrect (e.g. ghostscript says the file is broken)."
   ~size:(Size2.v 120. 90.)
   ~view:(Box2.v P2.o (Size2.v 1.2 0.9))
   begin fun _ ->
@@ -133,9 +133,16 @@ Db.image "path-cantor-dashes" ~author:Db.dbuenzli
           let d' = d /. 3. in 
           split true (d' :: d' :: d' :: acc) l
       in
-      let rec loop level i dashes = 
-	if level < 0 then i else
-        let area = `O { o with P.dashes = Some (0., dashes); } in
+      let rec loop level i dashes =
+        if level < 0 then i else
+        let pat =                (* only half + 1 of the dashes are needed. *)
+          let rec keep c l acc =
+            if c = 0 then List.rev acc else 
+            keep (c - 1) (List.tl l) ((List.hd l) :: acc) 
+          in 
+          keep (List.length dashes / 2 + 1) dashes [] 
+        in
+        let area = `O { o with P.dashes = Some (0., pat); } in
         let i' = 
           I.const (Color.gray 0.3) >> I.cut ~area unit >> 
           I.move (P2.v 0. (0.1 *. float level)) >> I.blend i
