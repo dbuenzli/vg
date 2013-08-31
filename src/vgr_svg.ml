@@ -21,6 +21,9 @@ type cmd = Pop of g_state | Draw of Vgr.Private.Data.image
    efficient but uncut primitives are not expected to be
    widespread. *)
 
+type path_id = int
+type clip_id = int
+
 type state = 
   { r : Vgr.Private.renderer;                    (* corresponding renderer. *)
     xmp : string option;
@@ -34,7 +37,8 @@ type state =
     prims :                                           (* cached primitives. *)
       (Vgr.Private.Data.primitive * Vgr.Private.Data.tr list, 
        svg_prim) Hashtbl.t; 
-    paths : (path, int) Hashtbl.t;                         (* cached paths. *)
+    paths : (path, path_id) Hashtbl.t;                     (* cached paths. *)
+    clips : (path_id * P.area, clip_id) Hashtbl.t;         (* cached clips. *)
     mutable s_tr : M3.t;  (* current transformation without view transform. *)
     mutable s_alpha : float;                       (* current global alpha. *)
     mutable s_blender : Vgr.Private.Data.blender; (* current blending mode. *)
@@ -272,14 +276,27 @@ let w_primitive_cut s a path_id k svg_prim r = match a with
     badd_str s "/>";
     w_buf s k r
 
+let w_clip_path s a i path_id k r = 
+  let clip = path_id, a in
+  try k (Hashtbl.find s.clips clip) r with
+  | Not_found -> 
+      let id = new_id s in 
+      let astr = match a with 
+      | `O _ -> warn s (`Unsupported_cut (a, image i)); area_str `Anz  
+      | `Anz | `Aeo as a -> area_str a
+      in
+      Hashtbl.add s.clips clip id;
+      badd_fmt s "<defs><clipPath id=\"i%d\" clip-rule=\"%s\">\
+                  <use l:href=\"#i%d\"/></clipPath></defs>" id astr path_id;
+      w_buf s (k id) r
+
 let w_clip s a i path_id k r = 
-  let astr = match a with 
-  | `O _ -> warn s (`Unsupported_cut (a, image i)); area_str `Anz 
-  | a -> area_str `Anz 
+  let w_clip k clip_id r = 
+    s.todo <- (Draw i) :: (pop_gstate s) :: s.todo;
+    badd_fmt s "<g clip-path=\"url(#i%d)\">" clip_id;
+    w_buf s k r
   in
-  s.todo <- (Draw i) :: (pop_gstate s) :: s.todo;
-  badd_fmt s "<g clip-path=\"url(#i%d)\" clip-rule=\"%s\">" path_id astr;
-  w_buf s k r
+  w_clip_path s a i path_id (w_clip k) r
 
 let tr_primitive i =
   let rec loop acc = function
@@ -394,6 +411,7 @@ let target ?(xml_decl = true) ?xmp () =
                       fonts = Hashtbl.create 17;
                       prims = Hashtbl.create 241; 
                       paths = Hashtbl.create 241;
+                      clips = Hashtbl.create 241;
                       s_tr = M3.id;
                       s_alpha = 1.; 
                       s_blender = `Over; 

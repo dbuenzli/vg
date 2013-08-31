@@ -522,7 +522,7 @@ let b_shade s shade_id prim =
   b_obj_start s shade_id; 
   begin match prim with 
   | Axial (stops, p0, p1) ->
-      b_fmt s "<<\n\ 
+      b_fmt s "<<\n\
                /ColorSpace %d 0 R\n\
                /ShadingType 2\n\
                /Function %a\n\
