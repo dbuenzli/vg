@@ -1137,7 +1137,7 @@ module Vgr = struct
     fmt b "<r:RDF xmlns:r=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\" \
                 xmlns:d=\"http://purl.org/dc/elements/1.1/\" \
                 xmlns:x=\"http://ns.adobe.com/xap/1.0/\">\
-            <r:Description>%a%a%a%a%a%a</r:Description>\
+            <r:Description r:about=\"\">%a%a%a%a%a%a</r:Description>\
            </r:RDF>" 
       b_title title b_authors authors b_subjects subjects b_description 
       description b_creator_tool creator_tool b_create_date create_date; 
