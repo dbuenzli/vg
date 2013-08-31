@@ -571,15 +571,16 @@ module Vgr : sig
       escaped, metadata packet according to the information you provide. *)
 
   val xmp_metadata : ?title:string -> ?authors:string list -> 
-    ?subjects:string list -> ?description:string -> ?creator_tool:string -> 
-      ?create_date:float -> unit -> string
+    ?subjects:string list -> ?description:string -> ?rights:string -> 
+    ?creator_tool:string -> ?create_date:float -> unit -> string
   (** [xmp_medata title authors creator_tool subject description create_date]
       is an XML XMP metadata packet. 
       {ul 
       {- [title] is mapped to dc:title.}
       {- [authors] is mapped to dc:creator.} 
       {- [subjects] is mapped to dc:subject.} 
-      {- [description] is mapped to dc:description.} 
+      {- [description] is mapped to dc:description.}
+      {- [rights] is mapped to dc:rights.}
       {- [creator_tool] is mapped to xmp:CreatorTool.}
       {- [create_date] (a POSIX timestamp in seconds) is mapped to 
          xmp:CreateDate.}} 

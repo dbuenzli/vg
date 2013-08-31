@@ -1098,7 +1098,7 @@ module Vgr = struct
     done;
     Buffer.add_substring b str !start (!last - !start)
       
-  let xmp_metadata ?title ?authors ?subjects ?description ?creator_tool 
+  let xmp_metadata ?title ?authors ?subjects ?description ?rights ?creator_tool
       ?create_date () =
     let fmt = Printf.bprintf in
     let esc = add_xml_data in
@@ -1122,6 +1122,11 @@ module Vgr = struct
     | Some d -> fmt b "<d:description><r:Alt><r:li xml:lang=\"x-default\">%a\
                        </r:li></r:Alt></d:description>" esc d
     in
+    let b_rights b = function 
+    | None -> () 
+    | Some r -> fmt b "<d:rights><r:Alt><r:li xml:lang=\"x-default\">%a\
+                       </r:li></r:Alt></d:rights>" esc r
+    in
     let b_creator_tool b = function 
     | None -> () 
     | Some c -> fmt b "<x:CreatorTool>%a</x:CreatorTool>" esc c
@@ -1137,10 +1142,11 @@ module Vgr = struct
     fmt b "<r:RDF xmlns:r=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\" \
                 xmlns:d=\"http://purl.org/dc/elements/1.1/\" \
                 xmlns:x=\"http://ns.adobe.com/xap/1.0/\">\
-            <r:Description r:about=\"\">%a%a%a%a%a%a</r:Description>\
+            <r:Description r:about=\"\">%a%a%a%a%a%a%a</r:Description>\
            </r:RDF>" 
-      b_title title b_authors authors b_subjects subjects b_description 
-      description b_creator_tool creator_tool b_create_date create_date; 
+      b_title title b_authors authors b_subjects subjects 
+      b_description description b_rights rights 
+      b_creator_tool creator_tool b_create_date create_date; 
     Buffer.contents b
       
   (* Renderable *)

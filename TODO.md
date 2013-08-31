@@ -2,9 +2,8 @@
 
 ## Before first release
 
-* Reader what's wrong with image 31 ? 
-* Add copyright to metadata.
-* check fill open path semantics 
+* Reader what's wrong with image 31 ?
+* Check fill open path semantics
 
 ### Path
 
