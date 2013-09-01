@@ -58,7 +58,10 @@ module Font : sig
  
   val create : ?slant:slant -> ?weight:weight -> string -> float -> font
   (** [create slant weight name size] is a font with given [name], [size],
-      [weight] (defaults to [`W400]) and [slant] (defaults to [`Normal]). *)
+      [weight] (defaults to [`W400]) and [slant] (defaults to [`Normal]). 
+
+      {b Note.} The font size is specified in the units of Vg's 
+      {{!coordinates}coordinate space}. *)
 
   val name : font -> string
   (** [name font] is [font]'s name. *)
@@ -990,7 +993,7 @@ let gray = I.const (Color.gray 0.5)
   with Sys_error e -> prerr_endline e
 
 let () = svg_of_usquare gray]}
-    The result should be a single page SVG with a gray square 
+    The result should be an SVG image with a gray square 
     like this:
 {%html: <img src="doc-gray-square.png" style="width:30mm; height:30mm;"/> %}
 
@@ -1187,15 +1190,8 @@ I.const Color.black >> I.cut ~area p
        or image data contains NaNs or infinite floats.}
     {- Any string is assumed to be UTF-8 encoded.}
     {- Sharing (sub)images, paths and outlines
-       values in the definition of an image results in more
-       efficient rendering in space and time.}
-    {- Images are said to be immutable. This is only true if you 
-       don't change the samples of raster images given to {!I.raster}.}
-    {- Some rendering target provide features that are not accessible 
-       from Vg. They were left out so that rendering to different 
-       targets doesn't result in too many discrepancies. If you need
-       these features, use a library dedicated to the target 
-       (e.g. {{:http://www.coherentpdf.com/ocaml-libraries.html}camlpdf}).}}
+       values in the definition of an image may result in much more
+       efficient rendering in space and time.}}
 *)
 
 (** {1:semantics Semantics} 
@@ -1345,14 +1341,46 @@ directory of the distribution.
 
 {2:minpdf Minimal PDF output} 
 
-The PDF renderer is TODO.
+The file [min_pdf.ml] contains the following mostly self-explanatory
+code. We first define an image and then render it. For the latter
+step we define some meta-data for the image, a function to print
+rendering warnings and then render the image on stdout.  
+
+{[
+open Gg
+open Vg
+
+(* 1. Define your image *)
+
+let aspect = 1.618
+let size = Size2.v (aspect *. 100.) 100. (* mm *)
+let view = Box2.v P2.o (Size2.v aspect 1.)
+let image = I.const (Color.v_srgb 0.314 0.784 0.471)
+
+(* 2. Render *)
+
+let () =
+  let title = "Vgr_pdf minimal example" in
+  let description = "Emerald Color" in
+  let xmp = Vgr.xmp_metadata ~title ~description () in
+  let warn w = Vgr.pp_warning Format.err_formatter w in
+  let r = Vgr.create ~warn (Vgr_pdf.target ~xmp ()) (`Channel stdout) in
+  ignore (Vgr.render r (`Image (size, view, image)));
+  ignore (Vgr.render r `End)
+]}
+
+This can be compiled with:
+{[
+> ocamlfind ocamlopt -package gg -package vg \
+                     -linkpkg -o min_pdf.native min_pdf.ml
+]}
 
 {2:minsvg Minimal code for SVG output}
 
 The file [min_svg.ml] contains the following mostly self-explanatory
 code. We first define an image and then render it. For the latter
 step we define some meta-data for the image, a function to print
-rendering warnings and then render the image on stdout.  
+rendering warnings and then render the image on stdout. 
 
 {[open Gg
 open Vg

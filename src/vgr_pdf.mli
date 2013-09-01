@@ -16,7 +16,7 @@
 
     {e Release %%VERSION%% - %%MAINTAINER%% } *)
 
-(** {1 PDF render targets} *)
+(** {1:target PDF render targets} *)
 
 val target : ?share:int -> ?xmp:string -> unit -> 
   Vg.Vgr.dst_stored Vg.Vgr.target
@@ -24,31 +24,28 @@ val target : ?share:int -> ?xmp:string -> unit ->
     destination given to {!Vg.Vgr.create}. 
     {ul 
     {- [share] indicates the number of consecutive pages that share
-       resources. If unspecified all pages share resources.  This
-       results in smaller file sizes but paths and outline
-       specifications of the images given to {!Vg.Vgr.render} are kept in
-       memory until [`End] is rendered.}
+       resources. If unspecified all pages share resources. TODO 
+       now that the compilation strategy changed it may not make 
+       much sence to expose that.}
     {- [xmp] is an optional UTF-8 encoded XML XMP metadata packet describing
        the SVG document (see ISO 16684-1 or the equivalent
         {{:http://www.adobe.com/devnet/xmp.html}Adobe spec.}). 
        The convenience function {!Vg.Vgr.xmp_metadata} can be used to 
        generate a packet.}}
-    @raise Invalid_argument if [share] is not strictly positive. *)
 
-(** {1:warnings Render warnings} *)
+    {b Multiple image.} Multiple images render is supported. Each image
+    defines a page of the resulting PDF file.
+
+    @raise Invalid_argument if [share] is not strictly positive. *)
 
 (** {1:text Text rendering support} *)
 
-(** {1:multi Multiple images} 
+(** {1:limits Render warnings and limitations}
 
-    Rendering multiple images is supported. Each image defines 
-    a page of the PDF file. *)
-
-(** {1:limitations Limitations}
-
-    The streams in the PDF files are uncompressed. This will be lifted
-    in future versions of the library. If you need to reduce the size
-    generated PDF you can make it go through ghostscript with:
+    The page content streams in the PDF files are currently uncompressed. 
+    This will be lifted in future versions of the library. If you need to 
+    reduce the size generated PDF you can for example filter it through 
+    ghostscript with:
 {[
 gs -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=output.pdf input.pdf
 ]}

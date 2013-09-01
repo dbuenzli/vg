@@ -7,7 +7,9 @@
 * Make a decision about P.linear_fold and P.sampler, my current stance
   is to remove them from the API (keep them around in
   test/p_util.ml{i} though). See also Path convenience section below.
-* Final code review. 
+* rhtmlc, make font bigger for those who don't have a high dpi display.
+* rhtmlc, try img with pdf.
+* Final code review.
 * Final doc review.
 * git grep TODO
 
@@ -57,6 +59,9 @@ val Image.raster : Gg.box2 -> Gg.raster -> image
   in html canvas. Gg's raster formats can be plentiful, normalize or 
   mandate a few formats ? 
 * Q: will js_of_ocaml support bigarrays over typed arrays once ? 
+* Potentially add this comment under Remarks and tips 
+  {- Images are said to be immutable. This is only true if you 
+     don't change the samples of raster images given to {!I.raster}.}
 
 ## Path convenience
 

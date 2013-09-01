@@ -12,7 +12,7 @@
 
     {e Release %%VERSION%% - %%MAITAINER%% } *)
 
-(** {1 SVG render targets} *)
+(** {1:target SVG render targets} *)
 
 val target : ?xml_decl:bool -> ?xmp:string ->unit -> 
   Vg.Vgr.dst_stored Vg.Vgr.target
@@ -32,7 +32,7 @@ val target : ?xml_decl:bool -> ?xmp:string ->unit ->
     supported. [Invalid_argument] is raised by {!Vg.Vgr.render} if multiple 
     images are rendered. *)
 
-(** {1 Text rendering support} 
+(** {1:text Text rendering support} 
 
     {b Warning.} The following is subject to change in the future. 
 
@@ -44,21 +44,20 @@ val target : ?xml_decl:bool -> ?xmp:string ->unit ->
 
     Glyph cuts are currently limited to areas cuts in constant images. *)
 
-(** {1 Render warnings and limitations} 
+(** {1:limits Render warnings and limitations} 
    
     The following render warnings are reported.
     {ul 
     {- [`Unsupported_cut (`O o)], outline cuts can be performed 
        only on [I.const], [I.axial] and [I.radial] primitive images.}
-    {- [`Unspported_glyph_cut (a, i)], glyph cuts can be performed
+    {- [`Unsupported_glyph_cut (a, i)], glyph cuts can be performed
        only on bare {!Vg.I.const} primitive images.}}
 
     The following limitations should be taken into account. 
     {ul 
     {- The generated file do specify that gradient interpolation 
        must be done in linear sRGB space, however many SVG viewers
-       to not respect that directive (e.g. most browsers).}} *)
-
+       do not respect that directive (e.g. most browsers).}} *)
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

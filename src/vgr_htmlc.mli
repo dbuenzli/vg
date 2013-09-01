@@ -13,7 +13,7 @@
     {e Release %%VERSION%% - %%MAINTAINER%% } *)
 
 
-(** {1 HTML canvas render targets} *)
+(** {1:target HTML canvas render targets} *)
 
 val target : ?resolution:Gg.v2 -> Dom_html.canvasElement Js.t -> 
   [`Other] Vg.Vgr.target
@@ -29,7 +29,7 @@ val target : ?resolution:Gg.v2 -> Dom_html.canvasElement Js.t ->
     Each new render clears the HTML canvas.
 *)
 
-(** {1 Text rendering support} 
+(** {1:text Text rendering support} 
 
     Fonts use the CSS font selection mechanism. Make sure that the
     fonts you use are embedded (and {e loaded}) in your DOM via
@@ -44,7 +44,7 @@ val target : ?resolution:Gg.v2 -> Dom_html.canvasElement Js.t ->
     browser bug which means that glyphs cut are currently limited to
     non-outline area cuts in constant images.  *)
 
-(** {1 Render warnings and limitations} 
+(** {1:limits Render warnings and limitations} 
     
     The following render warnings are reported.
     {ul
@@ -53,7 +53,8 @@ val target : ?resolution:Gg.v2 -> Dom_html.canvasElement Js.t ->
        primitive images.}
     {- [`Unsupported_glyph_cut (a, i)], glyph cuts can be performed only
        on bare {!I.const} primitive images and outline cuts are currently
-       unsupported.}} 
+       unsupported.}
+    {- [`Other _] if dashes are rendered but unsupported by the browser.}}
 
     The following limitations should be taken into account. 
     {ul 
