@@ -292,34 +292,6 @@ module P : sig
       [`Close]d. If [rev] is [true] (defaults to [false]) the segments
       and subpaths are traversed in reverse order. *)
 
-  (** {b TODO} the following two folds are strictly speaking not needed
-      but they are nice for effects. They do however add ~100 lines to 
-      vg. Do we keep them here ? *)
-
-  type linear_fold = [ `Sub of p2 | `Line of p2 | `Close ]
-  (** The type for linear folds. *)
-
-  val linear_fold : ?tol:float -> ('a -> linear_fold -> 'a) -> 'a -> path -> 'a
-  (** [linear_fold tol f acc p] approximates the subpaths of [p] by a
-      sequence of line segments and applies [f] to those with an
-      accumulator. Subpaths are traversed in the order they were
-      specified, always start with a [`Sub], but may not be
-      [`Close]d. The maximal distance between the original path and
-      the linear approximation does not exceed [tol] (defaults to
-      [1e-3]). *)
-
-  type sampler = [ `Sub of p2 | `Sample of p2 | `Close ]
-  (** The type for path samplers. *)
-
-  val sample : ?tol:float -> float -> ('a -> sampler -> 'a) -> 'a -> path -> 'a
-  (** [sample tol dt f acc p], samples the subpaths of [p] at every
-      distance [dt] on the curve and applies [f] to those with an
-      accumulator. Subpaths are traversed in the order they were
-      specified, always start with a [`Sub], followed by 
-      [`Sample]s at every distance [dt] along the curve. If the subpath
-      is closed [`Close] is called aswell. [tol] has the same meaning
-      as in {!linear_fold}. *)
-
   (** {1 Predicates and comparisons} *) 
 
   val is_empty : path -> bool
@@ -1189,7 +1161,7 @@ I.const Color.black >> I.cut ~area p
     {- Rendering results are undefined if path
        or image data contains NaNs or infinite floats.}
     {- Any string is assumed to be UTF-8 encoded.}
-    {- Sharing (sub)images, paths and outlines
+    {- Sharing (sub)image, path and outline
        values in the definition of an image may result in much more
        efficient rendering in space and time.}}
 *)

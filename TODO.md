@@ -4,9 +4,6 @@
 * Review ellipse things. There are a few TODOs and wrong things in there.
 * Do we actually have a renderer that supports arbitrary outline cut ? 
 * PDF glyph cuts.
-* Make a decision about P.linear_fold and P.sampler, my current stance
-  is to remove them from the API (keep them around in
-  test/p_util.ml{i} though). See also Path convenience section below.
 * rhtmlc, make font bigger for those who don't have a high dpi display.
 * rhtmlc, try img with pdf.
 * Final code review.
@@ -66,7 +63,7 @@ val Image.raster : Gg.box2 -> Gg.raster -> image
 ## Path convenience
 
 Quite a few convience operations on paths could be added. This would
-be only at the Vg level renderers wouldn't need to be extended. But
+be only at the Vg level, renderers wouldn't need to be extended. But
 does it really belong in Vg ? Tension between general computational
 geometry lib and rendering lib. However quite a few of these things
 could be used by a potential rasterizer. 
@@ -78,8 +75,11 @@ could be used by a potential rasterizer.
 * P.square 
 * Boolean operations on paths
 * Minkowski sum
+* The folds that are [`test/attic_path.ml`](test/attic_path)
 
-I'm more and more convinced that this doesn't belong in Vg though.
+I'm more and more convinced that this doesn't belong in Vg though, the
+folds in `attic_path.ml` also show that this can be provided as
+an external component with minimal reliance on `Vg.Vgr.Private`. 
 
 ## Blending groups and operators 
 
