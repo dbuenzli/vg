@@ -1,51 +1,30 @@
 # Before first release 
 
+* PDF remove share 
 * Check fill open path semantics
 * Review ellipse things. There are a few TODOs and wrong things in there.
-* Do we actually have a renderer that supports arbitrary outline cut ? 
+* Do we actually have a renderer that supports arbitrary outline cut ?
+  NO !
 * PDF glyph cuts.
 * rhtmlc, make font bigger for those who don't have a high dpi display.
 * rhtmlc, try img with pdf.
+* Font.t, expose the record ? at least provide Font.with_size font 4.
 * Final code review.
 * Final doc review.
 * git grep TODO
-
-## Glyph api
-
-* Otfm
-* Cairo, pdf & fonts
-  http://lists.cairographics.org/archives/cairo/2007-February/009452.html
-  http://lists.cairographics.org/archives/cairo/2007-September/011427.html
-
-* OpenVG, 
-  VGFont, just maps indices to glyphs, applications are responsible for 
-  creating the map. No metric or layout info in the font. 
-  Applications responsible for text layout operations.
-  Mapping defined by the app, e.g.
-	  - unicode character code (for subsets) -> glyph 
-	    no need for additional table.
-          - native font glyph indices (as found in TT or OpenType font)
-	  - other.
-  A glyph is either a VGPath (vector outline) or a VGimage (raster image)
-
-* SVG 1.2 tiny, text element can specify a line of text
-  the text layout is performed by the standard.
-
-* SVG 1.1, more control. E.g. tspan allows x, y offset as in VG api.
-  +rotate. Also possible to layout text along a path. 
-
-* Test miànjï 面积 (area, surface area), vector.
-* Test font http://www.twardoch.com/fonts/ Nadeyezhda 
 
 #  After first release
 
 ## Current backend improvements
 
 * SVG renderer, try to handle more glyph cuts.
-* SVG renderer, use SVG glyphs ? 
+* SVG renderer, give the opportunity to use SVG glyphs ? The idea 
+  would be that if no font resolver is provided, do it like now 
+  otherwise embed glyphs.
 * Canvas, try to handle more glyph cuts.
 * PDF, implement page content stream compression. LZW would be
   easiest.  Deflate would be nice.
+* PDF, implement gradients with alpha.
 
 ## Raster image primitive
 
@@ -106,6 +85,8 @@ I.blend : ?a:float -> ?blender:blender -> image -> image -> image
 
 # Db images ideas 
 
+* Test miànjï 面积 (area, surface area), vector.
+* Test font http://www.twardoch.com/fonts/ Nadeyezhda 
 * Quadratic paths.
 * Test degenerate color stops discarding.
 * Test degenerate subpaths rendering. 

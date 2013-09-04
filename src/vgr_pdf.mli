@@ -18,11 +18,14 @@
 
 (** {1:target PDF render targets} *)
 
-val target : ?share:int -> ?xmp:string -> unit -> 
-  Vg.Vgr.dst_stored Vg.Vgr.target
+val target : ?font:(Vg.font -> string option) -> ?share:int -> ?xmp:string -> 
+  unit -> Vg.Vgr.dst_stored Vg.Vgr.target
 (** [target share xmp ()] is a PDF render target for rendering to the stored
     destination given to {!Vg.Vgr.create}. 
     {ul 
+    {- [font] is the font resolver, given a {!Vg.font} [f] it must 
+       return the bytes of a corresponding OpenType font file (which will
+       most likely be independent of the size [Vg.Font.size f]).}
     {- [share] indicates the number of consecutive pages that share
        resources. If unspecified all pages share resources. TODO 
        now that the compilation strategy changed it may not make 

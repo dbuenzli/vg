@@ -1186,6 +1186,7 @@ module Vgr = struct
     (* Font helpers *)
 
     module Font = struct
+      external of_data : Data.font -> Font.t = "%identity"
       let css_slant font = Font.slant_to_str font.Data.slant
       let css_weight font = Font.weight_to_str font.Data.weight
       let css_font ~unit font =

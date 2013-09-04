@@ -765,8 +765,11 @@ module Vgr : sig
     end
 
     (** Font helpers. *)
-
     module Font : sig
+
+      val of_data : Data.font -> font
+      (** [of_data f] is the font from the internal representation [f]. *)
+  
       val css_font : unit:string -> Data.font -> string 
       (** [css_font unit font] is a CSS
           {{:http://www.w3.org/TR/CSS2/fonts.html#font-shorthand}font property}
