@@ -11,14 +11,17 @@
     {b Bug reports.}  PDF being an insane standard, rendering
     abilities of PDF readers vary wildly. No rendering bug report for
     this renderer will be considered if it cannot be reproduced in the
-    latest Adobe Acrobat Reader.
-    
+    latest Adobe Acrobat Reader.    
 
     {e Release %%VERSION%% - %%MAINTAINER%% } *)
 
 (** {1:target PDF render targets} *)
 
-val target : ?font:(Vg.font -> string option) -> ?share:int -> ?xmp:string -> 
+type font = [ `Otf of string | `Serif | `Sans | `Fixed ]
+(** The type for PDF fonts. Either an OpenType file ([`Otf]) or
+    a fallback font that uses the PDF standard fonts, see {{!text}details}. *)
+
+val target : ?font:(Vg.font -> font) -> ?share:int -> ?xmp:string -> 
   unit -> Vg.Vgr.dst_stored Vg.Vgr.target
 (** [target share xmp ()] is a PDF render target for rendering to the stored
     destination given to {!Vg.Vgr.create}. 
@@ -41,14 +44,35 @@ val target : ?font:(Vg.font -> string option) -> ?share:int -> ?xmp:string ->
 
     @raise Invalid_argument if [share] is not strictly positive. *)
 
-(** {1:text Text rendering support} *)
+(** {1:text Text rendering support} 
+
+    If the [font] resolver of the target returns something different 
+    than [`Otf], the following fonts are used:
+    {ul 
+    {- For [`Serif], one of Times-Roman, Times-Bold, Times-Italic or 
+       Times-BoldItalic, according to the font's slant and weight.}
+    {- For [`Sans], one of Helvetica, Helvetica-Bold, Helvetica-Oblique, 
+       Helvetica-BoldOblique, according the font's slant and weight.}
+    {- For [`Fixed], one of Courier, Courier-Bold, Courier-Oblique, 
+       Courier-BoldOblique, according to the font's slant and weight.}}    
+
+    In that case the glyph values given to {!I.cut_glyphs} are
+    interpreted as an
+    {{:http://unicode.org/glossary/#Unicode_scalar_value}Unicode
+    scalar value} which map to glyphs for the corresponding Unicode
+    scalar value. The supported set of glyph values are those listed
+    in the second column of
+    {{:http://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1252.TXT}
+    this document}, basically this is ISO-8859-1 (latin1) with some
+    additional characters (see those corresponding in the rows 0x80-0x9F). 
+    Any other glyph value is substituted by glyph 0. *)
 
 (** {1:limits Render warnings and limitations}
 
     The page content streams in the PDF files are currently uncompressed. 
     This will be lifted in future versions of the library. If you need to 
     reduce the size generated PDF you can for example filter it through 
-    ghostscript with:
+    {{:http://www.ghostscript.com}ghostscript} with:
 {[
 gs -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=output.pdf input.pdf
 ]}

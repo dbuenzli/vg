@@ -863,8 +863,10 @@ module Vgr : sig
     (** {1 Miscellaneous} *) 
 
     val add_xml_data : Buffer.t -> string -> unit 
-    (** [add_xml_data b s] adds [s] to [b] and escapes 
-        ['<', '>', '&'] and ['"'] (but {b not} single quotes).*)
+    (** [add_xml_data b s] adds [s] to [b], escapes 
+        ['<', '>', '&'] and ['"'] (but {b not} single quotes) and 
+        maps illegal XML unicode characters to the replacement character
+        U+FFFD. *)
   end
 end
 

@@ -13,6 +13,7 @@ include Gradients
 include Uncut
 include Npcut
 include Glyphs
+include Glyphs_pdf
 include Escapes
 
 include Arrowhead

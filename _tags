@@ -7,8 +7,12 @@ true : package(gg)
 
 <src/vgr_htmlc.{mli,ml}> : package(js_of_ocaml.syntax), syntax(camlp4o)
 
-<test/{rpdf,rsvg,examples,min_svg}.{byte,native}> : package(unix)
-<test/{rhtmlc,mui}.{mli,ml,byte}> : package(js_of_ocaml)
+<db/glyphs_pdf.{mli,ml}> : package(uutf)
+<test/{rpdf,rsvg,examples,min_svg}.{byte,native}> : package(unix), \
+                                                    package(uutf)
+
+<test/{rhtmlc,mui}.{mli,ml,byte}> : package(uutf), \
+                                    package(js_of_ocaml)
 
 <test/{min_htmlc,mui,sqc}.{mli,ml,byte}> : package(js_of_ocaml), \
                             package(js_of_ocaml.syntax), syntax(camlp4o)

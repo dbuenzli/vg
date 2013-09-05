@@ -987,6 +987,8 @@ module Vgr = struct
     | '&' -> escape "&amp;"
     (* | '\'' -> escape "&apos;" *) (* Not needed we use \x22 for attributes. *)
     | '\x22' -> escape "&quot;"
+    | '\n' | '\t' | '\r' -> incr last
+    | c when c < ' ' -> escape "\xEF\xBF\xBD" (* illegal, subst. by U+FFFD *)
     | _ -> incr last
     done;
     Buffer.add_substring b str !start (!last - !start)

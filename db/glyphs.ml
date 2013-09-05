@@ -10,7 +10,7 @@ open Vg
 
 (** Test images for glyphs. *)
 
-let to_glyph c = Char.code c (* ¡ Don't do that in practice ! *)
+let to_glyph c = Char.code c            (* ¡ Ay don't do that in practice ! *)
 let to_glyphs s =
   let l = String.length s in
   let rec loop acc i = 
@@ -32,6 +32,7 @@ Db.image "glyph-revolt" ~author:Db.dbuenzli
     I.const Color.black >> I.cut_glyphs ~text font (to_glyphs text) >> 
     I.move (V2.v 0.23 0.25)
   end;
+
 
 Db.image "glyph-revolt-outline" ~author:Db.dbuenzli
   ~title:"Revolt outline in black"
@@ -58,7 +59,7 @@ Db.image "glyph-aspect" ~author:Db.dbuenzli
     let font = Font.create ~weight:`W800 "Open Sans" 0.5 in
     let text = "R" in 
     let sq = P.empty >> P.rect (Box2.v (P2.v 0. 0.75) (P2.v 0.25 0.25)) in 
-    I.const Color.black >> I.cut sq >> 
+    I.const Color.black >> I.cut sq >>
     I.blend (I.const Color.black >> I.cut_glyphs ~text font (to_glyphs text))>> 
     I.scale (V2.v 4.0 1.0)
   end;

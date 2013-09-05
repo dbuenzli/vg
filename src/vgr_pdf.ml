@@ -37,27 +37,28 @@ let unsafe_byte s j = Char.code (String.unsafe_get s j)
 let unsafe_array_get = Array.unsafe_get
 let unsafe_chr = Char.unsafe_chr
 
-type id = int (* PDF object ids *) 
+type font = [ `Otf of string | `Serif | `Sans | `Fixed ]
+type font_program = [ `Fallback of string | `Otf of string ]
+
+type id = int                                             (* PDF object ids. *) 
 type gstate =                  (* Subset of the graphics state saved by a q. *) 
   { mutable g_tr : M3.t;           (* current transform with view transform. *) 
-    mutable g_scolor : Vgr.Private.Data.primitive; 
-    mutable g_fcolor : Vgr.Private.Data.primitive; 
-    mutable g_outline : P.outline;
-    mutable g_font : Vgr.Private.Data.font;
+    mutable g_scolor : Vgr.Private.Data.primitive;  (* current stroke color. *) 
+    mutable g_fcolor : Vgr.Private.Data.primitive;    (* current fill color. *) 
+    mutable g_outline : P.outline;       (* current path outline parameters. *)
+    mutable g_font_id : id;                              (* current font id. *) 
     mutable g_alpha : float;                              (* unused for now. *) 
     mutable g_blender : Vgr.Private.Data.blender; }       (* unused for now. *)
 
-let dumb_font = Vgr.Private.Data.of_font (Vg.Font.create "dumb" 1.0)
 let init_gstate = 
   { g_tr = M3.id; g_scolor = Const Color.black; g_fcolor = Const Color.black;
-    g_outline = P.o; g_font = dumb_font; g_alpha = 1.0; g_blender = `Over } 
+    g_outline = P.o; g_font_id = -1; g_alpha = 1.0; g_blender = `Over } 
 
-  
 type cmd = Set of gstate | Draw of Vgr.Private.Data.image
 
 type state = 
   { r : Vgr.Private.renderer;                    (* corresponding renderer. *)
-    font : Vg.font -> string option;             (* OpenType font resolver. *)
+    font : Vg.font -> font;                           (* PDF font resolver. *)
     share : int;                            (* page resource sharing limit. *)
     xmp : string option;                            (* XMP metadata packet. *)
     buf : Buffer.t;                                   (* formatting buffer. *) 
@@ -74,8 +75,8 @@ type state =
     mutable page_objs : int list;                      (* pages object ids. *)
     prims : (Vgr.Private.Data.primitive, (m3 * id) list) Hashtbl.t;
     alphas : (float * [`S | `F], id) Hashtbl.t;
-    fonts : (Vgr.Private.Data.font, id) Hashtbl.t; 
-    font_programs : (string, id) Hashtbl.t;             
+    fonts : (Vgr.Private.Data.font, id * bool) Hashtbl.t;
+    font_programs : (font_program, id) Hashtbl.t;             
     mutable gstate : gstate; }                    (* current graphic state. *) 
 
 let partial = Vgr.Private.partial
@@ -104,14 +105,29 @@ let get_id s h v = try Hashtbl.find h v with
 let get_alpha_id s alpha = get_id s s.alphas alpha
 let rec get_font_id s font = try Hashtbl.find s.fonts font with 
 | Not_found ->
-    let program = match s.font (Vgr.Private.Font.of_data font) with 
-    | None -> "H"
-    | Some otf -> otf 
+    let fallback font normal bold =
+      `Fallback (if font.weight < `W700 then normal else bold), true 
+    in
+    let program, fallback = match s.font (Vgr.Private.Font.of_data font) with
+    | `Otf _ as otf -> otf, false
+    | `Sans -> 
+        if font.slant = `Normal 
+        then fallback font "Helvetica" "Helvetica-Bold"
+        else fallback font "Helvetica-Oblique" "Helvetica-BoldOblique"
+    | `Serif ->    
+        if font.slant = `Normal 
+        then fallback font "Times-Roman" "Times-Bold"
+        else fallback font "Times-Italic" "Times-BoldItalic"
+    | `Fixed ->
+        if font.slant = `Normal 
+        then fallback font "Courier" "Courier-Bold" 
+        else fallback font "Courier-Oblique" "Courier-BoldOblique"
     in
     let id = try Hashtbl.find s.font_programs program with 
     | Not_found -> get_id s s.font_programs program 
     in
-    Hashtbl.add s.fonts font id; id
+    let spec = id, fallback in
+    Hashtbl.add s.fonts font spec; spec
 
 let get_prim_id s ctm prim = 
   let patts = try Hashtbl.find s.prims prim with 
@@ -297,11 +313,12 @@ let set_outline s ot =
 
 let set_font s font = 
   let c = s.gstate in
-  if c.g_font <> font && font != dumb_font then begin
-    let id = get_font_id s font in 
+  let id, fallback = get_font_id s font in
+  if c.g_font_id <> id then begin
     b_fmt s "\n/f%d %f Tf" id font.size;
-    c.g_font <- font
-  end
+    c.g_font_id <- id
+  end; 
+  fallback
     
 let push_transform s tr =
   let m = Vgr.Private.Data.tr_to_m3 tr in
@@ -382,8 +399,30 @@ let w_primitive_cut s ctm a p prim k r = match a with
 | `Aeo -> set_fcolor s ctm prim; w_path s p " f*" k r
 | `O o -> set_scolor s ctm prim; set_outline s o; w_path s p " S" k r
 
+(* Non straightforward mappings from unicode to Windows Code Page 1252.
+   http://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1252.TXT *)
+let uchar_to_cp1252 = 
+  [ 0x20AC, 0x80; 0x201A, 0x82; 0x0192, 0x83; 0x201E, 0x84; 0x2026, 0x85; 
+    0x2020, 0x86; 0x2021, 0x87; 0x02C6, 0x88; 0x2030, 0x89; 0x0160, 0x8A;
+    0x2039, 0x8B; 0x0152, 0x8C; 0x017D, 0x8E; 0x2018, 0x91; 0x2019, 0x92;
+    0x201C, 0x93; 0x201D, 0x94; 0x2022, 0x95; 0x2013, 0x96; 0x2014, 0x97;
+    0x02DC, 0x98; 0x2122, 0x99; 0x0161, 0x9A; 0x203A, 0x9B; 0x0153, 0x9C; 
+    0x017E, 0x9E; 0x0178, 0x9F; ]
+
+let fallback_encode s glyph =            (* glyph is an Unicode scalar value *)
+  let b s byte = Buffer.add_char s.buf (unsafe_chr byte) in
+  let glyph = match glyph with        (* translate to Windows Code Page 1252 *)
+  | g when g <= 0x007F -> g 
+  | g when g <= 0x00A0 -> 0
+  | g when g <= 0x00FF -> g
+  | g -> try List.assoc g uchar_to_cp1252 with Not_found -> 0
+  in
+  if glyph = u_lpar || glyph = u_rpar || glyph = u_bslash     (* PDF escape. *)
+  then (b s u_bslash; b s glyph)
+  else (b s glyph)
+
 let w_glyph_run s run op k r = 
-  set_font s run.Vgr.Private.Data.font; 
+  let fallback = set_font s run.Vgr.Private.Data.font in
   b_fmt s "%s" op;
   begin match run.Vgr.Private.Data.text with 
   | None -> b_fmt s "\nBT"
@@ -392,8 +431,7 @@ let w_glyph_run s run op k r =
   begin match run.Vgr.Private.Data.advances with 
   | None | Some _ (* TODO *) -> 
       b_fmt s "(";
-      List.iter (fun g -> b_fmt s "%c" (Char.chr g)) 
-        run.Vgr.Private.Data.glyphs; 
+      if fallback then List.iter (fallback_encode s) run.glyphs; 
       b_fmt s ") Tj" 
   end;
   begin match run.text with 
@@ -629,7 +667,7 @@ let b_refs op b refs =
 
 let w_resources ?(last = false) s k r =
   let alpha_ids = Hashtbl.fold (fun _ id acc -> id :: acc) s.alphas [] in
-  let font_ids = Hashtbl.fold (fun _ id acc -> id :: acc) s.fonts [] in
+  let font_ids = Hashtbl.fold (fun _ (id, _) acc -> id :: acc) s.fonts [] in
   let ids _ shs acc = List.fold_left (fun acc (_, id) -> id :: acc) acc shs in
   let prim_ids = Hashtbl.fold ids s.prims [] in
   b_obj_start s s.id_resources;
@@ -645,17 +683,20 @@ let w_resources ?(last = false) s k r =
   if not last then s.id_resources <- new_obj_id s;
   w_alphas s (w_prims s k) r
 
-
-let w_font s (id, fp) k r = 
+let w_font_fallback s id n k r = 
   b_obj_start s id; 
   b_fmt s "<<\n\
            /Type /Font\n\
            /Subtype /Type1\n\
-           /BaseFont /Helvetica\n\
+           /BaseFont /%s\n\
            /Encoding /WinAnsiEncoding\n\
-           >>\n";
+           >>\n" n;
   b_obj_end s;
   w_buf s k r
+
+let w_font s (id, fp) k r = match fp with 
+| `Fallback n -> w_font_fallback s id n k r 
+| `Otf _ -> (* TODO *) w_font_fallback s id "Helvetica" k r 
 
 let w_fonts s k r = 
   let rec loop s fs k r = match fs with
@@ -767,8 +808,14 @@ let render s v k r = match v with
     | n when n mod s.share = 0 -> w_resources s (w_page size s k) r
     | n -> w_page size s k r
     end
-    
-let target ?(font = fun _ -> None) ?(share = max_int) ?xmp () = 
+
+let default_font font = match Font.name font with 
+| "Times" -> `Serif 
+| "Helvetica" | "Arial" -> `Sans 
+| "Courier" -> `Fixed 
+| _ -> `Sans
+
+let target ?(font = default_font) ?(share = max_int) ?xmp () = 
   let target r _ = 
     true, render { r; 
                    font; 
