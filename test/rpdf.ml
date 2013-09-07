@@ -7,7 +7,7 @@
 (* Renders the Vg image database to PDF. *)
 
 open Vg
-include Db_pdf
+include Db_contents
 
 let renderer dst is =
   let xmp = Rstored.xmp_metadata is in

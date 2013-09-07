@@ -10,7 +10,7 @@ open Gg
 open Vg
 open Mui
 
-include Db_htmlc
+include Db_contents
 
 let app_name = "rhtmlc" 
 

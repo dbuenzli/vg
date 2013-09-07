@@ -7,7 +7,7 @@
 open Gg
 open Vg
 
-include Db_svg
+include Db_contents
 
 let renderer dst is =
   let xmp = Rstored.xmp_metadata is in 

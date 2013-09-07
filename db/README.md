@@ -1,14 +1,10 @@
 # Vg image database
 
-The Vg image database is a collection of test images. The database
-contains:
+The Vg image database is a collection of test images. 
 
-* Renderer independent images in [`db_any.ml`](db_any.ml)
-* Renderer dependent image in `db_$RENDERER.ml` files. 
-
-Renderer independent images should be rendered identically by all
-renderers but due to differences in renderer expressiveness and
-purposes this may not be possible or desirable.
+Most images should be rendered identically by all renderers. However
+due to differences in renderer expressiveness and purposes this may
+not be possible or desirable.
 
 Well written and appealing BSD3 licensed contributions showing Vg's
 expressiveness are gladly accepted. They will however have to suit
@@ -17,9 +13,8 @@ Vg's author taste... Follow the instructions below.
 ## Adding a new image
 
 To add a new image either add it to an existing relevant file or
-create a new file for it. In the latter case, if the image is renderer
-independent include the new file in [`db_any.ml`](db_any.ml), if it is
-not include the file in `db_$RENDERER.ml`.
+create a new file for it. In the latter case, include the new file in
+[`db_contents.ml`](db_contents.ml).
 
 An image is added by calling the function `Db.image` (see [`db.mli`](db.mli))
 at the toplevel of the file:
