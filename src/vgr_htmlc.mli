@@ -10,7 +10,7 @@
     {ul {- Rik Cabanier et al. {e {{:http://www.w3.org/TR/2dcontext/}HTML 
      Canvas 2D Context}}, 2012-12-17.}}
 
-    {e Release %%VERSION%% - %%MAINTAINER%% } *)
+    {e Release %%VERSION%% — %%MAINTAINER%% } *)
 
 
 (** {1:target HTML canvas render targets} *)
@@ -26,8 +26,7 @@ val target : ?resolution:Gg.v2 -> Dom_html.canvasElement Js.t ->
        dimensions.}} 
     
     {b Multiple images.} Multiple images render on the target is supported. 
-    Each new render clears the HTML canvas.
-*)
+    Each new render clears the HTML canvas. *)
 
 (** {1:text Text rendering support} 
 
