@@ -26,8 +26,9 @@ Contact: Daniel Bünzli `<daniel.buenzl i@erratique.ch>`
 
 Vg can be installed with `opam`:
 
-    opam install vg
-
+    opam install js_of_ocaml otfm vg  # all renderers
+    opam install vg                   # SVG renderer only
+    
 If you don't use `opam` consult the [`opam`](opam) file for
 build instructions and a complete specification of the dependencies.
 
