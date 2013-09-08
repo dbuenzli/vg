@@ -10,11 +10,13 @@ and compose these values.
 Renderers for PDF, SVG and the HTML canvas are distributed with the
 library. An API allows to implement new renderers.
      
-Vg depends on [Gg][1] and, *optionally*, on [js_of_ocaml][2] for the
-HTML canvas renderer. It is is distributed under the BSD3 license.
+Vg depends on [Gg][1]. The PDF renderer depends on [Otfm][2] and the
+HTML canvas renderer depends on [js_of_ocaml][2]. The library is
+distributed under the BSD3 license.
      
 [1]: http://erratique.ch/software/gg
-[2]: http://ocsigen.org/js_of_ocaml/ 
+[2]: http://erratique.ch/software/otfm
+[3]: http://ocsigen.org/js_of_ocaml/ 
 
 Home page: http://erratique.ch/software/vg  
 Contact: Daniel Bünzli `<daniel.buenzl i@erratique.ch>`

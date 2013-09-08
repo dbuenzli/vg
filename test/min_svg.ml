@@ -2,7 +2,7 @@
 
    Minimal Vgr_svg example, renders on stdout. Compile with:
 
-   ocamlfind ocamlopt -package gg -package vg \
+   ocamlfind ocamlopt -package gg,vg,vg.svg \
                       -linkpkg -o min_svg.native min_svg.ml
 *)
 

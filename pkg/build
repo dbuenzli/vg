@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Usage: build has_native has_jsoo
+# Usage: build has_native has_otfm has_jsoo
 
 set -e 
 LOC=`dirname $0`
@@ -8,15 +8,10 @@ LOC=`dirname $0`
 . $LOC/pkg-builder
 
 NATIVE=$1
-JSOO=$2
+OTFM=$2
+JSOO=$3
 
 add lib pkg/META		
-add lib src/vgr_pdf.mli	
-add lib src/vgr_pdf.cmi
-add lib src/vgr_pdf.cmx	
-add lib src/vgr_svg.mli
-add lib src/vgr_svg.cmi
-add lib src/vgr_svg.cmx
 add lib src/vg.mli	
 add lib src/vg.cmi
 add lib src/vg.cmx
@@ -25,18 +20,40 @@ add lib src/vg.a
 add lib src/vg.cmxa
 add lib src/vg.cmxs
 
-if [ "$JSOO" = "true" ]; then 
+add lib src/vgr_svg.mli	
+add lib src/vgr_svg.cmi
+add lib src/vgr_svg.cmx	
+add lib src/vgr_svg.cma
+add lib src/vgr_svg.a
+add lib src/vgr_svg.cmxa
+add lib src/vgr_svg.cmxs
+
+if [ "$OTFM" != "false" ]; then 
+    add lib src/vgr_pdf.mli	
+    add lib src/vgr_pdf.cmx 
+    add lib src/vgr_pdf.cmi
+    add lib src/vgr_pdf.cma
+    add lib src/vgr_pdf.a
+    add lib src/vgr_pdf.cmxa
+    add lib src/vgr_pdf.cmxs
+fi
+
+if [ "$JSOO" != "false" ]; then 
     add lib src/vgr_htmlc.mli	
     add lib src/vgr_htmlc.cmx 
     add lib src/vgr_htmlc.cmi
-    add lib src/vg_htmlc.cma
-    add lib src/vg_htmlc.a
-    add lib src/vg_htmlc.cmxa
-    add lib src/vg_htmlc.cmxs
+    add lib src/vgr_htmlc.cma
+    add lib src/vgr_htmlc.a
+    add lib src/vgr_htmlc.cmxa
+    add lib src/vgr_htmlc.cmxs
 fi
 
 add doc README.md
 add doc CHANGES.md
+add doc test/min_htmlc.html
+add doc test/min_htmlc.ml
+add doc test/min_pdf.ml
+add doc test/min_svg.ml
 
 build
 install vg

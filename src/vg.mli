@@ -1348,7 +1348,7 @@ let () =
 
 This can be compiled with:
 {[
-> ocamlfind ocamlopt -package gg -package vg \
+> ocamlfind ocamlopt -package gg,vg,vg.pdf \
                      -linkpkg -o min_pdf.native min_pdf.ml
 ]}
 
@@ -1383,7 +1383,7 @@ let () =
 
 This can be compiled with:
 {[
-> ocamlfind ocamlopt -package gg -package vg \
+> ocamlfind ocamlopt -package gg,vg,vg.svg \
                      -linkpkg -o min_svg.native min_svg.ml
 ]}
 
@@ -1437,8 +1437,8 @@ let () = Dom_html.window ## onload <- Dom_html.handler main
 This file needs to be compiled to byte code and then [js_of_ocaml]
 must be applied. This can be achieved with:
 {[> ocamlfind ocamlc \
-  -package js_of_ocaml -package js_of_ocaml.syntax \
-  -package gg -package vg -package vg.htmlc \
+  -package js_of_ocaml,js_of_ocaml.syntax \
+  -package gg,vg,vg.htmlc \
   -syntax camlp4o -linkpkg -o min_htmlc.byte min_htmlc.ml \
   && js_of_ocaml min_htmlc.byte]}
 

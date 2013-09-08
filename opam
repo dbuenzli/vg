@@ -7,10 +7,10 @@ tags: [ "pdf" "svg" "html-canvas" "declarative" "graphics" ]
 license: "BSD3"
 ocaml-version: [>= "4.00.0"]
 depends: [ "ocamlfind" "gg" ]
-depopts: [ "js_of_ocaml" ]
+depopts: [ "js_of_ocaml" "otfm" ]
 build: 
 [
   ["./pkg/pkg-git" ] 
-  ["./pkg/build" "true" "%{js_of_ocaml:installed}%" ]
+  ["./pkg/build" "true" "%{otfm:installed}%" "%{js_of_ocaml:installed}%" ]
 ]
 

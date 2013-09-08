@@ -7,6 +7,28 @@ archive(native) = "vg.cmxa"
 archive(native, plugin) = "vg.cmxs"
 exists_if = "vg.cma"
 
+package "svg" (
+  version = "%%VERSION%%"
+  description = "Vg's SVG renderer"
+  requires = "vg"
+  archive(byte) = "vg_svg.cma"
+  archive(byte, plugin) = "vg_svg.cma"
+  archive(native) = "vg_svg.cmxa"
+  archive(native, plugin) = "vg_svg.cmxs"
+  exists_if = "vg_svg.cma"
+)
+
+package "pdf" (
+  version = "%%VERSION%%"
+  description = "Vg's PDF renderer"
+  requires = "vg"
+  archive(byte) = "vg_pdf.cma"
+  archive(byte, plugin) = "vg_pdf.cma"
+  archive(native) = "vg_pdf.cmxa"
+  archive(native, plugin) = "vg_pdf.cmxs"
+  exists_if = "vg_pdf.cma"
+)
+
 package "htmlc" (
   version = "%%VERSION%%"
   description = "Vg's HTML canvas renderer"

@@ -2,7 +2,7 @@
 
    Minimal Vgr_pdf example, renders on stdout. Compile with:
 
-   ocamlfind ocamlopt -package gg -package vg \
+   ocamlfind ocamlopt -package gg,vg,vg.pdf \
                       -linkpkg -o min_pdf.native min_pdf.ml
 *)
 

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Should be included by a script. The includer should set the variable 
-# $NATIVE to "true" if it wants native code compilation.
+# $NATIVE to "false" if it doesn't want native code compilation.
 
 OCAMLBUILD=${OCAMLBUILD:="ocamlbuild -use-ocamlfind -classic-display"}
 B="_build"
@@ -34,7 +34,7 @@ add ()
     fi
     case $1 in
         lib)
-            if [ "$NATIVE" = "true" ]; then 
+            if [ "$NATIVE" != "false" ]; then 
                 add_lib $SRC $DST
             else
                 case $2 in
@@ -44,7 +44,7 @@ add ()
             fi
             ;;
         bin)
-            if [ "$NATIVE" = "true" ]; then 
+            if [ "$NATIVE" != "false" ]; then 
                 add_bin $SRC.native $DST
             else
                 add_bin $SRC.byte $DST

@@ -431,7 +431,7 @@ let w_glyph_run s run op k r =
   begin match run.Vgr.Private.Data.advances with 
   | None | Some _ (* TODO *) -> 
       b_fmt s "(";
-      if fallback then List.iter (fallback_encode s) run.glyphs; 
+      List.iter (fallback_encode s) run.glyphs; 
       b_fmt s ") Tj" 
   end;
   begin match run.text with 
