@@ -13,13 +13,20 @@
     this renderer will be considered if it cannot be reproduced in the
     latest Adobe Acrobat Reader.    
 
-    {e Release %%VERSION%% - %%MAINTAINER%% } *)
+    {e Release %%VERSION%% — %%MAINTAINER%% } *)
 
-(** {1:target PDF render targets} *)
+(** {1:fonts Font resolution} *) 
 
 type font = [ `Otf of string | `Serif | `Sans | `Fixed ]
-(** The type for PDF fonts. Either an OpenType file ([`Otf]) or
-    a fallback font that uses the PDF standard fonts, see {{!text}details}. *)
+(** The type for PDF fonts. Either the binary content of an OpenType file 
+    ([`Otf]) or a fallback font that uses the PDF standard fonts, 
+    see {{!text}details}. *)
+
+val font : Vg.font -> font 
+(** [font] is a default font resolver. It only resolves the PDF standard
+    fonts which are named ["Helvetica"], ["Times"] and ["Courier"]. *)
+
+(** {1:target PDF render targets} *)
 
 val target : ?font:(Vg.font -> font) -> ?share:int -> ?xmp:string -> 
   unit -> Vg.Vgr.dst_stored Vg.Vgr.target
@@ -28,7 +35,8 @@ val target : ?font:(Vg.font -> font) -> ?share:int -> ?xmp:string ->
     {ul 
     {- [font] is the font resolver, given a {!Vg.font} [f] it must 
        return the bytes of a corresponding OpenType font file (which will
-       most likely be independent of the size [Vg.Font.size f]).}
+       most likely be independent of the size [Vg.Font.size f]). Defaults 
+       to {!font}.}
     {- [share] indicates the number of consecutive pages that share
        resources. If unspecified all pages share resources. TODO 
        now that the compilation strategy changed it may not make 

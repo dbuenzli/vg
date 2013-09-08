@@ -809,13 +809,13 @@ let render s v k r = match v with
     | n -> w_page size s k r
     end
 
-let default_font font = match Font.name font with 
+let font font = match Font.name font with 
 | "Times" -> `Serif 
-| "Helvetica" | "Arial" -> `Sans 
+| "Helvetica" -> `Sans 
 | "Courier" -> `Fixed 
 | _ -> `Sans
 
-let target ?(font = default_font) ?(share = max_int) ?xmp () = 
+let target ?(font = font) ?(share = max_int) ?xmp () = 
   let target r _ = 
     true, render { r; 
                    font; 

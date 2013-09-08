@@ -30,6 +30,10 @@ let to_str_of_pp pp v =
 let src_link = (* TODO use %%VERSION%% *)
   format_of_string "https://github.com/dbuenzli/vg/blob/master/db/%s#L%d"
 
+let font f = match Font.name f, Font.weight f with     (* PDF font resolver. *) 
+| "Open Sans", `W800 -> `Otf Open_sans.extra_bold
+| _ -> Vgr_pdf.font f
+
 (* Resolution *)
 
 let ppi_300 = 11811.
@@ -290,7 +294,7 @@ let ui_render_targets () =
         in
         let create_date, creator_tool = Time.now (), app_name in
         let xmp = Db.xmp_metadata ~create_date ~creator_tool i in
-        let t = Vgr_pdf.target ~share:1 ~xmp () in
+        let t = Vgr_pdf.target ~font ~xmp () in
         render ~limit:20 ~warn t (`Buffer b) i finish;
   in
   List.iter (fun (_, ui) -> Ui.visible ~relayout:true ui false) uis;

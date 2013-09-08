@@ -10,8 +10,12 @@ open Vg
 include Db_contents
 
 let renderer dst is =
+  let font f = match Font.name f, Font.weight f with
+  | "Open Sans", `W800 -> `Otf Open_sans.extra_bold
+  | _ -> Vgr_pdf.font f
+  in
   let xmp = Rstored.xmp_metadata is in
-  Vgr.create (Vgr_pdf.target ~xmp ()) dst
+  Vgr.create (Vgr_pdf.target ~font ~xmp ()) dst
 
 let () = Rstored.main "PDF" "pdf" renderer
 
