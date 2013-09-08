@@ -209,8 +209,8 @@ let b_str_text buf str =     (* adds UTF-8 [str] as an UTF-16BE text string. *)
               let b1 = unsafe_byte str (i + 1) in 
               let b2 = unsafe_byte str (i + 2) in 
               let c = (((b0 land 0x0F) lsl 12) lor 
-                         ((b1 land 0x3F) lsl 6) lor 
-		         (b2 land 0x3F))
+                       ((b1 land 0x3F) lsl 6) lor 
+                       (b2 land 0x3F))
               in
               if b2 lsr 6 != 0b10 then malformed () else
               begin match b0 with
@@ -224,9 +224,9 @@ let b_str_text buf str =     (* adds UTF-8 [str] as an UTF-16BE text string. *)
               let b2 = unsafe_byte str (i + 2) in 
               let b3 = unsafe_byte str (i + 3) in 
               let c = (((b0 land 0x07) lsl 18) lor 
-                         ((b1 land 0x3F) lsl 12) lor 
-		         ((b2 land 0x3F) lsl 6) lor 
-                         (b3 land 0x3F))
+                       ((b1 land 0x3F) lsl 12) lor 
+                       ((b2 land 0x3F) lsl 6) lor 
+                       (b3 land 0x3F))
               in
               if b3 lsr 6 != 0b10 || b2 lsr 6 != 0b10 then malformed () else
               begin match b0 with
@@ -344,14 +344,14 @@ let cubic_earc tol cubic acc p0 large cw a r p1 =
         let a = 0.25 *. dt in
         let is_flat = (2.*. (sin a) ** 6.) /. (27.*. (cos a) ** 2.) <= tol in
         if is_flat then 
-	        let l = (4. *. tan a) /. 3. in
-         let c0 = V2.add p0 (V2.smul l (V2.ltr mt (V2.v (sin t0) (cos t0)))) in
-         let c1 = V2.sub p1 (V2.smul l (V2.ltr mt (V2.v (sin t1) (cos t1)))) in
+          let l = (4. *. tan a) /. 3. in
+          let c0 = V2.add p0 (V2.smul l (V2.ltr mt (V2.v (sin t0) (cos t0)))) in
+          let c1 = V2.sub p1 (V2.smul l (V2.ltr mt (V2.v (sin t1) (cos t1)))) in
          cubic c0 c1 p1 acc
         else
         let t = (t0 +. t1) /. 2. in
-	      let b = V2.(c + ltr m (V2.v (cos t) (sin t))) in
-	      loop tol cubic (loop tol cubic acc p0 t0 b t) b t p1 t1
+        let b = V2.(c + ltr m (V2.v (cos t) (sin t))) in
+        loop tol cubic (loop tol cubic acc p0 t0 b t) b t p1 t1
       in
       loop tol cubic acc p0 t0 p1 t1
         
