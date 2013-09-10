@@ -560,9 +560,11 @@ module Vgr : sig
       {- [create_date] (a POSIX timestamp in seconds) is mapped to 
          xmp:CreateDate.}} 
 
-      {b Note.} All strings must be UTF-8 encoded and must not contain the 
-      ASCII control characters [U+0000..U+001F], except tab ([U+0009]), 
-      linefeed ([U+000A]) or cariage return ([U+000D]). *)
+      {b Note.} All strings must be UTF-8 encoded. Unicode characters that 
+      are not legal XML {{:http://www.w3.org/TR/REC-xml/#NT-Char}characters} 
+      are replaced by the Unicode 
+      {{:http://unicode.org/glossary/#replacement_character}replacement 
+      character} *)
       
   (** {1:renderable Renderable} 
 
