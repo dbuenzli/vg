@@ -1,3 +1,4 @@
+#directory "_build/db";;
 #directory "_build/src";;
 #directory "_build/test";;
 

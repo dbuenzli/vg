@@ -1,18 +1,35 @@
-true : package(gg)
-
-<**/*.{ml,mli}> : bin_annot, annot
+<**/*.{mli,ml}> : bin_annot, annot
 <src> : include
 <test> : include
 <db> : include
 
-<src/vgr_htmlc.{mli,ml}> : package(js_of_ocaml.syntax), syntax(camlp4o)
+<src/vg.{mli,ml}> : package(gg)
 
+<src/vgr_htmlc.{mli,ml}> : package(gg), package(js_of_ocaml.syntax), \
+                           syntax(camlp4o)
+
+<src/vgr_svg.{mli,ml}> : package(gg)
+
+<src/vgr_pdf.{mli,ml}> : package(gg), package(otfm)
+
+<db/*.{mli,ml}> : package(gg)
 <db/glyphs_pdf.{mli,ml}> : package(uutf)
-<test/{rpdf,rsvg,examples,min_svg}.{byte,native}> : package(unix), \
-                                                    package(uutf)
 
-<test/{rhtmlc,mui}.{mli,ml,byte}> : package(uutf), \
-                                    package(js_of_ocaml)
+<test/mui.{mli,ml}> : package(js_of_ocaml), package(js_of_ocaml.syntax), \
+                      syntax(camlp4o)
 
-<test/{min_htmlc,mui,sqc}.{mli,ml,byte}> : package(js_of_ocaml), \
-                            package(js_of_ocaml.syntax), syntax(camlp4o)
+<test/rstored.{mli,ml}> : package(gg)
+
+<test/rpdf.{mli,ml,byte,native}> : package(gg), package(otfm), package(uutf), \
+                                   package(unix)
+
+<test/rsvg.{mli,ml,byte,native}> : package(gg), package(uutf), package(unix)
+
+<test/rhtmlc.{mli,ml,byte}> : package(js_of_ocaml), \
+                              package(js_of_ocaml.syntax), syntax(camlp4o)
+
+<test/min_pdf.{mli,ml,byte,native}> : package(gg), package(otfm)
+
+<test/min_svg.{mli,ml,byte,native}> : package(gg)
+
+<test/examples.{mli,ml,byte,native}> : package(gg)
