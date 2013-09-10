@@ -20,16 +20,24 @@
 
 <test/rstored.{mli,ml}> : package(gg)
 
-<test/rpdf.{mli,ml,byte,native}> : package(gg), package(otfm), package(uutf), \
+<test/rpdf.{mli,ml,byte,native}> : package(gg), package(uutf), package(otfm), \
                                    package(unix)
 
 <test/rsvg.{mli,ml,byte,native}> : package(gg), package(uutf), package(unix)
 
-<test/rhtmlc.{mli,ml,byte}> : package(js_of_ocaml), \
+<test/rhtmlc.{mli,ml,byte}> : package(gg), package(otfm), package(uutf), \
+                              package(js_of_ocaml), \
                               package(js_of_ocaml.syntax), syntax(camlp4o)
 
-<test/min_pdf.{mli,ml,byte,native}> : package(gg), package(otfm)
+<test/min_pdf.{ml,byte,native}> : package(gg), package(otfm)
 
-<test/min_svg.{mli,ml,byte,native}> : package(gg)
+<test/min_svg.{ml,byte,native}> : package(gg)
 
-<test/examples.{mli,ml,byte,native}> : package(gg)
+<test/min_htmlc.{ml,byte}> : package(gg), package(js_of_ocaml), \
+                             package(js_of_ocaml.syntax), syntax(camlp4o)
+                                        
+<test/sqc.{ml,byte}> : package(gg), package(js_of_ocaml), \
+                       package(js_of_ocaml.syntax), syntax(camlp4o)
+
+<test/examples.{ml,byte,native}> : package(gg)
+
