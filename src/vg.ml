@@ -96,7 +96,7 @@ module Font = struct
   let pp ppf font =     
     pp ppf "@[<1>(font@ (name %s)@ (size %g)@ (weight %s)@ (slant %s))@]"
       font.name font.size (weight_to_str font.weight) (slant_to_str font.slant)
-
+      
   let to_string p = to_string_of_formatter pp p 
 end
 
@@ -118,15 +118,15 @@ module P = struct
   (* Path outline joins *)
 
   type join = [ `Miter | `Round | `Bevel ]
-
+              
   let pp_join ppf = function 
   | `Bevel -> pp ppf "Bevel" | `Miter -> pp ppf "Miter" 
   | `Round -> pp ppf "Round"
-
+                
   (* Path outline dashes *)
 
   type dashes = float * float list
-
+                  
   let eq_dashes eq d d' = match d, d' with 
   | Some (f, ds), Some (f', ds') -> 
       eq f f' && (try List.for_all2 eq ds ds' with Invalid_argument _ -> false)
@@ -143,12 +143,12 @@ module P = struct
       let c = cmp f f' in 
       if c <> 0 then c else dashes ds ds'
   | d, d' -> Pervasives.compare d d'
-
+               
   let pp_dashes pp_f ppf = function 
   | None -> () | Some (f, ds) -> 
       let pp_dashes ppf ds = pp_list ~pp_sep:pp_space pp_f ppf ds in
       pp ppf "@ (dashes %a @[<1>(%a)@])" pp_f f pp_dashes ds
-
+        
   (* Path outlines *)
 
   type outline = 
@@ -170,13 +170,13 @@ module P = struct
   (* Path areas *)
 
   type area = [ `Aeo | `Anz | `O of outline ]
-        
+              
   let eq_area eq a a' = match a, a' with
   | `O o, `O o' ->
       eq o.width o'.width && o.cap = o'.cap && o.join = o'.join &&
       eq o.miter_angle o'.miter_angle && eq_dashes eq o.dashes o'.dashes
   | a, a' -> a = a'
-
+             
   let cmp_area cmp a a' = match a, a' with
   | `O o, `O o' ->
       let c = cmp o.width o'.width in 
@@ -188,16 +188,16 @@ module P = struct
       let c = cmp o.miter_angle o'.miter_angle in 
       if c <> 0 then c else cmp_dashes cmp o.dashes o'.dashes
   | a, a' -> Pervasives.compare a a'
-
+               
   let pp_area_f pp_f ppf = function 
   | `Anz -> pp ppf "@[<1>anz@]"
   | `Aeo -> pp ppf "@[<1>aeo@]"
   | `O o -> pp ppf "%a" (pp_outline_f pp_f) o
-
+              
   let pp_area ppf a = pp_area_f pp_float ppf a 
-
+      
   (* Paths *)
-  
+      
   type segment = 
     [ `Sub of p2                          (* subpath start, "empty" segment *)
     | `Line of p2
@@ -205,13 +205,13 @@ module P = struct
     | `Ccurve of p2 * p2 * p2 
     | `Earc of bool * bool * float * size2 * p2
     | `Close ]
-  
+    
   type t = segment list
   (* The list is reversed. The following invariants hold. The last
      element of the list is always `Sub. Between any two `Sub there is
      always at least one element different from `Sub. If there's an
      element preceding a `Close it's a `Sub. *)
-
+      
   let empty = []
   let last_pt = function 
   | [] -> None
@@ -228,7 +228,7 @@ module P = struct
           Some (find_sub ss)
             
   (* Subpath and segments *)  
-
+            
   let abs_origin p = match last_pt p with None -> P2.o | Some o -> o
   let abs p pt = match last_pt p with None -> pt | Some o -> V2.(o + pt)
   let close_empty_sub = function
@@ -372,12 +372,12 @@ module P = struct
     let b11 = V2.mix b01 b02 t in
     let b = V2.mix b10 b11 t in
     b
-
+      
   (* Functions *)
       
   let last_pt p = match last_pt p with 
   | None -> invalid_arg err_empty | Some pt -> pt
-        
+    
   let append p' p =
     let p = close_empty_sub p in
     List.rev_append (List.rev p') p
@@ -390,12 +390,12 @@ module P = struct
       let xmax = ref ~-.max_float in
       let ymax = ref ~-.max_float in
       let update pt = 
-  let x = P2.x pt in
+        let x = P2.x pt in
         let y = P2.y pt in
-  if x < !xmin then xmin := x;
-  if x > !xmax then xmax := x;
-  if y < !ymin then ymin := y;
-  if y > !ymax then ymax := y
+        if x < !xmin then xmin := x;
+        if x > !xmax then xmax := x;
+        if y < !ymin then ymin := y;
+        if y > !ymax then ymax := y
       in
       let rec seg_ctrl = function
       | `Sub pt :: l -> update pt; seg_ctrl l
@@ -403,77 +403,77 @@ module P = struct
       | `Qcurve (c, pt) :: l -> update c; update pt; seg_ctrl l
       | `Ccurve (c, c', pt) :: l -> update c; update c'; update pt; seg_ctrl l
       | `Earc (large, cw, angle, radii, pt) :: l ->
-    let last = last_pt l in
+          let last = last_pt l in
           begin match earc_params last large cw angle radii pt with
           | None -> update pt; seg_ctrl l
           | Some (c, m, a1, a2) ->
               (* TODO wrong in general. *)
-        let t = (a1 +. a2) /. 2. in
+              let t = (a1 +. a2) /. 2. in
               let b = V2.add c (V2.ltr m (V2.v (cos t) (sin t))) in
               update b; update pt; seg_ctrl l
-      end
-  | `Close :: l -> seg_ctrl l
-  | [] -> ()
+          end
+      | `Close :: l -> seg_ctrl l
+      | [] -> ()
       in
       let rec seg = function 
       | `Sub pt :: l -> update pt; seg l
       | `Line pt :: l -> update pt; seg l
       | `Qcurve (c, pt) :: l -> (* TODO *) update c; update pt; seg l
       | `Ccurve (c, c', pt) :: l -> 
-    let last = last_pt l in
+          let last = last_pt l in
           let update_z dim = (* Kallay, computing thight bounds *)
-        let fuzz = 1e-12 in
-        let solve a b c f = 
-    let d = b *. b -. a *. c in
-    if (d <= 0.) then () else 
-    begin
-      let d = sqrt d in
-      let b = -. b in
-      let b = if (b > 0.) then b +. d else b -. d in
-      if (b *. a > 0.) then f (b /. a);
-      let a = d *. c in
-      let b = c *. c *. fuzz in 
-      if (a > b || -. a < -. b) then f (c /. d);
-    end
-        in
-        let a = dim last in 
-        let b = dim c in
-        let cc = dim c' in
-        let d = dim pt in
-        if (a < b && b < d) && (a < cc && cc < d) then () else
-        let a = b -. a in
-        let b = cc -. b in
-        let cc = d -. cc in
-        let fa = abs_float a in
-        let fb = abs_float b *. fuzz in
-        let fc = abs_float cc in
-        if (fa < fb && fc < fb) then () else
-        if (fa > fc) then
-    let upd s = 
-                  update (casteljau last c c' pt (1.0 /. (1.0 +. s))) 
-                in
-    solve a b cc upd;   
-        else
-    let upd s = update (casteljau last c c' pt (s /. (1.0 +. s))) in
-    solve cc b a upd
-      in
-      update_z V2.x; update_z V2.y; update pt; seg l
-  | `Earc (large, cw, angle, radii, pt) :: l ->
-      let last = last_pt l in
-     begin match earc_params last large cw angle radii pt with
-      | None -> update pt; seg l
-      | Some (c, m, a1, a2) ->
-    (* TODO wrong in general. *)
-    let t = (a1 +. a2) /. 2. in
-    let b = V2.add c (V2.ltr m (V2.v (cos t) (sin t))) in
-    update b;  update pt; seg l
-      end
-  | `Close :: l -> seg l
-  | [] -> ()
+            let fuzz = 1e-12 in
+            let solve a b c f = 
+              let d = b *. b -. a *. c in
+              if (d <= 0.) then () else 
+              begin
+                let d = sqrt d in
+                let b = -. b in
+                let b = if (b > 0.) then b +. d else b -. d in
+                if (b *. a > 0.) then f (b /. a);
+                let a = d *. c in
+                let b = c *. c *. fuzz in 
+                if (a > b || -. a < -. b) then f (c /. d);
+              end
+            in
+            let a = dim last in 
+            let b = dim c in
+            let cc = dim c' in
+            let d = dim pt in
+            if (a < b && b < d) && (a < cc && cc < d) then () else
+            let a = b -. a in
+            let b = cc -. b in
+            let cc = d -. cc in
+            let fa = abs_float a in
+            let fb = abs_float b *. fuzz in
+            let fc = abs_float cc in
+            if (fa < fb && fc < fb) then () else
+            if (fa > fc) then
+              let upd s = 
+                update (casteljau last c c' pt (1.0 /. (1.0 +. s))) 
+              in
+              solve a b cc upd;   
+            else
+            let upd s = update (casteljau last c c' pt (s /. (1.0 +. s))) in
+            solve cc b a upd
+          in
+          update_z V2.x; update_z V2.y; update pt; seg l
+      | `Earc (large, cw, angle, radii, pt) :: l ->
+          let last = last_pt l in
+          begin match earc_params last large cw angle radii pt with
+          | None -> update pt; seg l
+          | Some (c, m, a1, a2) ->
+              (* TODO wrong in general. *)
+              let t = (a1 +. a2) /. 2. in
+              let b = V2.add c (V2.ltr m (V2.v (cos t) (sin t))) in
+              update b;  update pt; seg l
+          end
+      | `Close :: l -> seg l
+      | [] -> ()
       in
       if ctrl then seg_ctrl p else seg p;
       Box2.v (P2.v !xmin !ymin) (Size2.v (!xmax -. !xmin) (!ymax -. !ymin))
-
+        
   let tr m p = 
     let det = lazy (M3.det m) in
     let tr_seg m = function 
@@ -482,7 +482,7 @@ module P = struct
     | `Qcurve (c, pt) -> `Qcurve (P2.tr m c, P2.tr m pt) 
     | `Ccurve (c, c', pt) -> `Ccurve (P2.tr m c, P2.tr m c', P2.tr m pt)
     | `Earc (l, cw, a, r, pt) -> 
-  let sina = sin a in
+        let sina = sin a in
         let cosa = cos a in
         let rx = V2.x r in
         let ry = V2.y r in
@@ -490,25 +490,25 @@ module P = struct
         let ay = V2.v (-. sina *. ry) (cosa *. ry) in 
         (* TODO this won't work, ax' and ay' may no longer be orthnormal
            with m shears or doesn't scale uniformly. *)
-  let ax' = V2.tr m ax in    
-  let ay' = V2.tr m ay in
-  let a' = atan2 (V2.y ax') (V2.x ax') in 
-  let rx' = V2.norm ax' in
-  let ry' = V2.norm ay' in
+        let ax' = V2.tr m ax in    
+        let ay' = V2.tr m ay in
+        let a' = atan2 (V2.y ax') (V2.x ax') in 
+        let rx' = V2.norm ax' in
+        let ry' = V2.norm ay' in
         let cw = if Lazy.force det < 0. then not cw else cw in
         `Earc (l, cw, a', (V2.v rx' ry'), (P2.tr m pt))
     | `Close -> `Close 
     in
     List.rev (List.rev_map (tr_seg m) p)
-
+      
   (* Traversal *)
-
+      
   type fold = segment 
   let fold ?(rev = false) f acc p = 
     List.fold_left f acc (if rev then p else List.rev p) 
       
   (* Predicates and comparisons *)
-
+      
   let is_empty = function [] -> true | _ -> false 
   let equal p p' = p = p' 
   let rec equal_f eq p p' =
@@ -530,7 +530,7 @@ module P = struct
     | s :: p, s' :: p' -> if equal_seg eq s s' then equal_f eq p p' else false
     | [], [] -> true
     | _ -> false
-          
+      
   let compare p p' = Pervasives.compare p p'
   let rec compare_f cmp p p' = 
     let compare_seg cmp s s' = match s, s' with 
