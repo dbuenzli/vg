@@ -3,6 +3,7 @@
    Distributed under the BSD3 license, see license at the end of the file.
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
+
 (** Vg PDF renderer. 
 
     Renders a sequence of renderables as a multi-page PDF 1.7
@@ -15,75 +16,128 @@
 
     {e Release %%VERSION%% — %%MAINTAINER%% } *)
 
-(** {1:fonts Font resolution} *) 
+(** {1:fonts Font resolution} 
 
-type font = [ `Otf of string | `Serif | `Sans | `Fixed ]
-(** The type for PDF fonts. Either the binary content of an OpenType file 
-    ([`Otf]) or a fallback font that uses the PDF standard fonts, 
-    see {{!text}details}. *)
+    Font resolution happens during the rendering of {!Vg.I.cut_glyphs} 
+    images through the [font] callback given to the PDF rendering {!target}. 
+    See {!text} for more details. *) 
+
+type otf_font 
+(** The type for OpenType fonts. *)
+
+val otf_font : string -> [ `Otf of otf_font | `Error of Otfm.error ]
+(** [otf_font bytes] is an OpenType font from the OpenType byte 
+    serialization [bytes]. *)
+
+type font = 
+  [ `Otf of otf_font 
+  | `Serif | `Sans | `Fixed 
+  | `Helvetica | `Times | `Courier ]
+(** The type for font resolution results. Any case different from [`Otf]
+    ends up using the PDF standard fonts. See {!text} for details. *)
 
 val font : Vg.font -> font 
-(** [font] is a default font resolver. It only resolves the PDF standard
-    fonts which are named ["Helvetica"], ["Times"] and ["Courier"]. *)
+(** [font] is the default font resolver. Given a {!Vg.font} [f] it performs the 
+    following resolutions according to the result of {!Vg.Font.name}[ f]: 
+    {ul 
+    {- ["Helvetica"], returns [`Sans]}
+    {- ["Times"], returns [`Serif]}
+    {- ["Courier"], returns [`Fixed]}
+    {- Any other, returns [`Sans]}} 
+    See {!text} for understanding what this entails. *)
 
 (** {1:target PDF render targets} *)
 
-val target : ?font:(Vg.font -> font) -> ?share:int -> ?xmp:string -> 
+val target : ?font:(Vg.font -> font) -> ?xmp:string -> 
   unit -> Vg.Vgr.dst_stored Vg.Vgr.target
-(** [target share xmp ()] is a PDF render target for rendering to the stored
+(** [target font xmp ()] is a PDF render target for rendering to the stored
     destination given to {!Vg.Vgr.create}. 
     {ul 
-    {- [font] is the font resolver, given a {!Vg.font} [f] it must 
-       return the bytes of a corresponding OpenType font file (which will
-       most likely be independent of the size [Vg.Font.size f]). Defaults 
-       to {!font}.}
-    {- [share] indicates the number of consecutive pages that share
-       resources. If unspecified all pages share resources. TODO 
-       now that the compilation strategy changed it may not make 
-       much sence to expose that.}
+    {- [font] is the font resolver, defaults to {!val:font}, see {!text} for 
+       details. Note that [font] results are cached by the renderer.}
     {- [xmp] is an optional UTF-8 encoded XML XMP metadata packet describing
-       the SVG document (see ISO 16684-1 or the equivalent
+       the PDF document (see ISO 16684-1 or the equivalent
         {{:http://www.adobe.com/devnet/xmp.html}Adobe spec.}). 
-       The convenience function {!Vg.Vgr.xmp_metadata} can be used to 
+       The convenience function {!Vg.Vgr.xmp} can be used to 
        generate a packet.}}
 
     {b Multiple image.} Multiple images render is supported. Each image
-    defines a page of the resulting PDF file.
+    defines a page of the resulting PDF file. *)
 
-    @raise Invalid_argument if [share] is not strictly positive. *)
+(** {1:text Text rendering} 
 
-(** {1:text Text rendering support} 
+    Text rendering depends on the way fonts are resolved by the
+    function specified in the rendering {!target}. Given a glyph
+    cut:
 
-    If the [font] resolver of the target returns something different 
-    than [`Otf], the following fonts are used:
+{!Vg.I.cut_glyphs}[ ~text ~advances font glyphs]
+
+    First, if the optional [text] argument is specified, it is always used to 
+    map the rendered glyphs to this UTF-8 text for PDF text extraction. Then 
+    the following happens according to the resolution of the [font] argument 
+    by the render target:
     {ul 
-    {- For [`Serif], one of Times-Roman, Times-Bold, Times-Italic or 
-       Times-BoldItalic, according to the font's slant and weight.}
-    {- For [`Sans], one of Helvetica, Helvetica-Bold, Helvetica-Oblique, 
-       Helvetica-BoldOblique, according the font's slant and weight.}
-    {- For [`Fixed], one of Courier, Courier-Bold, Courier-Oblique, 
-       Courier-BoldOblique, according to the font's slant and weight.}}    
+    {- [`Otf otf], the values in [glyphs] are glyph indexes of 
+       the OpenType font [otf]. If [advances] is specified these vectors
+       are used to position the glyphs (e.g. you need to use this to perform 
+       kerning), otherwise the font's glyph widths, as found in [otf], are 
+       used.}
+    {- [`Helvetica], uses one of the standard PDF font Helvetica, 
+       Helvetica-Bold, Helvetica, Helvetica-Bold, Helvetica-Oblique, 
+       Helvetica-BoldOblique according to [font]'s {!Vg.Font.slant} and 
+       {!Vg.Font.weight}. The values in [glyphs] are glyph indexes 
+       representing the corresponding Unicode character (e.g. glyph 
+       index [0x20] is the glyph for character [U+0020]). The font
+       supports glyph indexes for all the characters listed in the in 
+       the second column of
+   {{:http://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1252.TXT}
+       this document} which is all the Basic Latin block, the Latin-1 
+       Supplement block without its control characters and some 
+       additional characters (those at rows 0x80-0x9F in that document). 
+       If a glyph index is not supported it is replaced by [0]. If 
+       [advances] is specified these vectors are used to position the glyphs,
+       otherwise the internal font's glyphs width are used.}
+    {- [`Times], same as [`Helvetica] but uses one of the standard PDF font 
+       Times-Roman, Times-Bold, Times-Italic or Times-BoldItalic.}
+    {- [`Courier], same as [`Helvetica] but uses one of the standard PDF font 
+       Courier, Courier-Bold, Courier-Oblique, Courier-BoldOblique.}
+    {- [`Sans] is the same as [`Helvetica] except [advances] and [glyphs]
+       are {b ignored}. Instead the UTF-8 string [text] is used to generate
+       a corresponding [glyphs] list, mapping supported characters as mentioned 
+       above to their corresponding glyph. Unsupported characters are 
+       mapped to glyph 0.}
+    {- [`Serif] same as [`Sans] but uses the same fonts as [`Times].}
+    {- [`Fixed] same as [`Sans] but uses the same fonts as [`Courier].}}
 
-    In that case the glyph values given to {!I.cut_glyphs} are
-    interpreted as an
-    {{:http://unicode.org/glossary/#Unicode_scalar_value}Unicode
-    scalar value} which map to glyphs for the corresponding Unicode
-    scalar value. The supported set of glyph values are those listed
-    in the second column of
-    {{:http://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1252.TXT}
-    this document}, basically this is ISO-8859-1 (latin1) with some
-    additional characters (see those corresponding in the rows 0x80-0x9F). 
-    Any other glyph value is substituted by glyph 0. *)
+    So what should be used ? In general clients should use a font
+    resolution mechanism independent from [Vg] in order to get an
+    OpenType font [otf] for [font]. Using this [otf] font is should
+    compute, using again a mechanism independent from [Vg], a glyph
+    layout resulting in [advances] and [glyphs] to use with
+    {!Vg.I.cut_glyphs} and finally resolve [font] in the target with
+    [`Otf otf]. This means that font resolution should:
+    {ul
+    {- Use [`Otf otf] whenever it is guaranteed that the glyph indexes
+       in [glyphs] actually correspond to the glyph indexes of [otf].}
+    {- Use [`Sans], [`Serif] or [`Fixed] whenever its is unable to resolve 
+       [font] to an appropriate [otf], this may not result in the expected 
+       rendering but still at least show (the latin) part of the text.}
+    {- Use [`Helvetica], [`Times] or [`Courier] to perform glyph
+       layout using PDF's standard fonts without having to embed the fonts in 
+       the PDF (the font metrics can be downloaded
+    {{:http://partners.adobe.com/public/developer/font/index.html#pcfi}here}).
+       PDFs without embedded fonts are however not recommended.}}  *)
 
 (** {1:limits Render warnings and limitations}
 
-    The page content streams in the PDF files are currently uncompressed. 
-    This will be lifted in future versions of the library. If you need to 
-    reduce the size generated PDF you can for example filter it through 
-    {{:http://www.ghostscript.com}ghostscript} with:
+    {ul
+    {-  The page content streams in the PDF files are currently uncompressed. 
+        This will be lifted in future versions of the library. If you need to 
+        reduce the size of generated PDFs you can, for example, filter them 
+        through {{:http://www.ghostscript.com}ghostscript} with:
 {[
 gs -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=output.pdf input.pdf
-]}
+]}}}
 *)
 
 (*---------------------------------------------------------------------------

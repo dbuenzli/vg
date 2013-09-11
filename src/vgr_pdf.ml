@@ -8,27 +8,6 @@ open Gg
 open Vg
 open Vgr.Private.Data
 
-external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
-
-let mm_to_pt = 72. /. 25.4
-
-(* Initially a few things were tried to share paths construction
-   operators in XObjects, it turned out it wouldn't work in
-   Reader. Path are thus written once per cut unless the *same* path
-   is cut repeatedly. This should be less a problem once we get some
-   compression in.
-
-   Regarding text rendering a simple approach is taken for now
-   according to the arguments given to glyph_cut. If glyph advances
-   are explicitly given we draw glyph by glyph using td to position
-   them. If glyphs advances are omitted we use the Tj
-   operator. Unfortunately PDF still requires use to extract the glyph
-   advances from the font which means that the font resolver interface
-   is a little bit clumsy at the moment. Depending on how much work
-   that entails once Otfm matures we could make it dependent on it and
-   do the work internally (but then distribute the PDF backend separately
-   in order not to impose Otfm). *)
-
 (* Unsafe string byte manipulations. If you don't believe the author's
    invariants, replacing with safe versions makes everything safe in
    the module. He won't be upset. *)
@@ -37,10 +16,88 @@ let unsafe_byte s j = Char.code (String.unsafe_get s j)
 let unsafe_array_get = Array.unsafe_get
 let unsafe_chr = Char.unsafe_chr
 
-type font = [ `Otf of string | `Serif | `Sans | `Fixed ]
-type font_program = [ `Fallback of string | `Otf of string ]
+(* Constants and convenience functions. *)
 
-type id = int                                             (* PDF object ids. *) 
+external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
+
+let mm_to_pt = 72. /. 25.4
+
+(* Constant Unicode scalar values *) 
+
+let u_bom    = 0xFEFF                                                (* BOM. *)
+let u_rep    = 0xFFFD                              (* replacement character. *)
+let u_lpar   = 0x0028           
+let u_rpar   = 0x0029 
+let u_bslash = 0x005C
+
+(* Render target *)
+
+type id = int                                             (* PDF object ids. *)
+
+(* Font resolution *) 
+
+type otf_font = 
+  { otf_program : string; 
+    otf_flavour : [ `CFF | `TTF ]; 
+    otf_postscript_name : string option;
+    otf_units_per_em : int;
+    otf_xmin : int; otf_ymin : int; otf_xmax : int; otf_ymax : int;
+    otf_ascent : int; 
+    otf_descent : int;
+    otf_widths : int list; }
+    
+type font_program = [ `Pdf_font of string (* name *) | `Otf of otf_font ]
+type font_mode = [ `Otf_glyphs | `Pdf_glyphs | `Pdf_text ]
+type font = 
+  [ `Otf of otf_font | `Serif | `Sans | `Fixed | `Helvetica | `Times 
+  | `Courier ]
+
+let pdf_helvetica_programs = 
+  ("Helvetica", "Helvetica-Bold"), ("Helvetica-Oblique","Helvetica-BoldOblique")
+
+let pdf_times_programs = 
+  ("Times-Roman", "Times-Bold"), ("Times-Italic", "Times-BoldItalic")
+
+let pdf_courier_programs = 
+  ("Courier", "Courier-Bold"), ("Courier-Oblique", "Courier-BoldOblique")
+
+let pdf_font_program font (normal, slanted) = 
+  let (regular, bold) = if font.slant = `Normal then normal else slanted in 
+  `Pdf_font (if font.weight < `W700 then regular else bold)
+
+let otf_font s =
+  let ( >>= ) x f = match x with `Error _ as e -> e | `Ok v -> f v in
+  let add_adv acc _ adv _ = adv :: acc in
+  let d = Otfm.decoder (`String s) in
+  Otfm.flavour         d >>= fun otf_flavour -> 
+  Otfm.postscript_name d >>= fun otf_postscript_name -> 
+  Otfm.head            d >>= fun head -> 
+  Otfm.hhea            d >>= fun hhea ->
+  Otfm.hmtx d add_adv [] >>= fun widths ->
+  let otf_units_per_em = head.Otfm.head_units_per_em in
+  let otf_xmin = head.Otfm.head_xmin in
+  let otf_ymin = head.Otfm.head_ymin in
+  let otf_xmax = head.Otfm.head_xmax in
+  let otf_ymax = head.Otfm.head_ymax in
+  let otf_ascent = hhea.Otfm.hhea_ascender in 
+  let otf_descent = hhea.Otfm.hhea_descender in
+  let otf_widths = List.rev widths in
+  `Otf { otf_program = s; 
+         otf_flavour; 
+         otf_postscript_name;
+         otf_units_per_em; 
+         otf_xmin; otf_ymin; otf_xmax; otf_ymax;
+         otf_ascent; otf_descent;
+         otf_widths; }
+  
+let font font = match Font.name font with 
+| "Helvetica" -> `Sans 
+| "Times" -> `Serif 
+| "Courier" -> `Fixed 
+| _ -> `Sans
+
+(* Render state *)
+
 type gstate =                  (* Subset of the graphics state saved by a q. *) 
   { mutable g_tr : M3.t;           (* current transform with view transform. *) 
     mutable g_scolor : Vgr.Private.Data.primitive;  (* current stroke color. *) 
@@ -58,7 +115,7 @@ type cmd = Set of gstate | Draw of Vgr.Private.Data.image
 
 type state = 
   { r : Vgr.Private.renderer;                    (* corresponding renderer. *)
-    font : Vg.font -> font;                           (* PDF font resolver. *)
+    font : Vg.font -> font;                               (* font resolver. *)
     share : int;                            (* page resource sharing limit. *)
     xmp : string option;                            (* XMP metadata packet. *)
     buf : Buffer.t;                                   (* formatting buffer. *) 
@@ -75,7 +132,7 @@ type state =
     mutable page_objs : int list;                      (* pages object ids. *)
     prims : (Vgr.Private.Data.primitive, (m3 * id) list) Hashtbl.t;
     alphas : (float * [`S | `F], id) Hashtbl.t;
-    fonts : (Vgr.Private.Data.font, id * bool) Hashtbl.t;
+    fonts : (Vgr.Private.Data.font, id * font_mode) Hashtbl.t;
     font_programs : (font_program, id) Hashtbl.t;             
     mutable gstate : gstate; }                    (* current graphic state. *) 
 
@@ -98,41 +155,31 @@ let new_page s =
   s.page_objs <- id :: s.page_objs; id
 
 let get_id s h v = try Hashtbl.find h v with 
-| Not_found -> 
+| Not_found ->
     let id = new_obj_id s in 
     Hashtbl.add h v id; id
 
 let get_alpha_id s alpha = get_id s s.alphas alpha
+
 let rec get_font_id s font = try Hashtbl.find s.fonts font with 
 | Not_found ->
-    let fallback font normal bold =
-      `Fallback (if font.weight < `W700 then normal else bold), true 
-    in
-    let program, fallback = match s.font (Vgr.Private.Font.of_data font) with
-    | `Otf _ as otf -> otf, false
-    | `Sans -> 
-        if font.slant = `Normal 
-        then fallback font "Helvetica" "Helvetica-Bold"
-        else fallback font "Helvetica-Oblique" "Helvetica-BoldOblique"
-    | `Serif ->    
-        if font.slant = `Normal 
-        then fallback font "Times-Roman" "Times-Bold"
-        else fallback font "Times-Italic" "Times-BoldItalic"
-    | `Fixed ->
-        if font.slant = `Normal 
-        then fallback font "Courier" "Courier-Bold" 
-        else fallback font "Courier-Oblique" "Courier-BoldOblique"
+    let program, mode = match s.font (Vgr.Private.Font.of_data font) with
+    | `Otf _ as p -> p, `Otf_glyphs
+    | `Helvetica  -> pdf_font_program font pdf_helvetica_programs, `Pdf_glyphs
+    | `Sans       -> pdf_font_program font pdf_helvetica_programs, `Pdf_text
+    | `Times      -> pdf_font_program font pdf_times_programs, `Pdf_glyphs
+    | `Serif      -> pdf_font_program font pdf_times_programs, `Pdf_text
+    | `Courier    -> pdf_font_program font pdf_courier_programs, `Pdf_glyphs
+    | `Fixed      -> pdf_font_program font pdf_courier_programs, `Pdf_text
     in
     let id = try Hashtbl.find s.font_programs program with 
     | Not_found -> get_id s s.font_programs program 
     in
-    let spec = id, fallback in
-    Hashtbl.add s.fonts font spec; spec
+    let resolution = id, mode in
+    Hashtbl.add s.fonts font resolution; resolution
 
 let get_prim_id s ctm prim = 
-  let patts = try Hashtbl.find s.prims prim with 
-  | Not_found -> [] 
-  in
+  let patts = try Hashtbl.find s.prims prim with | Not_found -> [] in
   let id = new_obj_id s in
   Hashtbl.replace s.prims prim ((ctm, id) :: patts); 
   id
@@ -153,94 +200,32 @@ let rec b_id_list b = function
 
 let b_fmt s fmt = Printf.bprintf s.buf fmt
 let b_str s str = Buffer.add_string s.buf str
+let b_str_byte s byte = 
+  let b s byte = Buffer.add_char s.buf (unsafe_chr byte) in
+  if byte = u_lpar || byte = u_rpar || byte = u_bslash     
+  then (b s u_bslash; b s byte)                              (* PDF escape. *)
+  else (b s byte)
 
-let utf_8_len = [| (* uchar byte length according to first UTF-8 byte. *)
-  1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 
-  1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 
-  1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 
-  1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 
-  1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 1; 
-  1; 1; 1; 1; 1; 1; 1; 1; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 
-  0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 
-  0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 
-  0; 0; 2; 2; 2; 2; 2; 2; 2; 2; 2; 2; 2; 2; 2; 2; 2; 2; 2; 2; 2; 2; 2; 2; 
-  2; 2; 2; 2; 2; 2; 2; 2; 3; 3; 3; 3; 3; 3; 3; 3; 3; 3; 3; 3; 3; 3; 3; 3; 
-  4; 4; 4; 4; 4; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0; 0 |]
-
-let u_bom = 0xFEFF                                                   (* BOM. *)
-let u_rep = 0xFFFD                                 (* replacement character. *)
-let u_lpar = 0x0028           
-let u_rpar = 0x0029 
-let u_bslash = 0x005C
 let b_str_text buf str =     (* adds UTF-8 [str] as an UTF-16BE text string. *) 
-  let add_utf16be b u =
-    let w byte = Buffer.add_char b (unsafe_chr byte) in          (* inlined. *)
-    if u < 0x10000 then begin 
-      if u = u_lpar || u = u_rpar || u = u_bslash             (* PDF escape. *)
-      then (w 0x00; w u_bslash (* escape next *byte* *) ; w u) 
-      else (w (u lsr 8); w (u land 0xFF)) 
-    end else begin 
-      let u' = u - 0x10000 in
-      let hi = (0xD800 lor (u' lsr 10)) in
-      let lo = (0xDC00 lor (u' land 0x3FF)) in
-      w (hi lsr 8); w (hi land 0xFF);
-      w (lo lsr 8); w (lo land 0xFF)
-    end
+  let rec add_utf16_be () i = function 
+  | `Malformed _ -> add_utf16_be () i (`Uchar Uutf.u_rep)
+  | `Uchar u ->
+      (* Can't use Uutf.Buffer.add_utf16_be because of the PDF escape rules. *) 
+      let w byte = Buffer.add_char buf (unsafe_chr byte) in
+      if u < 0x10000 then begin 
+        if u = u_lpar || u = u_rpar || u = u_bslash           (* PDF escape. *)
+        then (w 0x00; w u_bslash (* escape next *byte* *) ; w u) 
+        else (w (u lsr 8); w (u land 0xFF)) 
+      end else begin 
+        let u' = u - 0x10000 in
+        let hi = (0xD800 lor (u' lsr 10)) in
+        let lo = (0xDC00 lor (u' land 0x3FF)) in
+        w (hi lsr 8); w (hi land 0xFF);
+        w (lo lsr 8); w (lo land 0xFF)
+      end
   in
-  let rec loop str i l =
-    if i = l then () else 
-    let malformed () = add_utf16be buf u_rep in
-    let uchar u = add_utf16be buf u in 
-    match unsafe_array_get utf_8_len (unsafe_byte str i) with
-    | 0 -> malformed (); loop str (i + 1) l
-    | need -> 
-        let rem = l - i in
-        if rem < need then malformed () else
-        begin 
-          begin match need with
-          | 1 -> uchar (unsafe_byte str i)
-          | 2 -> 
-              let b0 = unsafe_byte str i in 
-              let b1 = unsafe_byte str (i + 1) in 
-              if b1 lsr 6 != 0b10 then malformed () else
-              uchar (((b0 land 0x1F) lsl 6) lor (b1 land 0x3F))
-          | 3 -> 
-              let b0 = unsafe_byte str i in 
-              let b1 = unsafe_byte str (i + 1) in 
-              let b2 = unsafe_byte str (i + 2) in 
-              let c = (((b0 land 0x0F) lsl 12) lor 
-                       ((b1 land 0x3F) lsl 6) lor 
-                       (b2 land 0x3F))
-              in
-              if b2 lsr 6 != 0b10 then malformed () else
-              begin match b0 with
-              | 0xE0 -> if b1 < 0xA0 || 0xBF < b1 then malformed () else uchar c
-              | 0xED -> if b1 < 0x80 || 0x9F < b1 then malformed () else uchar c
-              | _ -> if b1 lsr 6 != 0b10 then malformed () else uchar c
-              end
-          | 4 -> 
-              let b0 = unsafe_byte str i in 
-              let b1 = unsafe_byte str (i + 1) in 
-              let b2 = unsafe_byte str (i + 2) in 
-              let b3 = unsafe_byte str (i + 3) in 
-              let c = (((b0 land 0x07) lsl 18) lor 
-                       ((b1 land 0x3F) lsl 12) lor 
-                       ((b2 land 0x3F) lsl 6) lor 
-                       (b3 land 0x3F))
-              in
-              if b3 lsr 6 != 0b10 || b2 lsr 6 != 0b10 then malformed () else
-              begin match b0 with
-              | 0xF0 -> if b1 < 0x90 || 0xBF < b1 then malformed () else uchar c
-              | 0xF4 -> if b1 < 0x80 || 0x8F < b1 then malformed () else uchar c
-              | _ -> if b1 lsr 6 != 0b10 then malformed () else uchar c
-              end
-          | _ -> assert false
-          end;
-          loop str (i + need) l
-        end
-  in
-  add_utf16be buf u_bom; (* add BOM *) 
-  loop str 0 (String.length str)
+  Buffer.add_string buf "\xFE\xFF"; (* BOM *) 
+  Uutf.String.fold_utf_8 add_utf16_be () str
   
 let b_start s = b_str s "%PDF-1.7\n%\xCF\xC3\xE1\xED\xEC\n"
 let b_obj_end s = b_str s "endobj\n"
@@ -313,12 +298,12 @@ let set_outline s ot =
 
 let set_font s font = 
   let c = s.gstate in
-  let id, fallback = get_font_id s font in
-  if c.g_font_id <> id then begin
+  let id, font_mode = get_font_id s font in
+  if c.g_font_id <> id then begin 
     b_fmt s "\n/f%d %f Tf" id font.size;
-    c.g_font_id <- id
-  end; 
-  fallback
+    c.g_font_id <- id;
+  end;
+  font_mode
     
 let push_transform s tr =
   let m = Vgr.Private.Data.tr_to_m3 tr in
@@ -370,7 +355,7 @@ let w_path s p op k r =
   | `Ccurve (c0, c1, pt) -> 
       b_cubic c0 c1 pt (); pt
   | `Earc (large, cw, angle, radii, pt) -> 
-      cubic_earc 1e-3 b_cubic () last large cw angle radii pt; pt 
+      cubic_earc 1e-9 b_cubic () last large cw angle radii pt; pt 
   | `Close -> 
       b_fmt s "\nh"; last
   in
@@ -399,7 +384,7 @@ let w_primitive_cut s ctm a p prim k r = match a with
 | `Aeo -> set_fcolor s ctm prim; w_path s p " f*" k r
 | `O o -> set_scolor s ctm prim; set_outline s o; w_path s p " S" k r
 
-(* Non straightforward mappings from unicode to Windows Code Page 1252.
+(* The non straightforward mappings from unicode to Windows Code Page 1252.
    http://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1252.TXT *)
 let uchar_to_cp1252 = 
   [ 0x20AC, 0x80; 0x201A, 0x82; 0x0192, 0x83; 0x201E, 0x84; 0x2026, 0x85; 
@@ -409,29 +394,46 @@ let uchar_to_cp1252 =
     0x02DC, 0x98; 0x2122, 0x99; 0x0161, 0x9A; 0x203A, 0x9B; 0x0153, 0x9C; 
     0x017E, 0x9E; 0x0178, 0x9F; ]
 
-let fallback_encode s glyph =            (* glyph is an Unicode scalar value *)
-  let b s byte = Buffer.add_char s.buf (unsafe_chr byte) in
+let glyph_pdf_encode s glyph =    (* glyph is an Unicode scalar value <= 255 *)
   let glyph = match glyph with        (* translate to Windows Code Page 1252 *)
   | g when g <= 0x007F -> g 
   | g when g <= 0x00A0 -> 0
   | g when g <= 0x00FF -> g
   | g -> try List.assoc g uchar_to_cp1252 with Not_found -> 0
   in
-  if glyph = u_lpar || glyph = u_rpar || glyph = u_bslash     (* PDF escape. *)
-  then (b s u_bslash; b s glyph)
-  else (b s glyph)
+  b_str_byte s glyph 
 
+let glyph_identity_h_encode s glyph =
+  b_str_byte s ((glyph land 0xFF00) lsr 8); 
+  b_str_byte s ((glyph land 0x00FF))
+  
 let w_glyph_run s run op k r = 
-  let fallback = set_font s run.Vgr.Private.Data.font in
+  let font_mode = set_font s run.Vgr.Private.Data.font in
   b_fmt s "%s" op;
   begin match run.Vgr.Private.Data.text with 
   | None -> b_fmt s "\nBT"
   | Some t -> b_fmt s "\nBT /Span << /ActualText (%a)>> BDC\n" b_str_text t
   end; 
+  let encode = match font_mode with 
+  | `Otf_glyphs -> glyph_identity_h_encode
+  | `Pdf_glyphs | `Pdf_text -> glyph_pdf_encode
+  in
+  let glyphs = match font_mode with 
+  | `Otf_glyphs | `Pdf_glyphs -> run.glyphs
+  | `Pdf_text ->
+      begin match run.text with 
+      | None -> [] 
+      | Some text ->
+          let add_glyph acc _ = function 
+          | `Uchar u -> u :: acc | `Malformed _ -> Uutf.u_rep :: acc 
+          in
+          List.rev (Uutf.String.fold_utf_8 add_glyph [] text)
+      end
+  in
   begin match run.Vgr.Private.Data.advances with 
   | None | Some _ (* TODO *) -> 
       b_fmt s "(";
-      List.iter (fallback_encode s) run.glyphs; 
+      List.iter (encode s) glyphs;
       b_fmt s ") Tj" 
   end;
   begin match run.text with 
@@ -683,7 +685,7 @@ let w_resources ?(last = false) s k r =
   if not last then s.id_resources <- new_obj_id s;
   w_alphas s (w_prims s k) r
 
-let w_font_fallback s id n k r = 
+let w_pdf_font s id n k r = 
   b_obj_start s id; 
   b_fmt s "<<\n\
            /Type /Font\n\
@@ -694,9 +696,80 @@ let w_font_fallback s id n k r =
   b_obj_end s;
   w_buf s k r
 
+let em_to_user = 1000
+
+let rec b_widths u_per_em b = function 
+| [] -> () 
+| w :: ws -> 
+    Printf.bprintf b " %d" ((w * em_to_user) / u_per_em); 
+    b_widths u_per_em b ws
+
 let w_font s (id, fp) k r = match fp with 
-| `Fallback n -> w_font_fallback s id n k r 
-| `Otf _ -> (* TODO *) w_font_fallback s id "Helvetica" k r 
+| `Pdf_font n -> w_pdf_font s id n k r 
+| `Otf otf ->
+    let cid_id = new_obj_id s in
+    let ps_name = match otf.otf_postscript_name with 
+    | None -> "f" ^ string_of_int cid_id (* XXX: just make up something *) 
+    | Some n -> n 
+    in
+    let subtype, name = match otf.otf_flavour with 
+    | `CFF -> "/CIDFontType0", ps_name ^ "-Identity-H" 
+    | `TTF -> "/CIDFontType2", ps_name
+    in
+    b_obj_start s id;
+    b_fmt s "<<\n\
+             /Type /Font\n\
+             /Subtype /Type0\n\
+             /BaseFont /%s\n\
+             /Encoding /Identity-H\n\
+             /DescendantFonts [%d 0 R]\n\
+             >>\n" name cid_id;
+    b_obj_end s;
+    let fd_id = new_obj_id s in
+    b_obj_start s cid_id;
+    b_fmt s "<<\n\
+             /Type /Font\n\
+             /Subtype %s\n\
+             /BaseFont /%s\n\
+             /CIDSystemInfo\n\
+             << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >>\n\
+             /W [ 0 [%a]]\n\
+             /FontDescriptor %d 0 R\n\
+             >>\n" 
+      subtype ps_name (b_widths otf.otf_units_per_em) otf.otf_widths fd_id;
+    b_obj_end s;
+    let fp_id = new_obj_id s in
+    b_obj_start s fd_id; 
+    b_fmt s "<<\n\
+             /Type /FontDescriptor\n\
+             /FontName /%s\n\
+             /Flags 0\n\
+             /FontBBox [ %d %d %d %d ]\n\
+             /ItalicAngle 0\n\
+             /Ascent %d\n\
+             /Descent %d\n\
+             /StemV 80\n\
+             /FontFile3 %d 0 R\n\
+             >>\n"
+      ps_name
+      ((otf.otf_xmin * em_to_user) / otf.otf_units_per_em) 
+      ((otf.otf_ymin * em_to_user) / otf.otf_units_per_em) 
+      ((otf.otf_xmax * em_to_user) / otf.otf_units_per_em) 
+      ((otf.otf_ymax * em_to_user) / otf.otf_units_per_em)
+      ((otf.otf_ascent * em_to_user) / otf.otf_units_per_em) 
+      ((otf.otf_descent * em_to_user) / otf.otf_units_per_em)
+      fp_id;
+    b_obj_end s; 
+    let len_id = new_obj_id s in
+    b_obj_start s fp_id; 
+    b_fmt s "<< /Subtype /OpenType /Length %d 0 R >>\nstream\n" len_id;
+    let stream_start = byte_offset s in
+    b_str s otf.otf_program; 
+    let len = byte_offset s - stream_start in
+    b_str s "\nendstream\n"; 
+    b_obj_end s;
+    b_length_obj s len_id len;
+    w_buf s k r
 
 let w_fonts s k r = 
   let rec loop s fs k r = match fs with
@@ -750,7 +823,7 @@ let w_xmp_metadata s id_meta k r = match id_meta with
     b_obj_end s;
     b_length_obj s len_id len;
     w_buf s k r
-      
+
 let w_info s id_info k r =       (* just /Producer, rest is handled by XMP. *) 
   b_obj_start s id_info;
   b_str s "<< /Producer (OCaml Vg library %%VERSION%%) >>\n"; 
@@ -809,17 +882,11 @@ let render s v k r = match v with
     | n -> w_page size s k r
     end
 
-let font font = match Font.name font with 
-| "Times" -> `Serif 
-| "Helvetica" -> `Sans 
-| "Courier" -> `Fixed 
-| _ -> `Sans
-
-let target ?(font = font) ?(share = max_int) ?xmp () = 
+let target ?(font = font) ?xmp () = 
   let target r _ = 
     true, render { r; 
                    font; 
-                   share;
+                   share = max_int; (* TODO remove ? *) 
                    xmp;
                    buf = Buffer.create (max_buf + 8);
                    cost = 0; 

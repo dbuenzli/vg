@@ -7,7 +7,7 @@
 open Gg;;
 open Vg;;
 
-(* Tests the PDF font fallback supports. *)
+(* Tests the generic PDF font resolutions. *)
 
 let supported_uchars = 
   [ `Range (0x0000, 0x007F); `Range (0x00A0, 0x00FF); 
@@ -42,7 +42,7 @@ let glyph_chart font =
     let y = 15. -. float (i / 16) in
     let x = float (i mod 16) in
     let glyph = 
-      I.cut_glyphs ~text:(utf8 u) font [u] black >>
+      I.cut_glyphs ~text:(utf8 u) font [] black >>
       I.blend (I.cut ~area cage gray) >> 
       I.move (P2.v x y)
     in
@@ -51,7 +51,6 @@ let glyph_chart font =
   foldi_uchars glyph_box I.void >>
   I.move (P2.v 2. 2.)
 
-
 let font ?(bold = false) ?(slant = `Normal) name size = 
   let weight = if bold then `W700 else `W400 in
   Font.create ~weight ~slant name size 
@@ -59,68 +58,72 @@ let font ?(bold = false) ?(slant = `Normal) name size =
 let size = Size2.v 130. 130.
 let view = Box2.v P2.o (P2.v 19.5 19.5)
 let tags = [ "glyph" ]
-
-let helvetica = "Helvetica"
 let fsize = 0.42
-;;
+
+(* Helvetica *) 
+
+let helvetica = "Helvetica";;
 
 Db.image "glyph-pdf-sans" ~author:Db.dbuenzli
-  ~title:"Glyph chart for PDF `Sans fallback" ~tags ~size ~view
+  ~title:"Glyph chart for PDF `Sans font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font helvetica fsize) end;;
 
 Db.image "glyph-pdf-sans-bf" ~author:Db.dbuenzli
-  ~title:"Glyphs of PDF `Sans bold fallback" ~tags ~size ~view
+  ~title:"Glyphs of PDF `Sans bold font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font ~bold:true helvetica fsize) end;;
 
 let slant = `Oblique;; 
 
 Db.image "glyph-pdf-sans-obl" ~author:Db.dbuenzli
-  ~title:"Glyph chart for PDF `Sans oblique fallback" ~tags ~size ~view
+  ~title:"Glyph chart for PDF `Sans oblique font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font ~slant helvetica fsize) end;;
 
 Db.image "glyph-pdf-sans-obl-bf" ~author:Db.dbuenzli
-  ~title:"Glyphs of PDF `Sans oblique bold fallback" ~tags ~size ~view
+  ~title:"Glyphs of PDF `Sans oblique bold font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font ~slant ~bold:true helvetica fsize) end;;
 
+(* Times *) 
 
 let times = "Times";;
 
 Db.image "glyph-pdf-serif" ~author:Db.dbuenzli
-  ~title:"Glyph chart for PDF `Serif fallback" ~tags ~size ~view
+  ~title:"Glyph chart for PDF `Serif font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font times fsize) end;;
 
 Db.image "glyph-pdf-serif-bf" ~author:Db.dbuenzli
-  ~title:"Glyphs of PDF `Serif bold fallback" ~tags ~size ~view
+  ~title:"Glyphs of PDF `Serif bold font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font ~bold:true times fsize) end;;
 
 let slant = `Italic;; 
 
 Db.image "glyph-pdf-serif-obl" ~author:Db.dbuenzli
-  ~title:"Glyph chart for PDF `Serif italic fallback" ~tags ~size ~view
+  ~title:"Glyph chart for PDF `Serif italic font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font ~slant times fsize) end;;
 
 Db.image "glyph-pdf-serif-obl-bf" ~author:Db.dbuenzli
-  ~title:"Glyphs of PDF `Serif italic bold fallback" ~tags ~size ~view
+  ~title:"Glyphs of PDF `Serif italic bold font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font ~slant ~bold:true times fsize) end;;
+
+(* Courier *)
 
 let courier = "Courier";;
 
 Db.image "glyph-pdf-fixed" ~author:Db.dbuenzli
-  ~title:"Glyph chart for PDF `Fixed fallback" ~tags ~size ~view
+  ~title:"Glyph chart for PDF `Fixed font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font courier fsize) end;;
 
 Db.image "glyph-pdf-fixed-bf" ~author:Db.dbuenzli
-  ~title:"Glyphs of PDF `Fixed bold fallback" ~tags ~size ~view
+  ~title:"Glyphs of PDF `Fixed bold font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font ~bold:true courier fsize) end;;
 
 let slant = `Italic;; 
 
 Db.image "glyph-pdf-fixed-obl" ~author:Db.dbuenzli
-  ~title:"Glyph chart for PDF `Fixed italic fallback" ~tags ~size ~view
+  ~title:"Glyph chart for PDF `Fixed italic font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font ~slant courier fsize) end;;
 
 Db.image "glyph-pdf-fixed-obl-bf" ~author:Db.dbuenzli
-  ~title:"Glyphs of PDF `Fixed italic bold fallback" ~tags ~size ~view
+  ~title:"Glyphs of PDF `Fixed italic bold font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font ~slant ~bold:true courier fsize) end;;
 
 

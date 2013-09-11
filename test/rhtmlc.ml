@@ -30,8 +30,12 @@ let to_str_of_pp pp v =
 let src_link = (* TODO use %%VERSION%% *)
   format_of_string "https://github.com/dbuenzli/vg/blob/master/db/%s#L%d"
 
+let open_sans_xbold = match Vgr_pdf.otf_font Open_sans.extra_bold with 
+| `Error e -> Log.msg "%a" Otfm.pp_error e; `Sans 
+| `Otf _ as otf -> otf 
+
 let font f = match Font.name f, Font.weight f with     (* PDF font resolver. *) 
-| "Open Sans", `W800 -> `Otf Open_sans.extra_bold
+| "Open Sans", `W800 -> open_sans_xbold
 | _ -> Vgr_pdf.font f
 
 (* Resolution *)

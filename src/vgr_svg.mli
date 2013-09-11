@@ -32,7 +32,7 @@ val target : ?xml_decl:bool -> ?xmp:string ->unit ->
     supported. [Invalid_argument] is raised by {!Vg.Vgr.render} if multiple 
     images are rendered. *)
 
-(** {1:text Text rendering support} 
+(** {1:text Text rendering} 
 
     {b Warning.} The following is subject to change in the future. 
 
