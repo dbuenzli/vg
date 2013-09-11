@@ -12,7 +12,6 @@
 * Final code review.
 * Final doc review.
 * Rename Vgr.xmp_metadata to Vgr.xmp
-* examples.ml upto date ? 
 * git grep TODO
 
 
