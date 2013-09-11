@@ -10,7 +10,7 @@
 
 <src/vgr_svg.{mli,ml}> : package(gg)
 
-<src/vgr_pdf.{mli,ml}> : package(gg), package(otfm)
+<src/vgr_pdf.{mli,ml}> : package(gg), package(uutf), package(otfm)
 
 <db/*.{mli,ml}> : package(gg)
 <db/glyphs_pdf.{mli,ml}> : package(uutf)
@@ -29,7 +29,7 @@
                               package(js_of_ocaml), \
                               package(js_of_ocaml.syntax), syntax(camlp4o)
 
-<test/min_pdf.{ml,byte,native}> : package(gg), package(otfm)
+<test/min_pdf.{ml,byte,native}> : package(gg), package(uutf), package(otfm)
 
 <test/min_svg.{ml,byte,native}> : package(gg)
 
@@ -40,4 +40,3 @@
                        package(js_of_ocaml.syntax), syntax(camlp4o)
 
 <test/examples.{ml,byte,native}> : package(gg)
-

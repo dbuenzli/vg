@@ -11,7 +11,10 @@
 * Font.t, expose the record ? at least provide Font.with_size font 4.
 * Final code review.
 * Final doc review.
+* Rename Vgr.xmp_metadata to Vgr.xmp
+* examples.ml upto date ? 
 * git grep TODO
+
 
 #  After first release
 
@@ -25,6 +28,7 @@
 * PDF, implement page content stream compression. LZW would be
   easiest.  Deflate would be nice.
 * PDF, implement gradients with alpha.
+* PDF, implement font subsetting.
 
 ## Raster image primitive
 
