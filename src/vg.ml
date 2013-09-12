@@ -701,6 +701,7 @@ module I = struct
     { font : font;
       text : string option; 
       o : p2;
+      blocks : (bool * (int * int) list) option;
       advances : v2 list option; 
       glyphs : glyph list; }
 
@@ -778,9 +779,9 @@ module I = struct
   (* Cutting images *)
 
   let cut ?(area = `Anz) p i = Cut (area, p, i)  
-  let cut_glyphs ?area ?text ?advances font glyphs i =
+  let cut_glyphs ?area ?text ?blocks ?advances font glyphs i =
     let area = match area with None -> `Anz | Some o -> (o :> P.area) in
-    let run = { font; text; o = P2.o; advances; glyphs; } in 
+    let run = { font; text; o = P2.o; blocks; advances; glyphs; } in 
     Cut_glyphs (area, run , i)
 
   (* Blending images *)
@@ -1156,6 +1157,7 @@ module Vgr = struct
         { font : font;
           text : string option; 
           o : p2;
+          blocks : (bool * (int * int) list) option;
           advances : v2 list option; 
           glyphs : glyph list; }
 

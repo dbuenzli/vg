@@ -385,17 +385,22 @@ module I : sig
       the individual renderer documentation. *)
 
   val cut_glyphs : ?area:[ `O of P.outline ] -> ?text:string -> 
+    ?blocks:bool * (int * int) list ->
     ?advances:v2 list -> (* ?o:p2 -> *)
     font -> glyph list -> image -> image
-  (** [cut_glyphs area text advances font glyphs i] is like {!cut} except the
-      path cut is the union of all the paths of the glyphs [glyphs] of the 
-      font [font].
+  (** {b WARNING.} The interface and specifics of glyph rendering are 
+      still subject to change in the future.
+ 
+      [cut_glyphs area text clusters advances font glyphs i] is like 
+      {!cut} except the path cut is the union of all the paths of the 
+      glyphs [glyphs] of the font [font].
 
       The origin of the first glyph is set to [P2.o], the origin of
       each subsequent glyph in [glyphs] is offset by the advance
       vector of the previous glyph as provided by [font]. Advance
       vectors for each glyph can be overriden by providing their value
-      in [advances].
+      in [advances], if the length of [advances] is smaller than 
+      [glyphs] the rendering results are undefined. 
 
       If provided the [text] parameter indicates the UTF-8 text
       corresponding to the sequence of glyphs. This may be used by
@@ -403,12 +408,21 @@ module I : sig
       the text if it lacks control over glyph rendering (in which case
       an empty list of glyphs may be passed). 
 
-      In general if [text] is present and [glyphs] is empty renderer
-      should try to perform a best effort rendering of [text]. 
+      If provided [blocks] is used to specify a sequential map between
+      [glyphs] and the characters of [text]. The number of elements in
+      the list defines the number of blocks. Starting at the head of
+      each sequence, each block [(char_adv, glyph_adv)] indicates the
+      number of characters and glyphs that make the next block (one or
+      the other may be 0). If the boolean is [true] the sequence
+      glyphs is reversed for peforming the map. If [blocks] is
+      unspecified a one to one map between glyphs and characters is
+      assumed with undefined results if the number of glyphs and
+      characters differ.
 
-      If [area] it provided the outline area of the glyphs are cut as
+      If [area] is provided, the outline area of the glyphs are cut as
       specified, otherwise the area of the glyphs is determined as 
-      mandated by the font. *)
+      mandated by the font. {b Warning.} Backend support is poor 
+      this may be removed in the future. *)
 
   (** {1:blend Blending images} *)
   
@@ -547,12 +561,13 @@ module Vgr : sig
       {- [create_date] (a POSIX timestamp in seconds) is mapped to 
          xmp:CreateDate.}} 
 
-      {b Note.} All strings must be UTF-8 encoded. Unicode characters that 
-      are not legal XML {{:http://www.w3.org/TR/REC-xml/#NT-Char}characters} 
-      are replaced by the Unicode 
-      {{:http://unicode.org/glossary/#replacement_character}replacement 
+      {b Note.} All strings must be UTF-8 encoded. Unicode characters
+      that are not legal XML
+      {{:http://www.w3.org/TR/REC-xml/#NT-Char}characters} are
+      replaced by the Unicode
+      {{:http://unicode.org/glossary/#replacement_character}replacement
       character} *)
-      
+
   (** {1:renderable Renderable} 
 
       A renderable specifies a finite view rectangle and a physical
@@ -729,6 +744,7 @@ module Vgr : sig
         { font : font;
           text : string option; 
           o : p2;                          (** Unused for now, always P2.o *)
+          blocks : (bool * (int * int) list) option;
           advances : v2 list option; 
           glyphs : glyph list; }
 

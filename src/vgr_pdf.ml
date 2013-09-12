@@ -332,7 +332,7 @@ let cubic_earc tol cubic acc p0 large cw a r p1 =
           let l = (4. *. tan a) /. 3. in
           let c0 = V2.add p0 (V2.smul l (V2.ltr mt (V2.v (sin t0) (cos t0)))) in
           let c1 = V2.sub p1 (V2.smul l (V2.ltr mt (V2.v (sin t1) (cos t1)))) in
-         cubic c0 c1 p1 acc
+          cubic c0 c1 p1 acc
         else
         let t = (t0 +. t1) /. 2. in
         let b = V2.(c + ltr m (V2.v (cos t) (sin t))) in
@@ -355,7 +355,7 @@ let w_path s p op k r =
   | `Ccurve (c0, c1, pt) -> 
       b_cubic c0 c1 pt (); pt
   | `Earc (large, cw, angle, radii, pt) -> 
-      cubic_earc 1e-9 b_cubic () last large cw angle radii pt; pt 
+      cubic_earc 1e-6 b_cubic () last large cw angle radii pt; pt 
   | `Close -> 
       b_fmt s "\nh"; last
   in
@@ -394,7 +394,7 @@ let uchar_to_cp1252 =
     0x02DC, 0x98; 0x2122, 0x99; 0x0161, 0x9A; 0x203A, 0x9B; 0x0153, 0x9C; 
     0x017E, 0x9E; 0x0178, 0x9F; ]
 
-let glyph_pdf_encode s glyph =    (* glyph is an Unicode scalar value <= 255 *)
+let glyph_pdf_encode s glyph =           (* glyph is an Unicode scalar value *)
   let glyph = match glyph with        (* translate to Windows Code Page 1252 *)
   | g when g <= 0x007F -> g 
   | g when g <= 0x00A0 -> 0

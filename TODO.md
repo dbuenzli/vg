@@ -27,7 +27,10 @@
   easiest.  Deflate would be nice.
 * PDF, implement gradients with alpha.
 * PDF, implement font subsetting.
-
+* PDF, text extraction, consider using /ToUnicode maps instead of 
+  solely /ActualText.
+  http://lists.cairographics.org/archives/cairo/2007-September/011427.html
+  
 ## Raster image primitive
 
 val Image.raster : Gg.box2 -> Gg.raster -> image
