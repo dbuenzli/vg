@@ -55,16 +55,8 @@ module Font = struct
   type weight = 
     [ `W100 | `W200 | `W300 | `W400 | `W500 | `W600 | `W700 | `W800 | `W900 ]
 
-  type t = { name : string; size : float; weight : weight; slant : slant }
+  type t = { name : string; slant : slant; weight : weight; size : float; }
  
-  let create ?(slant = `Normal) ?(weight = `W400) name size = 
-    { name; size; weight; slant } 
-
-  let name font = font.name
-  let size font = font.size
-  let weight font = font.weight
-  let slant font = font.slant
-
   (* Predicates and comparisons *)
 
   let equal = ( = )
@@ -1130,14 +1122,6 @@ module Vgr = struct
 
     module Data = struct
 
-      (* Fonts *) 
-
-      type font = Font.t = 
-        { name : string; size : float; weight : Font.weight; 
-          slant : Font.slant }
-
-      external of_font : Font.t -> font = "%identity"
-
       (* Path representation *)
 
       type segment = P.segment
@@ -1188,13 +1172,12 @@ module Vgr = struct
     (* Font helpers *)
 
     module Font = struct
-      external of_data : Data.font -> Font.t = "%identity"
-      let css_slant font = Font.slant_to_str font.Data.slant
-      let css_weight font = Font.weight_to_str font.Data.weight
+      let css_slant font = Font.slant_to_str font.Font.slant
+      let css_weight font = Font.weight_to_str font.Font.weight
       let css_font ~unit font =
         let slant = css_slant font in
         let weight = css_weight font in
-        Printf.sprintf "%s %s %g%s \"%s\"" slant weight font.Data.size unit 
+        Printf.sprintf "%s %s %g%s \"%s\"" slant weight font.Font.size unit 
           font.Font.name
 
     end

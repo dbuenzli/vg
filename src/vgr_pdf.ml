@@ -61,9 +61,9 @@ let pdf_times_programs =
 let pdf_courier_programs = 
   ("Courier", "Courier-Bold"), ("Courier-Oblique", "Courier-BoldOblique")
 
-let pdf_font_program font (normal, slanted) = 
-  let (regular, bold) = if font.slant = `Normal then normal else slanted in 
-  `Pdf_font (if font.weight < `W700 then regular else bold)
+let pdf_font_program font (normal, slant) = 
+  let (regular, bold) = if font.Font.slant = `Normal then normal else slant in 
+  `Pdf_font (if font.Font.weight < `W700 then regular else bold)
 
 let otf_font s =
   let ( >>= ) x f = match x with `Error _ as e -> e | `Ok v -> f v in
@@ -90,7 +90,7 @@ let otf_font s =
          otf_ascent; otf_descent;
          otf_widths; }
   
-let font font = match Font.name font with 
+let font font = match font.Font.name with 
 | "Helvetica" -> `Sans 
 | "Times" -> `Serif 
 | "Courier" -> `Fixed 
@@ -132,7 +132,7 @@ type state =
     mutable page_objs : int list;                      (* pages object ids. *)
     prims : (Vgr.Private.Data.primitive, (m3 * id) list) Hashtbl.t;
     alphas : (float * [`S | `F], id) Hashtbl.t;
-    fonts : (Vgr.Private.Data.font, id * font_mode) Hashtbl.t;
+    fonts : (Vg.font, id * font_mode) Hashtbl.t;
     font_programs : (font_program, id) Hashtbl.t;             
     mutable gstate : gstate; }                    (* current graphic state. *) 
 
@@ -163,7 +163,7 @@ let get_alpha_id s alpha = get_id s s.alphas alpha
 
 let rec get_font_id s font = try Hashtbl.find s.fonts font with 
 | Not_found ->
-    let program, mode = match s.font (Vgr.Private.Font.of_data font) with
+    let program, mode = match s.font font with
     | `Otf _ as p -> p, `Otf_glyphs
     | `Helvetica  -> pdf_font_program font pdf_helvetica_programs, `Pdf_glyphs
     | `Sans       -> pdf_font_program font pdf_helvetica_programs, `Pdf_text
@@ -300,7 +300,7 @@ let set_font s font =
   let c = s.gstate in
   let id, font_mode = get_font_id s font in
   if c.g_font_id <> id then begin 
-    b_fmt s "\n/f%d %f Tf" id font.size;
+    b_fmt s "\n/f%d %f Tf" id font.Font.size;
     c.g_font_id <- id;
   end;
   font_mode

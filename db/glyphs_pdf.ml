@@ -53,7 +53,7 @@ let glyph_chart font =
 
 let font ?(bold = false) ?(slant = `Normal) name size = 
   let weight = if bold then `W700 else `W400 in
-  Font.create ~weight ~slant name size 
+  { Font.name = name; size; slant; weight; }
     
 let size = Size2.v 130. 130.
 let view = Box2.v P2.o (P2.v 19.5 19.5)

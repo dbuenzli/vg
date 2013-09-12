@@ -26,12 +26,6 @@ open Gg
 
 (** {1 Fonts} *)
 
-type glyph = int
-(** The type for glyphs. Index in a font glyph table. *)
-
-type font 
-(** The type for fonts. *)
-
 (** Fonts. 
 
     Font handling in [Vg] happens in renderers and text layout and
@@ -53,52 +47,45 @@ module Font : sig
   type slant = [ `Normal | `Italic | `Oblique ]
   (** The type for font slants. *)
 
-  type t = font
-  (** The type for fonts. *)
+  type t = 
+    { name : string;
+      slant : slant;
+      weight : weight; 
+      size : float; }
+  (** The type for fonts. The size is the size given to the 
+      font's em unit in [Vg]'s {{!coordinates}coordinate space}. *)
  
-  val create : ?slant:slant -> ?weight:weight -> string -> float -> font
-  (** [create slant weight name size] is a font with given [name], [size],
-      [weight] (defaults to [`W400]) and [slant] (defaults to [`Normal]). 
-
-      {b Note.} The font size is specified in the units of Vg's 
-      {{!coordinates}coordinate space}. *)
-
-  val name : font -> string
-  (** [name font] is [font]'s name. *)
-
-  val size : font -> float
-  (** [size font] is [font]'s size. *)
-
-  val weight : font -> weight
-  (** [weight font] is [font]'s weight. *)
-
-  val slant : font -> slant
-  (** [slant font] is [font]'s slant. *)
-
   (** {1 Predicates and comparisons} *)
 
-  val equal : font -> font -> bool 
+  val equal : t -> t -> bool 
   (** [equal font font'] is [font = font']. *)
 
-  val equal_f : (float -> float -> bool) -> font -> font -> bool 
+  val equal_f : (float -> float -> bool) -> t -> t -> bool 
   (** [equal_f eq font font'] is like {!equal} but uses [eq] to test floating
       point values. *)
 
-  val compare : font -> font -> int
+  val compare : t -> t -> int
   (** [compare font font'] is [Pervasives.compare font font'] *)
 
-  val compare_f : (float -> float -> int) -> font -> font -> int 
+  val compare_f : (float -> float -> int) -> t -> t -> int 
   (** [compare_f cmp font font'] is like {!compare} but uses [cmp] to compare 
       floating point values. *)
 
   (** {1 Printers} *)
 
-  val to_string : font -> string 
+  val to_string : t -> string 
   (** [to_string font] is a textual representation of [font]. *)
 
-  val pp : Format.formatter -> font -> unit
+  val pp : Format.formatter -> t -> unit
   (** [pp ppf font] is a textual representation of [font] on [ppf]. *)
 end
+
+type font = Font.t
+(** The type for fonts. *)
+
+type glyph = int
+(** The type for glyphs. The integer represents a glyph identifier in a 
+    backend dependent font format. *)
 
 (** {1 Paths and images} *)
 
@@ -134,9 +121,9 @@ module P : sig
 
   type outline = 
       { width : float;          (** Outline width. *)
-	cap : cap;              (** Shape at the end points of open subpaths
+	      cap : cap;              (** Shape at the end points of open subpaths
 				    and dashes. *)
-	join : join;            (** Shape at segment jointures. *)
+	     join : join;            (** Shape at segment jointures. *)
 	miter_angle : float;    (** Limit {e angle} for miter joins 
                                     (in \[0;pi\]).*)
 	dashes : dashes option; (** Outline dashes. *) }
@@ -696,15 +683,6 @@ module Vgr : sig
 
     (** Internal data. *)
     module Data : sig
-
-      (** {1 Font representation} *)
-
-      type font = 
-        { name : string; size : float; weight : Font.weight; 
-          slant : Font.slant }
-
-      val of_font : Font.t -> font
-      (** [of_font font] is the internal representation of [font]. *)
       
       (** {1 Path representation} *)
 
@@ -768,19 +746,16 @@ module Vgr : sig
 
     (** Font helpers. *)
     module Font : sig
-
-      val of_data : Data.font -> font
-      (** [of_data f] is the font from the internal representation [f]. *)
   
-      val css_font : unit:string -> Data.font -> string 
+      val css_font : unit:string -> font -> string 
       (** [css_font unit font] is a CSS
           {{:http://www.w3.org/TR/CSS2/fonts.html#font-shorthand}font property}
           for the font with size expressed in [unit]. *)
       
-      val css_weight : Data.font -> string 
+      val css_weight : font -> string 
       (** [css_weight font] is [font]'s weigth as CSS [font-weight] value. *)
 
-      val css_slant : Data.font -> string 
+      val css_slant : font -> string 
       (** [css_slant font] is [font]'s slant as a CSS [font-style] value. *)
     end
 

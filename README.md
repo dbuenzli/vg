@@ -12,7 +12,7 @@ module. An API allows to implement new renderers.
      
 Vg depends only on [Gg][1]. The SVG renderer has no dependency, the
 PDF renderer depends on [Uutf][2] and [Otfm][3], the HTML canvas
-renderer depends on [js_of_ocaml][4]. All these components are
+renderer depends on [js_of_ocaml][4]. Vg and its renderers are
 distributed under the BSD3 license.
      
 [1]: http://erratique.ch/software/gg
@@ -28,8 +28,8 @@ Contact: Daniel Bünzli `<daniel.buenzl i@erratique.ch>`
 
 Vg can be installed with `opam`:
 
-    opam install uutf otfm js_of_ocaml vg  # all renderers
     opam install vg                        # SVG renderer only
+    opam install uutf otfm js_of_ocaml vg  # all renderers
     
 If you don't use `opam` consult the [`opam`](opam) file for
 build instructions and a complete specification of the dependencies.

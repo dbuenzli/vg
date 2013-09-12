@@ -14,7 +14,7 @@ let renderer dst is =
   | `Error e -> Format.eprintf "%a" Otfm.pp_error e; `Sans 
   | `Otf _ as otf -> otf 
   in
-  let font f = match Font.name f, Font.weight f with
+  let font f = match f.Font.name, f.Font.weight with
   | "Open Sans", `W800 -> open_sans_xbold
   | _ -> Vgr_pdf.font f
   in

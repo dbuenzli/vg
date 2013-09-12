@@ -103,7 +103,7 @@ let renderable (fname, info) size text =
   | None -> fixed_layout text
   | Some info -> otf_layout info text
   in
-  let font = Font.create fname size in
+  let font = { Font.name = fname; slant = `Normal; weight = `W400; size } in
   let i = 
     I.const (Color.black) >>
     I.cut_glyphs ~text font (List.rev glyphs_rev) >>

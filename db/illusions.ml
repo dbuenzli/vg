@@ -68,7 +68,10 @@ Db.image "pie-ambiguity" ~author:Db.dbuenzli
     in
     let bar_chart bar_size pad colors pcts = 
       let w, h = V2.to_tuple bar_size in
-      let font = Font.create ~weight:`W400 "Open Sans" (h *. 0.015) in
+      let font = 
+        { Font.name = "Open Sans"; slant = `Normal; weight = `W400; 
+          size = (h *. 0.015) } 
+      in
       let mgray = I.const (Color.gray 0.3) in 
       let lgray = I.const (Color.gray 0.75) in
       let bar (acc, x) color pct = 
@@ -78,7 +81,7 @@ Db.image "pie-ambiguity" ~author:Db.dbuenzli
         in
         let label =
           let text = Printf.sprintf "%g" pct in
-          let pos = P2.v (0.275 *. w) (-1.4 *. (Font.size font)) in 
+          let pos = P2.v (0.275 *. w) (-1.4 *. font.Font.size) in 
           mgray >> I.cut_glyphs ~text font [] >> I.move pos
         in
         let x = x +. pad in 

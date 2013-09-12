@@ -32,8 +32,7 @@ type state =
     mutable view : Gg.box2;           (* current renderable view rectangle. *)
     mutable todo : cmd list;                        (* commands to perform. *)
     mutable id : int;                                     (* uid generator. *)
-    fonts :                                                (* cached fonts. *)
-      (Vgr.Private.Data.font, svg_font) Hashtbl.t; 
+    fonts : (font, svg_font) Hashtbl.t;                    (* cached fonts. *) 
     prims :                                           (* cached primitives. *)
       (Vgr.Private.Data.primitive * Vgr.Private.Data.tr list, 
        svg_prim) Hashtbl.t; 
@@ -79,10 +78,10 @@ let bget_font s font = try Hashtbl.find s.fonts font with
        results in broken behaviour in one or other of the browsers. *)
     let font_str = 
       badd_str s "font-family=\""; 
-      badd_esc_str s font.name; 
+      badd_esc_str s font.Font.name; 
       badd_fmt s "\" font-style=\"%s\" font-weight=\"%s\" font-size=\"%g\""
         (Vgr.Private.Font.css_slant font) (Vgr.Private.Font.css_weight font)
-        font.size; 
+        font.Font.size; 
       Buffer.contents s.buf
     in
     Hashtbl.add s.fonts font font_str; Buffer.clear s.buf; font_str

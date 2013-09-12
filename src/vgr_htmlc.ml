@@ -52,8 +52,7 @@ type state =
     mutable view : Gg.box2;           (* current renderable view rectangle. *)
     mutable view_tr : M3.t;                    (* view to canvas transform. *)
     mutable todo : cmd list;                        (* commands to perform. *)
-    fonts :                                                (* cached fonts. *)
-      (Vgr.Private.Data.font * float, js_font) Hashtbl.t;     
+    fonts : (Vg.font * float, js_font) Hashtbl.t;          (* cached fonts. *)
     prims :                                           (* cached primitives. *)
       (Vgr.Private.Data.primitive, js_primitive) Hashtbl.t;     
     mutable s_tr : M3.t;         (* current transformation without view_tr. *)
@@ -124,7 +123,7 @@ let get_primitive s p = try Hashtbl.find s.prims p with
 let get_font s (font, size as spec) = try Hashtbl.find s.fonts spec with
 | Not_found -> 
     let js_font =
-      let font = { font with size } in
+      let font = { font with Font.size } in
       Js.string (Vgr.Private.Font.css_font ~unit:"px" font)
     in
     Hashtbl.add s.fonts spec js_font; js_font
@@ -252,7 +251,7 @@ let rec r_cut_glyphs s a run = function
         s.todo <- (pop_gstate s) :: s.todo;
         let m = M3.mul s.view_tr s.s_tr in
         let o = P2.tr m run.o in
-        let font_size = V2.norm (V2.tr m (V2.v 0. run.font.size)) in
+        let font_size = V2.norm (V2.tr m (V2.v 0. run.font.Font.size)) in
         let y_scale = 1. /. V2.norm (V2.tr s.s_tr V2.oy) in
         let x_scale =
           (* we don't apply the view transform but still need to scale

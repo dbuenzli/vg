@@ -10,9 +10,11 @@ open Vg
 
 (** Test images for glyphs. *)
 
+let open_sans_xb = 
+  { Font.name = "Open Sans"; size = 0.7; weight = `W800; slant = `Normal}
+
 (* Glyphs for the string "Revolt!" as per cmap of Open_sans.extra_bold *)
-let glyphs = [ 53; 72; 89; 82; 79; 87; 4 ]             
-  
+let glyphs = [ 53; 72; 89; 82; 79; 87; 4 ]
 ;;
   
 Db.image "glyph-revolt" ~author:Db.dbuenzli
@@ -23,9 +25,8 @@ Db.image "glyph-revolt" ~author:Db.dbuenzli
   ~size:(Size2.v 135. 45.)
   ~view:(Box2.v P2.o (Size2.v 3. 1.))
   begin fun _ -> 
-    let font = Font.create ~weight:`W800 "Open Sans" 0.7 in
     let text = "Revolt!" in 
-    I.const Color.black >> I.cut_glyphs ~text font glyphs >> 
+    I.const Color.black >> I.cut_glyphs ~text open_sans_xb glyphs >> 
     I.move (V2.v 0.23 0.25)
   end;
 
@@ -37,10 +38,9 @@ Db.image "glyph-revolt-outline" ~author:Db.dbuenzli
   ~size:(Size2.v 135. 45.)
   ~view:(Box2.v P2.o (Size2.v 3. 1.))
   begin fun _ -> 
-    let font = Font.create ~weight:`W800 "Open Sans" 0.7 in
     let area = `O { P.o with P.width = 0.03; join = `Bevel } in
     let text = "Revolt!" in 
-    I.const Color.black >> I.cut_glyphs ~area ~text font glyphs >> 
+    I.const Color.black >> I.cut_glyphs ~area ~text open_sans_xb glyphs >> 
     I.move (V2.v 0.23 0.25)
   end;
 
@@ -51,11 +51,10 @@ Db.image "glyph-aspect" ~author:Db.dbuenzli
   ~size:(Size2.v 25. 50.)
   ~view:(Box2.v P2.o (Size2.v 2. 1.))
   begin fun _ -> 
-    let font = Font.create ~weight:`W800 "Open Sans" 0.5 in
     let text = "R" in 
     let sq = P.empty >> P.rect (Box2.v (P2.v 0. 0.75) (P2.v 0.25 0.25)) in 
     I.const Color.black >> I.cut sq >>
-    I.blend (I.const Color.black >> I.cut_glyphs ~text font [ 53; ])>> 
+    I.blend (I.const Color.black >> I.cut_glyphs ~text open_sans_xb [53;])>> 
     I.scale (V2.v 4.0 1.0)
   end;
 
@@ -66,11 +65,10 @@ Db.image "glyph-multi" ~author:Db.dbuenzli
   ~size:(Size2.v 108. 135.)
   ~view:(Box2.v P2.o (P2.v 0.8 1.0))
   begin fun view -> 
-    let font = Font.create ~weight:`W800 "Open Sans" 0.025 in
     let text = "Revolt!" in
     let angle = Float.rad_of_deg 30. in
     let revolt pos = 
-      I.const Color.black >> I.cut_glyphs ~text font glyphs >> 
+      I.const Color.black >> I.cut_glyphs ~text open_sans_xb glyphs >> 
       I.move pos
     in
     let next max dv pt = 
