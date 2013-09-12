@@ -59,7 +59,13 @@ distribution. They can be built with:
 
 The resulting binaries are in `_build/test` :
 
-- `rsvg.native`, renders images of the Vg image database to SVG files.
-- `rpdf.native`, renders images of the Vg image database to PDF files.
+- `min_pdf.native`, minimal example to render an image to an PDF file. 
 - `min_svg.native`, minimal example to render an image to an SVG file. 
 - `min_htmlc.byte`, minimal example to render with the HTML canvas.
+- `rsvg.native`, renders images of the Vg image database to SVG files.
+- `rpdf.native`, renders images of the Vg image database to PDF files.
+- `rhtml.html` and `rhtml.byte` can be processed with `js_of_ocaml`,
+  the resulting webapp renders images of the Vg image database with
+  the HTML canvas, PDF and SVG renderers.   
+- `vecho.native`, like echo(1) but produces a PDF file on stdout, the 
+  font file can be specified, invoke with `-help` for options. 

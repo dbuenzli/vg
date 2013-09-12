@@ -51,6 +51,8 @@ if [ "$JSOO" != "false" ]; then
     add lib src/vgr_htmlc.cmxs
 fi
 
+add bin test/vecho.native
+
 add doc README.md
 add doc CHANGES.md
 add doc test/min_htmlc.html

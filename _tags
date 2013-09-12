@@ -40,3 +40,5 @@
                        package(js_of_ocaml.syntax), syntax(camlp4o)
 
 <test/examples.{ml,byte,native}> : package(gg)
+
+<test/vecho.{ml,byte,native}> : package(gg), package(uutf), package(otfm)

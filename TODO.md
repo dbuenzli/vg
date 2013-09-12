@@ -1,17 +1,16 @@
 # Before first release 
 
-* PDF remove share 
 * Check fill open path semantics
 * Review ellipse things. There are a few TODOs and wrong things in there.
 * Do we actually have a renderer that supports arbitrary outline cut ?
   NO !
-* PDF glyph cuts.
 * rhtmlc, make font bigger for those who don't have a high dpi display.
 * rhtmlc, try img with pdf.
 * Font.t, expose the record ? at least provide Font.with_size font 4.
 * Final code review.
 * Final doc review.
 * Rename Vgr.xmp_metadata to Vgr.xmp
+* Review conversion of earc to bezier. 
 * git grep TODO
 
 
