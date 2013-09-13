@@ -7,7 +7,7 @@
 open Gg
 
 (* Invalid_arg strings *)
-
+  
 let err_empty = "empty path"
 let err_bounds j l = Printf.sprintf "invalid bounds (index %d, length %d)" j l 
 let err_exp_await = "`Await expected"
@@ -21,7 +21,7 @@ let err_once = "a single `Image can be rendered"
 let unsafe_blit = String.unsafe_blit
 let unsafe_set_byte s j byte = String.unsafe_set s j (Char.unsafe_chr byte)
 let unsafe_byte s j = Char.code (String.unsafe_get s j)
-
+    
 (* A few useful definitions *)
 
 external ( >> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
@@ -42,7 +42,7 @@ let rec pp_list ?(pp_sep = Format.pp_print_cut) pp_v ppf = function
 | [] -> ()
 | v :: vs -> 
     pp_v ppf v; if vs <> [] then (pp_sep ppf (); pp_list ~pp_sep pp_v ppf vs)
-
+                                 
 let to_string_of_formatter pp v =                       (* NOT thread safe. *)
   Format.fprintf Format.str_formatter "%a" pp v; 
   Format.flush_str_formatter ()
@@ -74,7 +74,7 @@ module Font = struct
     if c <> 0 then c else
     let c = Pervasives.compare font.slant font'.slant in 
     c
-
+      
   (* Printers *)
 
   let weight_to_str = function 
@@ -84,7 +84,7 @@ module Font = struct
     
   let slant_to_str = function 
   | `Normal -> "normal" | `Italic -> "italic" | `Oblique -> "oblique"
-
+    
   let pp ppf font =     
     pp ppf "@[<1>(font@ (name %s)@ (size %g)@ (weight %s)@ (slant %s))@]"
       font.name font.size (weight_to_str font.weight) (slant_to_str font.slant)
@@ -94,21 +94,21 @@ end
 
 type glyph = int
 type font = Font.t
-
+              
 (* Paths *)
-
+              
 module P = struct
-
+  
   (* Path outline caps *)
-
+  
   type cap = [ `Butt | `Round | `Square ]
-
+             
   let pp_cap ppf = function 
   | `Butt -> pp ppf "Butt" | `Round -> pp ppf "Round" 
   | `Square -> pp ppf "Square"
-
+                 
   (* Path outline joins *)
-
+                 
   type join = [ `Miter | `Round | `Bevel ]
               
   let pp_join ppf = function 
@@ -116,14 +116,14 @@ module P = struct
   | `Round -> pp ppf "Round"
                 
   (* Path outline dashes *)
-
+                
   type dashes = float * float list
                   
   let eq_dashes eq d d' = match d, d' with 
   | Some (f, ds), Some (f', ds') -> 
       eq f f' && (try List.for_all2 eq ds ds' with Invalid_argument _ -> false)
   | d, d' -> d = d'
-          
+             
   let cmp_dashes cmp d d' = match d, d' with
   | Some (f, ds), Some (f', ds') -> 
       let rec dashes ds ds' = match ds, ds' with 
@@ -142,23 +142,23 @@ module P = struct
       pp ppf "@ (dashes %a @[<1>(%a)@])" pp_f f pp_dashes ds
         
   (* Path outlines *)
-
+        
   type outline = 
     { width : float; cap : cap; join : join; miter_angle : float; 
       dashes : dashes option }
-
+    
   let o = { width = 1.; cap = `Butt; join = `Miter; 
             miter_angle = Float.rad_of_deg 11.5; 
             dashes = None }
-
+          
   let pp_outline_f pp_f ppf o =
     pp ppf "@[<1>(outline@ (width %a)@ (cap %a)@ (join %a)\
             @ (miter-angle %a)%a)@]"
       pp_f o.width pp_cap o.cap pp_join o.join pp_f o.miter_angle 
       (pp_dashes pp_f) o.dashes
-
+      
   let pp_outline ppf o = pp_outline_f pp_float ppf o
-
+      
   (* Path areas *)
 
   type area = [ `Aeo | `Anz | `O of outline ]
@@ -226,15 +226,15 @@ module P = struct
   let close_empty_sub = function
   | (`Sub _ as s) :: p -> `Close :: s :: p 
   | p -> p 
-
+    
   let push seg = function 
   | [] | `Close :: _  as p -> seg :: `Sub P2.o :: p 
   | p  -> seg :: p
-        
+          
   let sub ?(rel = false) pt p =
     let pt = if rel then abs p pt else pt in
     `Sub pt :: (close_empty_sub p)
-    
+               
   let line ?(rel = false) pt p =
     let pt = if rel then abs p pt else pt in 
     push (`Line pt) p 
@@ -248,15 +248,15 @@ module P = struct
     if not rel then push (`Ccurve (c, c', pt)) p else
     let o = abs_origin p in
     push (`Ccurve (V2.(o + c), V2.(o + c'), V2.(o + pt))) p 
-
+      
   let earc ?(rel = false) ?(large = false) ?(cw = false) ?(angle = 0.) r pt p = 
     let pt = if rel then abs p pt else pt in
     push (`Earc (large, cw, angle, r, pt)) p
       
   let close p = push `Close p
-        
+      
   (* Derived subpaths *)
-
+      
   let circle ?(rel = false) c r p =
     let c = if rel then abs p c else c in
     let cx = P2.x c in
@@ -275,7 +275,7 @@ module P = struct
     let a0 = P2.v (cx +. xx) (cy +. xy) in
     let api = P2.v (cx -. xx) (cy -. xy) in
     p >> sub a0 >> earc r ~angle api >> earc r ~angle a0 >> close
-      
+    
   let rect ?(rel = false) r p = 
     if Box2.is_empty r then p else
     let lb = if rel then abs p (Box2.o r) else (Box2.o r) in
@@ -286,7 +286,7 @@ module P = struct
     let t = b +. Size2.h size in
     p >> sub lb >> line (P2.v r b) >> line (P2.v r t) >> line (P2.v l t) >> 
     close
-      
+    
   let rrect ?(rel = false) r cr p = 
     if Box2.is_empty r then p else
     let lb = if rel then abs p (Box2.o r) else (Box2.o r) in
@@ -312,7 +312,7 @@ module P = struct
   (* See Vgr.Private.P.earc_params in mli file for the doc. The center is 
      found by first transforming the points on the ellipse to points on 
      a unit circle (i.e. we rotate by -a and scale by 1/rx 1/ry). *)
-
+    
   let earc_params p0 ~large ~cw a r p1 = 
     let rx = V2.x r in let ry = V2.y r in
     let x0 = V2.x p0 in let y0 = V2.y p0 in
@@ -553,9 +553,9 @@ module P = struct
         let c = compare_seg cmp s s' in 
         if c <> 0 then c else compare_f cmp p p' 
     | p, p' -> Pervasives.compare p p'
-       
+                 
   (* Printers *)
-
+                 
   let pp_seg pp_f pp_v2 ppf = function
   | `Sub pt -> 
       pp ppf "@ S@ %a" pp_v2 pt 
@@ -576,22 +576,22 @@ module P = struct
     let pp_v2 = V2.pp_f pp_f in
     let pp_segs ppf ss = List.iter (pp_seg pp_f pp_v2 ppf) ss in 
     pp ppf "@[<1>(path%a)@]" pp_segs (List.rev p)
-
+      
   let pp_f pp_f ppf p = pp_path pp_f ppf p    
   let pp ppf p = pp_path pp_float ppf p
   let to_string p = to_string_of_formatter pp p 
 end
 
 type path = P.t
-
+              
 (* Images *)
-
+              
 module I = struct
-
+  
   (* Blenders *)
-
+  
   type blender = [ `Atop | `In | `Out | `Over | `Plus | `Copy | `Xor ]  
-
+                 
   let pp_blender ppf = function
   | `Atop -> pp ppf "Atop" | `Copy -> pp ppf "Copy" | `In -> pp ppf "In" 
   | `Out -> pp ppf "Out" | `Over -> pp ppf "Over" | `Plus -> pp ppf "Plus"
@@ -607,34 +607,34 @@ module I = struct
   | Scale s, Scale s' -> V2.equal_f eq s s' 
   | Matrix m, Matrix m' -> M3.equal_f eq m m' 
   | _, _ -> false
-
+    
   let compare_tr cmp tr tr' = match tr, tr' with 
   | Move v, Move v' -> V2.compare_f cmp v v' 
   | Rot r, Rot r' -> cmp r r' 
   | Scale s, Scale s' -> V2.compare_f cmp s s' 
   | Matrix m, Matrix m' -> M3.compare_f cmp m m' 
   | tr, tr' -> compare tr tr'
-
+                 
   let pp_tr pp_f ppf = function 
   | Move v -> pp ppf "(move %a)" (V2.pp_f pp_f) v
   | Rot a -> pp ppf "(rot %a)" pp_f a
   | Scale s -> pp ppf "(scale %a)" (V2.pp_f pp_f) s
   | Matrix m -> pp ppf "%a" (M3.pp_f pp_f) m
-
+                  
   (* Color stops *)
-
+                  
   type stops = Color.stops
-  
+                 
   let pp_stops pp_f ppf ss =
     let pp_stop ppf (s, c) = pp ppf "@ %a@ %a" pp_f s (V4.pp_f pp_f) c in 
     pp ppf "@[<1>(stops%a)@]" (fun ppf ss -> List.iter (pp_stop ppf) ss) ss
-
+      
   let rec eq_stops eq ss ss' = match ss, ss' with 
   | (s, c) :: ss, (s', c') :: ss' -> 
       eq s s' && V4.equal_f eq c c' && eq_stops eq ss ss'
   | [], [] -> true
   | _, _ -> false
-
+    
   let rec compare_stops cmp ss ss' = match ss, ss' with
   | (s, sc) :: ss, (s', sc') :: ss' -> 
       let c = cmp s s' in
@@ -642,15 +642,15 @@ module I = struct
       let c = V4.compare_f cmp sc sc' in 
       if c <> 0 then c else compare_stops cmp ss ss' 
   | ss, ss' -> Pervasives.compare ss ss'
-
+                 
   (* Primitives *)
-
+                 
   type primitive = 
     | Const of color
     | Axial of Color.stops * p2 * p2
     | Radial of Color.stops * p2 * p2 * float
     | Raster of box2 * raster
-          
+                
   let eq_primitive eq i i' = match i, i' with 
   | Const c, Const c' -> 
       V4.equal_f eq c c'
@@ -662,7 +662,7 @@ module I = struct
   | Raster (r, ri), Raster (r', ri') ->
       Box2.equal_f eq r r' && Raster.equal ri ri'
   | _, _ -> false
-                 
+    
   let compare_primitive cmp i i' = match i, i' with 
   | Const c, Const c' -> 
       V4.compare_f cmp c c' 
@@ -682,7 +682,7 @@ module I = struct
       let c = Box2.compare_f cmp r r' in 
       if c <> 0 then c else Raster.compare ri ri'
   | i, i' -> Pervasives.compare i i'
-
+               
   let pp_primitive pp_f ppf = function
   | Const c -> 
       pp ppf "@[<1>(i-const@ %a)@]" (V4.pp_f pp_f) c
@@ -696,7 +696,7 @@ module I = struct
       pp ppf "@[<1>(i-raster %a@ %a)@]" (Box2.pp_f pp_f) r Raster.pp ri
 
   (* Glyph runs *)
-
+        
   type glyph_run = 
     { font : font;
       text : string option; 
@@ -704,7 +704,7 @@ module I = struct
       blocks : (bool * (int * int) list) option;
       advances : v2 list option; 
       glyphs : glyph list; }
-
+    
   let eq_advances eq r1 r2 = match r1.advances, r2.advances with 
   | None, None -> true
   | Some a1, Some a2 -> 
@@ -712,7 +712,7 @@ module I = struct
       | Invalid_argument _ -> false
       end
   | _, _ -> false 
-
+    
   let cmp_advances cmp adv adv' = match adv, adv' with
   | None, None -> 0 
   | Some a1s, Some a2s -> 
@@ -724,11 +724,11 @@ module I = struct
       in
       adv a1s a2s
   | a1, a2 -> Pervasives.compare a1 a2
-
+                
   let eq_glyph_run eq r1 r2 =
     Font.equal_f eq r1.font r2.font && r1.text = r2.text && 
     V2.equal_f eq r1.o r2.o && eq_advances eq r1 r2 && r1.glyphs = r2.glyphs
-   
+                                                                     
   let cmp_glyph_run cmp r1 r2 =
     let c = Font.compare_f cmp r1.font r2.font in 
     if c <> 0 then c else 
@@ -739,7 +739,7 @@ module I = struct
     let c = cmp_advances cmp r1.advances r2.advances in 
     if c <> 0 then c else
     Pervasives.compare r1.glyphs r2.glyphs
-    
+      
   let pp_glyph_run ppf r =
     let pp_text ppf = function 
     | None -> () 
@@ -756,18 +756,18 @@ module I = struct
       Font.pp r.font pp_text r.text V2.pp r.o pp_advances r.advances;
     List.iter (fun g -> pp ppf " %d" g) r.glyphs; 
     pp ppf ")"
-    
+      
   (* Images *)
-
+      
   type t = 
     | Primitive of primitive
     | Cut of P.area * P.t * t
     | Cut_glyphs of P.area * glyph_run * t
     | Blend of blender * float option * t * t
     | Tr of tr * t
-
+            
   (* Primitive images *)
-
+            
   let const c = Primitive (Const c)
   let void = const Color.void
   let axial stops pt pt' = Primitive (Axial (stops, pt, pt'))
@@ -775,28 +775,28 @@ module I = struct
   let radial stops ?f c r = 
     let f = match f with None -> c | Some f -> f in
     Primitive (Radial (stops, f, c, r))
-
+      
   (* Cutting images *)
-
+      
   let cut ?(area = `Anz) p i = Cut (area, p, i)  
   let cut_glyphs ?area ?text ?blocks ?advances font glyphs i =
     let area = match area with None -> `Anz | Some o -> (o :> P.area) in
     let run = { font; text; o = P2.o; blocks; advances; glyphs; } in 
     Cut_glyphs (area, run , i)
-
+      
   (* Blending images *)
 
   let blend src dst = Blend (`Over, None, src, dst)
-
+      
   (* Transforming images *)
-
+      
   let move v i = Tr (Move v, i)
   let rot a i = Tr (Rot a, i)
   let scale s i = Tr (Scale s, i)
   let tr m i = Tr (Matrix m, i)
-
+      
   (* Predicates and comparisons *)  
-
+      
   let is_void i = i == void 
   let equal i i' = i = i'
   let equal_f eq i i' = 
@@ -858,7 +858,7 @@ module I = struct
         | i, i' -> Pervasives.compare i i'
     in
     loop [(i, i')]
-
+      
   (* Printers *)
       
   let pp_image pp_f ppf i = 
@@ -896,20 +896,20 @@ module I = struct
 end
 
 type image = I.t
-
+               
 (* Image renderers *)
 
 module Vgr = struct
-
+  
   (* Render warnings *)
-
+  
   type warning =  
     [ `Unsupported_cut of P.area * I.t 
     | `Unsupported_glyph_cut of P.area * I.t
     | `Other of string ]
-
+    
   type warn = warning -> unit
-
+    
   let pp_warning ppf w = 
     let pp_area ppf = function
     | `Aeo -> pp ppf "even-odd"
@@ -923,7 +923,7 @@ module Vgr = struct
         pp ppf "Unsupported cut: %a" pp_area a
     | `Unsupported_glyph_cut (a, _) -> 
         pp ppf "Unsupported glyph cut: %a" pp_area a
-
+          
   (* Render metadata *) 
 
   let decompose_posix_time pt =              (* (YYYY, MM, DD), (hh, mm, ss) *)
@@ -963,7 +963,7 @@ module Vgr = struct
       let days = truncate (ms /. day) - 1 in 
       let dt = truncate (day +. (mod_float ms day)) - 1 in 
       (to_gregorian (posix_epoch + days), (to_hhmmss dt))
-
+      
   let add_xml_data b str = 
     let len = String.length str in
     let start = ref 0 in 
@@ -1028,8 +1028,8 @@ module Vgr = struct
     in
     let b = Buffer.create 1024 in 
     fmt b "<r:RDF xmlns:r=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\" \
-                xmlns:d=\"http://purl.org/dc/elements/1.1/\" \
-                xmlns:x=\"http://ns.adobe.com/xap/1.0/\">\
+                  xmlns:d=\"http://purl.org/dc/elements/1.1/\" \
+                  xmlns:x=\"http://ns.adobe.com/xap/1.0/\">\
             <r:Description r:about=\"\">%a%a%a%a%a%a%a</r:Description>\
            </r:RDF>" 
       b_title title b_authors authors b_subjects subjects 
@@ -1038,16 +1038,16 @@ module Vgr = struct
     Buffer.contents b
       
   (* Renderable *)
-
+      
   type renderable = size2 * box2 * image
-
+                    
   (* Rendering *)
-
+                    
   type dst_stored = 
     [ `Buffer of Buffer.t | `Channel of Pervasives.out_channel | `Manual ] 
     
   type dst = [ dst_stored | `Other ]
-
+             
   type t = 
     { dst : dst;                                     (* output destination. *)
       mutable o : string;            (* current output chunk (stored dsts). *)
@@ -1058,20 +1058,20 @@ module Vgr = struct
       mutable k :                                   (* render continuation. *)
         [`Await | `End | `Image of size2 * box2 * image ] -> t -> 
         [ `Ok | `Partial ] }
-
+    
   type k = t -> [ `Ok | `Partial ]
   type render_fun = [`End | `Image of size2 * box2 * image ] -> k -> k 
   type 'a target = t -> 'a -> bool * render_fun constraint 'a = [< dst]
-      
+                                                                
   let expect_await k v r = match v with 
   | `Await -> k r | _ -> invalid_arg err_exp_await
-
+                           
   let expect_none v r = match v with  
   | `Await | `End | `Image _ -> invalid_arg err_end
-
+                                  
   let ok k r = r.k <- k; `Ok
   let partial k r = r.k <- expect_await k; `Partial
-                        
+    
   let rec r_once (rfun : render_fun) v r = match v with
   | `End -> rfun `End (ok expect_none) r
   | (`Image _) as i -> 
@@ -1087,7 +1087,7 @@ module Vgr = struct
   | `End -> rfun `End (ok expect_none) r
   | `Image _ as i -> rfun i (ok (r_loop rfun)) r
   | `Await -> ok (r_loop rfun) r
-
+                
   let create ?(limit = max_int) ?(warn = fun _ -> ()) target dst = 
     let o, o_pos, o_max = match dst with 
     | `Manual | `Other -> "", 1, 0          (* implies [o_rem e = 0]. *)
@@ -1099,60 +1099,60 @@ module Vgr = struct
     let multi, rfun = target r dst in 
     r.k <- if multi then r_loop rfun else r_once rfun; 
     r
-                                              
+    
   let render r v = r.k (v :> [ `Await | `End | `Image of renderable ]) r
   let renderer_dst r = r.dst
   let renderer_limit r = r.limit 
-
+                           
   (* Manual rendering destinations *)
-      
+                           
   module Manual = struct
     let dst r s j l =                                (* set [r.o] with [s]. *)
-      if (j < 0 || l < 0 || j + l > String.length s) then 
-        invalid_arg (err_bounds j l);
+      if (j < 0 || l < 0 || j + l > String.length s) 
+      then invalid_arg (err_bounds j l);
       r.o <- s; r.o_pos <- j; r.o_max <- j + l - 1
-          
+                                         
     let dst_rem r = r.o_max - r.o_pos + 1   (* rem bytes to write in [r.o]. *)
   end
 
   (* Implementing renderers. *)
 
   module Private = struct
-
+    
     (* Internal data *)
-
+    
     module Data = struct
-
+      
       (* Path representation *)
 
       type segment = P.segment
       type path = P.t
       external of_path : P.t -> path = "%identity" 
-      
+        
       (* Image representation *)
-    
+        
       type tr = I.tr = Move of v2 | Rot of float | Scale of v2 | Matrix of m3
-
+                         
       let tr_to_m3 = function 
       | Move v -> M3.move2 v
       | Rot a -> M3.rot2 a 
       | Scale s -> M3.scale2 s 
       | Matrix m -> m
-
+        
       let inv_tr_to_m3 = function
       | Move v -> M3.move2 (V2.neg v) 
       | Rot a -> M3.rot2 (-. a) 
       | Scale s -> M3.scale2 (V2.v (1. /. V2.x s) (1. /. V2.y s))
       | Matrix m -> M3.inv m
-
+                      
       type blender = I.blender
-
+                       
       type primitive = I.primitive = 
         | Const of color
         | Axial of Color.stops * p2 * p2
         | Radial of Color.stops * p2 * p2 * float
         | Raster of box2 * raster
-           
+                    
       type glyph_run = I.glyph_run = 
         { font : font;
           text : string option; 
@@ -1160,19 +1160,19 @@ module Vgr = struct
           blocks : (bool * (int * int) list) option;
           advances : v2 list option; 
           glyphs : glyph list; }
-
+        
       type image = I.t = 
         | Primitive of primitive
         | Cut of P.area * P.t * image
         | Cut_glyphs of P.area * glyph_run * image
         | Blend of I.blender * float option * image * image
         | Tr of tr * image
-
+                
       external of_image : I.t -> image = "%identity"
     end
-
+    
     (* Font helpers *)
-
+    
     module Font = struct
       let css_slant font = Font.slant_to_str font.Font.slant
       let css_weight font = Font.weight_to_str font.Font.weight
@@ -1181,11 +1181,11 @@ module Vgr = struct
         let weight = css_weight font in
         Printf.sprintf "%s %s %g%s \"%s\"" slant weight font.Font.size unit 
           font.Font.name
-
+          
     end
     
     (* Path helpers *)
-
+    
     module P = struct
       external of_data : Data.path -> P.t = "%identity"
       let earc_params = P.earc_params
@@ -1194,22 +1194,22 @@ module Vgr = struct
         let angle = if angle = 0. then Float.rad_of_deg 0.05 else angle in
         1. /. sin (angle /. 2.)
     end
-
+    
     (* Image helpers *)
-
+    
     module I = struct 
       external of_data : Data.image -> I.t = "%identity"
     end
-
+    
     (* Renderers *)
-
+    
     type renderer = t
-
+      
     type k = renderer -> [ `Ok | `Partial ]
     type render_fun = [`End | `Image of size2 * box2 * Data.image ] -> k -> k 
     type 'a render_target = renderer -> 'a -> bool * render_fun 
     constraint 'a = [< dst]
-
+                      
     let renderer r = r
     let create_target t = t
     let limit r = r.limit
@@ -1222,11 +1222,11 @@ module Vgr = struct
       | `Buffer b -> Buffer.add_substring b r.o 0 r.o_pos; r.o_pos <- 0; k r
       | `Channel oc -> output oc r.o 0 r.o_pos; r.o_pos <- 0; k r
       | `Other -> assert false
-
+        
     let rec writeb b k r =                 (* write byte [b] and [k]ontinue. *)
       if r.o_pos > r.o_max then flush (writeb b k) r else
       (unsafe_set_byte r.o r.o_pos b; r.o_pos <- r.o_pos + 1; k r)
-
+      
     let rec writes s j l k r =  (* write [l] bytes from [s] starting at [j]. *)
       let rem = o_rem r in 
       if rem >= l
@@ -1235,7 +1235,7 @@ module Vgr = struct
         unsafe_blit s j r.o r.o_pos rem; r.o_pos <- r.o_pos + rem; 
         flush (writes s (j + rem) (l - rem) k) r
       end
-
+      
     let rec writebuf buf j l k r = (* write [l] bytes from [buf] start at [j].*)
       let rem = o_rem r in
       if rem >= l 
@@ -1244,7 +1244,7 @@ module Vgr = struct
         Buffer.blit buf j r.o r.o_pos rem; r.o_pos <- r.o_pos + rem; 
         flush (writebuf buf (j + rem) (l - rem) k) r
       end 
-
+      
     let add_xml_data = add_xml_data
   end
 end

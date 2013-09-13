@@ -5,8 +5,8 @@
   ---------------------------------------------------------------------------*)
 
 (** Declarative 2D vector graphics.
-
-    [Vg] is a declarative 2D vector graphics library. In Vg, images
+    
+    [Vg] is a declarative 2D vector graphics library. In [Vg], images
     are {{!Vg.image}values} that denote functions mapping points of
     the cartesian plane to colors. The library provides
     {{!Vg.I}combinators} to define and compose them. Renderers for
@@ -23,37 +23,35 @@
     {e Release %%VERSION%% — %%MAINTAINER%% } *)
 
 open Gg
-
+  
 (** {1 Fonts} *)
-
+  
 (** Fonts. 
-
+    
     Font handling in [Vg] happens in renderers and text layout and
     text to glyph translations are expected to be carried out by an
-    external library.
-
-    Values of type [font] just represent a font specification 
-    to be resolved by the concrete renderer. *)
+    external library. Values of type {!Vg.font} just represent a font 
+    specification to be resolved by the concrete renderer. *)
 module Font : sig
-
+  
   (** {1 Fonts} *)
-
-  type weight = 
-    [ `W100 | `W200 | `W300 | `W400 | `W500 | `W600 
-    | `W700 | `W800 | `W900 ]
+  
+  type weight =
+    [ `W100 | `W200 | `W300 | `W400 | `W500 | `W600 | `W700 | `W800 | `W900 ]
   (** The type for font weights. Usually [`W400] denotes a normal 
       weight and [`W700], a bold weight. *)
-
+    
   type slant = [ `Normal | `Italic | `Oblique ]
   (** The type for font slants. *)
-
+               
   type t = 
     { name : string;
       slant : slant;
       weight : weight; 
       size : float; }
-  (** The type for fonts. The size is the size given to the 
-      font's em unit in [Vg]'s {{!coordinates}coordinate space}. *)
+  (** The type for fonts. The size is expressed in 
+      [Vg]'s {{!coordinates}coordinate space}, the em unit of the font
+      is scaled to that size. *)
  
   (** {1 Predicates and comparisons} *)
 
@@ -73,7 +71,7 @@ module Font : sig
 
   (** {1 Printers} *)
 
-  val to_string : t -> string 
+  val to_string : t -> string
   (** [to_string font] is a textual representation of [font]. *)
 
   val pp : Format.formatter -> t -> unit
@@ -102,83 +100,83 @@ val ( >> ) : 'a -> ('a -> 'b) -> 'b
 (** Paths.
     
     Consult their {{!sempaths}semantics}. 
-
+    
     The composition operator {!Vg.(>>)} is used to build paths from
     the empty path. For this reason path combinators always take the
     path to use as the last argument. *)
 module P : sig
 
   (** {1 Path areas} *)
-
+  
   type cap = [ `Butt | `Round | `Square ]
   (** The type for path caps. {{!semcaps}Semantics}.*)
-
+             
   type join = [ `Bevel | `Miter | `Round ]
   (** The type for segment jointures. {{!semjoins}Semantics}.*)
-
+              
   type dashes = float * float list
   (** The type for dashes. {{!semdashes}Semantics}. *)
-
+                  
   type outline = 
-      { width : float;          (** Outline width. *)
-	      cap : cap;              (** Shape at the end points of open subpaths
-				    and dashes. *)
-	     join : join;            (** Shape at segment jointures. *)
-	miter_angle : float;    (** Limit {e angle} for miter joins 
+    { width : float;          (** Outline width. *)
+      cap : cap;              (** Shape at the end points of open subpaths
+                                    and dashes. *)
+      join : join;            (** Shape at segment jointures. *)
+      miter_angle : float;    (** Limit {e angle} for miter joins 
                                     (in \[0;pi\]).*)
-	dashes : dashes option; (** Outline dashes. *) }
+      dashes : dashes option; (** Outline dashes. *) }
   (** The type for path outline area specifications. 
       {{!semoutlines}Semantics}.*)
-
+    
   val o : outline 
   (** [o] holds a default set of values. [width] is [1.],
       [cap] is [`Butt], [join] is [`Miter], [miter_angle] is 
       [11.5] degrees in radians and [dashes] is [None]. *)
-      
+    
   val pp_outline : Format.formatter -> outline -> unit 
   (** [pp_outline ppf o] prints a textual representation of [o] on [ppf]. *)
-
+    
   type area = [ `Aeo | `Anz | `O of outline ]
   (** The type for path area specifications. 
       {{!sempaths}Semantics}.*)
 
   val pp_area : Format.formatter -> area -> unit
   (** [pp_area ppf a] prints a textual representation of [a] on [ppf] *)
-
+    
   (** {1 Paths} *)
-
+    
   type t = path
   (** The type for paths. *)
-
+    
   val empty : path
   (** [empty] is the empty path. *)
 
   (** {1 Subpaths and segments} 
-
+      
       If a path segment is directly added to a path [p] which is
       {{!empty}[empty]} or whose last subpath is {{!close}closed}, a
       new subpath is {e automatically} started with {!sub}[ P2.o p].
-
+      
       In the functions below the default value of the optional
       argument [rel] is [false]. If [true], the points given to the
       function are expressed {e relative} to the {{!last_pt}last
       point} of the path or {!Gg.P2.o} if the path is {{!empty}[empty]}. *)
-
+    
   val sub : ?rel:bool -> p2 -> path -> path
   (** [sub pt p] is [p] with a new subpath starting at [pt]. If [p]'s last 
       subpath had no segment it is automatically {!close}d. *)
- 
+    
   val line : ?rel:bool -> p2 -> path -> path
   (** [line pt p] is [p] with a straight line from [p]'s last point to [pt]. *)
-
+    
   val qcurve : ?rel:bool -> p2 -> p2 -> path -> path
   (** [qcurve c pt p] is [p] with a quadratic bézier curve from 
       [p]'s last point to [pt] with control point [c]. *)
-
+    
   val ccurve : ?rel:bool -> p2 -> p2 -> p2 -> path -> path
   (** [ccurve c c' pt p] is [p] with a cubic bézier curve from [p]'s 
       last point to [pt] with control points [c] and [c']. *)
-
+    
   val earc : ?rel:bool -> ?large:bool -> ?cw:bool -> ?angle:float -> size2 -> 
     p2 -> path -> path
   (** [earc large cw a r pt p] is [p] with an elliptical arc from
@@ -187,7 +185,7 @@ module P : sig
       respect to the current coordinate system. If the parameters do not
       define a valid ellipse (points coincident or too far apart, zero
       radius) the arc collapses to a line.
-
+      
       In general the parameters define four possible arcs, thus
       [large] indicates if more than pi radians of the arc is to be
       traversed and [cw] if the arc is to be traversed in the
@@ -197,65 +195,65 @@ module P : sig
       is [~cw:false]:
       {%html: <img src="doc-earcs.png" style="width:75mm; height:45mm;"/> %}
   *)
-
+    
   val close : path -> path
   (** [close p] is [p] with a straight line from [p]'s last point to
       [p]'s current subpath starting point, this ends the subpath. *)
-
+    
   (** {2 Derived subpaths} 
-
+      
       The following convenience functions start and close a new subpath
       to the given path. *)
-
+    
   val circle : ?rel:bool -> p2 -> float -> path -> path
   (** [circle c r p] is [p] with a circle subpath of center [c] 
       and radius [r]. *)
-
+    
   val ellipse : ?rel:bool -> ?angle:float -> p2 -> size2 -> path -> path
   (** [ellipse c r p] is [p] with an axis-aligned (unless [angle] is specified) 
       ellipse subpath of center [c] and radii [r].*)
-
+    
   val rect : ?rel:bool -> box2 -> path -> path
   (** [rect r p] is [p] with an axis-aligned rectangle subpath 
       [r]. If [r] is empty, [p] is returned. *)
-
+    
   val rrect :?rel:bool -> box2 -> size2 -> path -> path
   (** [rrect r cr p] is [p] with an axis-aligned rectangle subpath
       [r] with round corners of radii [cr]. If [r] is empty, [p]
       is returned. *)
-
+    
   (** {1 Functions} *)
-
+    
   val last_pt : path -> p2
   (** [last_pt p] is the last point of [p]'s last subpath.
       @raise Invalid_argument if [p] is [empty]. *)
-
+    
   val append : path -> path -> path
   (** [append p' p] appends [p'] to [p]. If [p]'s last subpath had no
       segment it is closed.
-
+      
       {b Warning.} To accomodate {!(>>)} the argument order is the opposite of
       {!List.append}. *)
-
+    
   val bounds : ?ctrl:bool -> path -> box2
   (** [bounds ctrl p] is an axis-aligned rectangle containing [p]. If
       [ctrl] is [true] (defaults to [false]) control points are also
       included in the rectangle. Returns {!Gg.Box2.empty} if the path 
       is [empty].
-
+      
       {b Warning.} This function computes the bounds of the ideal
       path (without width). Path {!outline}s areas will exceed these 
       bounds. *)
-
+    
   val tr : Gg.m3 -> path -> path 
   (** [tr m p] is the affine transform in homogenous 2D space of the path
       [p] by [m]. 
-
+      
       {b Bug.} Elliptical arcs transformation is currently broken if
       [m] doesn't scale uniformely or shears. *)
 
   (** {1 Traversal} *)
-
+    
   type fold = 
     [ `Sub of p2
     (** New subpath starting at point, the point *)
@@ -271,41 +269,41 @@ module P : sig
     (** Line to point of the last [`Sub], ends the subpath. *)
     ]
   (** The type for path folds. *)
-
+    
   val fold : ?rev:bool -> ('a -> fold -> 'a) -> 'a -> path -> 'a
   (** [fold ~rev f acc p], applies [f] to each subpath and subpath segments
       with an accumulator. Subpaths are traversed in the order they
       were specified, always start with a [`Sub], but may not be
       [`Close]d. If [rev] is [true] (defaults to [false]) the segments
       and subpaths are traversed in reverse order. *)
-
+    
   (** {1 Predicates and comparisons} *) 
-
+    
   val is_empty : path -> bool
   (** [is_empty p] is [true] iff [p] is [empty]. *)
-
+    
   val equal : path -> path -> bool 
   (** [equal p p'] is [p = p']. *)
-
+    
   val equal_f : (float -> float -> bool) -> path -> path -> bool 
   (** [equal_f eq p p'] is like {!equal} but uses [eq] to test floating
       point values. *)
-
+    
   val compare : path -> path -> int 
   (** [compare p p'] is {!Pervasives.compare}[ p p']. *)
-
+    
   val compare_f : (float -> float -> int) -> path -> path -> int 
   (** [compare_f cmp p p'] is like {!compare} but uses [cmp] to compare 
       floating point values. *)
-
+    
   (** {1 Printers} *)
 
   val to_string : path -> string
   (** [to_string p] is a textual representation of [p]. *) 
-
+    
   val pp : Format.formatter -> path -> unit
   (** [pp ppf p] prints a textual representation of [p] on [ppf]. *)
-  
+    
   val pp_f : (Format.formatter -> float -> unit) -> Format.formatter -> 
     path -> unit
   (** [pp_f pp_float ppf p] prints [p] like {!pp} but uses [pp_float] to 
@@ -313,7 +311,7 @@ module P : sig
 end
 
 (** Images.
-  
+    
     Consult their {{!semimages}semantics}. 
 
     The composition operator {!Vg.(>>)} is used to compose images. 
@@ -391,7 +389,7 @@ module I : sig
   (** {b WARNING.} The interface and specifics of glyph rendering are 
       still subject to change in the future.
  
-      [cut_glyphs area text clusters advances font glyphs i] is like 
+      [cut_glyphs area text blocks advances font glyphs i] is like 
       {!cut} except the path cut is the union of all the paths of the 
       glyphs [glyphs] of the font [font].
 
@@ -413,11 +411,10 @@ module I : sig
       the list defines the number of blocks. Starting at the head of
       each sequence, each block [(char_adv, glyph_adv)] indicates the
       number of characters and glyphs that make the next block (one or
-      the other may be 0). If the boolean is [true] the sequence
-      glyphs is reversed for peforming the map. If [blocks] is
-      unspecified a one to one map between glyphs and characters is
-      assumed with undefined results if the number of glyphs and
-      characters differ.
+      the other may be 0). If the boolean is [true] the glyph sequence
+      is reversed for peforming the map. If [blocks] is unspecified a
+      one to one map between glyphs and characters is assumed with
+      undefined results if the number of glyphs and characters differ.
 
       If [area] is provided, the outline area of the glyphs are cut as
       specified, otherwise the area of the glyphs is determined as 
@@ -522,9 +519,9 @@ module Vgr : sig
       by [Vg]'s rendering model. 
 
       Whenever a renderer encounters an unsupported capability it
-      (usually) ignores it and calls the [warn] callback specified at
-      renderer {{!Vgr.create}creation} time. The documentation of
-      renderers indicate which warnings they report. *)
+      ignores it and calls the [warn] callback specified at renderer
+      {{!Vgr.create}creation} time. The documentation of renderers
+      indicate which warnings they report. *)
 
   type warning = 
     [ `Unsupported_cut of P.area * I.t
@@ -651,13 +648,13 @@ module Vgr : sig
   module Manual : sig
     val dst : renderer -> string -> int -> int -> unit 
     (** [dst r s j l] provides [r] with [l] bytes to write, starting
-          at [j] in [s]. This byte range is written by calls to {!render}
-          until [`Partial] is returned. Use {!dst_rem} to know the remaining
-          number of non-written free byte in [s]. *)
+        at [j] in [s]. This byte range is written by calls to {!render}
+        until [`Partial] is returned. Use {!dst_rem} to know the remaining
+        number of non-written free bytes in [s]. *)
       
     val dst_rem : renderer -> int 
-      (** [dst_rem r] is the remaining number of non-written, free bytes
-          in the last buffer provided with {!dst}. *)
+    (** [dst_rem r] is the remaining number of non-written, free bytes
+        in the last buffer provided with {!dst}. *)
   end
 
   (** {1:renderer  Implementing renderers} *)
@@ -712,7 +709,7 @@ module Vgr : sig
       
       type path = segment list
       (** The type for paths. The segment list is reversed. A few invariants
-          apply. See the comment in Vg's source. *)
+          apply. See the comment in [Vg]'s source. *)
 
       val of_path : P.t -> path
       (** [of_path p] is the internal representation of [p]. *)
@@ -948,7 +945,7 @@ let gray = I.const (Color.gray 0.5)
     concrete renderer implementation used (PDF, SVG, HTML canvas etc.).
 
     The following function outputs the unit square of [gray] on a
-    30x30 millimiters SVG target in the file [/tmp/vg-basics.svg]:
+    30x30 millimeters SVG target in the file [/tmp/vg-basics.svg]:
 {[let svg_of_usquare i = 
   let size = Size2.v 30. 30. in
   let view = Box2.unit in
@@ -1014,10 +1011,10 @@ let gray_circle = I.cut circle gray
 
     But the [circle] path can also be seen as defining a thin outline
     area around the ideal mathematical circle of [circle]. This can be
-    specified by using an outline area `O o. The value [o] defines
-    various parameters that define the outline area; for example its
-    width. The following code cuts the [circle] outline area of width [0.04] 
-    in an infinite black image.
+    specified by using an outline area `O o. The value [o] of type
+    {!P.outline} defines various parameters that define the outline
+    area; for example its width. The following code cuts the [circle]
+    outline area of width [0.04] in an infinite black image.
 
 {[
 let circle_outline = 
@@ -1088,7 +1085,7 @@ let scatter_plot pts pt_width =
 ]}
     Note that [dot] is defined outside [mark], this means that all [mark]s
     share the same [dot], doing so allows renderers to perform space 
-    and time optimizations. For example the PDF renderer will output a single
+    and time optimizations. For example the SVG renderer will output a single
     [circle] path shared by all marks. 
    
     Here's the result of [scatter_point] on 800 points with coordinates
@@ -1160,11 +1157,11 @@ I.const Color.black >> I.cut ~area p
        or image data contains NaNs or infinite floats.}
     {- Any string is assumed to be UTF-8 encoded.}
     {- Sharing (sub)image, path and outline
-       values in the definition of an image may result in much more
+       values in the definition of an image may result in more
        efficient rendering in space and time.}}
 *)
 
-(** {1:semantics Semantics} 
+(** {1:semantics Semantics}
 
     The following notations and definitions are used to give precise
     meaning to the images and the combinators.
@@ -1302,7 +1299,7 @@ I.const Color.black >> I.cut ~area p
 
 Many examples of images and their source can be found in the
 {{:http://erratique.ch/software/vg/demos/rhtmlc.html}online version}
-of Vg's test image database. Clicking on the title of an image brings
+of [Vg]'s test image database. Clicking on the title of an image brings
 you to its definition.
 
 The following examples show for each renderer the minimal code
@@ -1455,8 +1452,6 @@ javascript [min_htmlc.js]. The following one will do:
 v}
 *)
 
-
-
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
    All rights reserved.
@@ -1489,4 +1484,3 @@ v}
    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ---------------------------------------------------------------------------*)
-
