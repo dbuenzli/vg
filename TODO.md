@@ -2,11 +2,7 @@
 
 * Check fill open path semantics
 * Review ellipse things. There are a few TODOs and wrong things in there.
-* Do we actually have a renderer that supports arbitrary outline cut ?
-  NO !
-* rhtmlc, make font bigger for those who don't have a high dpi display.
-* rhtmlc, try img with pdf.
-* Font.t, expose the record ? at least provide Font.with_size font 4.
+* Add blocks to glyph_run printer.
 * Final code review.
 * Final doc review.
 * Rename Vgr.xmp_metadata to Vgr.xmp

@@ -13,8 +13,11 @@ open Vg
 let open_sans_xbold = 
   { Font.name = "Open Sans"; size = 1.0; weight = `W800; slant = `Normal}
 
-(* Glyphs for the string "Revolt!" as per cmap of Open_sans.extra_bold *)
+(* Font info for the string "Revolt!" as found in Open_sans.extra_bold. *)
+
 let glyphs = [ 53; 72; 89; 82; 79; 87; 4 ]
+let advances = [1386.; 1266.; 1251.; 1305.; 662.; 942.; 594.;]
+let u_to_em = 2048.
 ;;
   
 Db.image "glyph-revolt" ~author:Db.dbuenzli
@@ -94,6 +97,38 @@ Db.image "glyph-multi" ~author:Db.dbuenzli
     I.move (P2.v 0.2 (-. sin (angle))) >>
     I.blend margin
   end;
+
+Db.image "glyph-advances" ~author:Db.dbuenzli
+  ~title:"Advancing revolt"
+  ~tags:["glyph"]
+  ~note:"First line, no advances specified. Second line advances with glyph
+         advances, should render same as first line. Third line, funky glyph 
+         advances with up and down."
+  ~size:(Size2.v 135. (45. *. 3.))
+  ~view:(Box2.v P2.o (Size2.v 3. 3.))
+  begin fun _ -> 
+    let fsize = 0.7 in
+    let font = { open_sans_xbold with Font.size = fsize } in
+    let text = "Revolt!" in 
+    let black = I.const Color.black in
+    let ypos n = V2.v 0.23 (0.25 +. n *. 0.98) in
+    let no_advances = I.cut_glyphs ~text font glyphs in
+    let adv_advances = 
+      let adv a = V2.v ((a *. fsize) /. u_to_em) 0. in
+      I.cut_glyphs ~text ~advances:(List.map adv advances) font glyphs 
+    in
+    let funky_advances = 
+      let adv i a = 
+        V2.v ((a *. fsize) /. u_to_em) (if i mod 2 = 0 then 0.2 else -0.2)
+      in
+      I.cut_glyphs ~text ~advances:(List.mapi adv advances) font glyphs
+    in
+    black >> funky_advances >> I.move (ypos 0.) >> 
+    I.blend (black >> adv_advances >> I.move (ypos 1.)) >>
+    I.blend (black >> no_advances >> I.move (ypos 2.))
+  end
+;;
+
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

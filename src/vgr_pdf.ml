@@ -384,6 +384,9 @@ let w_primitive_cut s ctm a p prim k r = match a with
 | `Aeo -> set_fcolor s ctm prim; w_path s p " f*" k r
 | `O o -> set_scolor s ctm prim; set_outline s o; w_path s p " S" k r
 
+(* There's room for a lot of improvements e.g. to avoid using to 
+   many td operators. *) 
+
 (* The non straightforward mappings from unicode to Windows Code Page 1252.
    http://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1252.TXT *)
 let uchar_to_cp1252 = 
@@ -406,7 +409,15 @@ let glyph_pdf_encode s glyph =           (* glyph is an Unicode scalar value *)
 let glyph_identity_h_encode s glyph =
   b_str_byte s ((glyph land 0xFF00) lsr 8); 
   b_str_byte s ((glyph land 0x00FF))
-  
+
+let rec b_glyphs_advs s encode gs advs = match gs, advs with
+| g :: gs, a :: advs -> 
+    b_fmt s "("; (encode s g); b_fmt s ") Tj %f %f Td " (V2.x a) (V2.y a);
+    b_glyphs_advs s encode gs advs
+| g :: _ as gs, [] -> (* finish without advances *) 
+    b_fmt s "("; List.iter (encode s) gs; b_fmt s ") Tj"
+| [], _ -> () 
+
 let w_glyph_run s run op k r = 
   let font_mode = set_font s run.Vgr.Private.Data.font in
   b_fmt s "%s" op;
@@ -430,12 +441,10 @@ let w_glyph_run s run op k r =
           List.rev (Uutf.String.fold_utf_8 add_glyph [] text)
       end
   in
-  begin match run.Vgr.Private.Data.advances with 
-  | None | Some _ (* TODO *) -> 
-      b_fmt s "(";
-      List.iter (encode s) glyphs;
-      b_fmt s ") Tj" 
-  end;
+  let advances = match run.Vgr.Private.Data.advances with 
+  | None -> [] | Some advances -> advances
+  in
+  b_glyphs_advs s encode glyphs advances;
   begin match run.text with 
   | None -> b_fmt s "\nET"
   | Some _ -> b_fmt s "\nEMC ET"

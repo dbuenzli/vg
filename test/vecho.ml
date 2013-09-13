@@ -77,39 +77,44 @@ let font_info font = match font with
           
 (* Text layout *) 
 
-let fixed_layout text =
+let fixed_layout size text =
   let units_per_em = 1000. in
   let add_adv acc _ = function 
   | `Malformed _ -> acc | `Uchar _ -> acc + 600 (* Courier's advance *)
   in
-  [], [], (float (Uutf.String.fold_utf_8 add_adv 0 text)) /. units_per_em
+  let len = size *. (float (Uutf.String.fold_utf_8 add_adv 0 text)) in
+  [], [], (len /. units_per_em)
 
-let otf_layout info text =
+let otf_layout info size text =
   let get_adv g = try Gmap.find g info.i_advs with Not_found -> 0 in
   let get_glyph u = try Cmap.find u info.i_cmap with Not_found -> 0 in
-  let rec add_glyph (gs, adv, len as acc) i = function 
+  let u_to_em = float info.i_units_per_em in
+  let rec add_glyph (gs, advs, len as acc) i = function 
   | `Malformed _ -> add_glyph acc i (`Uchar Uutf.u_rep)
   | `Uchar u ->
       let g = get_glyph u in
-      (g :: gs, [], len + (get_adv g))
+      let v_adv = get_adv g in
+      let adv = V2.v ((size *. (float v_adv)) /. u_to_em) 0. in
+      (g :: gs, adv :: advs, len + v_adv)
   in
-  let gs, advs, lens = Uutf.String.fold_utf_8 add_glyph ([], [], 0) text in 
-  (gs, advs, (float lens) /. (float info.i_units_per_em))
+  let gs, advs, len = Uutf.String.fold_utf_8 add_glyph ([], [], 0) text in 
+  gs, advs, ((size *. (float len)) /. u_to_em)
   
 (* Text rendering *)
 
 let renderable (fname, info) size text = 
-  let glyphs_rev, _, len = match info with 
-  | None -> fixed_layout text
-  | Some info -> otf_layout info text
+  let glyphs_rev, advances_rev, len = match info with 
+  | None -> fixed_layout size text
+  | Some info -> otf_layout info size text
   in
+  let glyphs, advances = List.rev glyphs_rev, List.rev advances_rev in
   let font = { Font.name = fname; slant = `Normal; weight = `W400; size } in
   let i = 
     I.const (Color.black) >>
-    I.cut_glyphs ~text font (List.rev glyphs_rev) >>
+    I.cut_glyphs ~text ~advances font glyphs >>
     I.move V2.(0.5 * (v size size))
   in
-  let size = Size2.v (len *. size +. size) (2. *. size) in
+  let size = Size2.v (len +. size) (2. *. size) in
   let view = Box2.v P2.o size in 
   `Image (size, view, i)
 
