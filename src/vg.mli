@@ -742,7 +742,7 @@ module Vgr : sig
           text : string option; 
           o : p2;                          (** Unused for now, always P2.o *)
           blocks : (bool * (int * int) list) option;
-          advances : v2 list option; 
+          advances : v2 list; 
           glyphs : glyph list; }
 
       (** The type for images. *)

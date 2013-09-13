@@ -441,10 +441,7 @@ let w_glyph_run s run op k r =
           List.rev (Uutf.String.fold_utf_8 add_glyph [] text)
       end
   in
-  let advances = match run.Vgr.Private.Data.advances with 
-  | None -> [] | Some advances -> advances
-  in
-  b_glyphs_advs s encode glyphs advances;
+  b_glyphs_advs s encode glyphs run.Vgr.Private.Data.advances;
   begin match run.text with 
   | None -> b_fmt s "\nET"
   | Some _ -> b_fmt s "\nEMC ET"
