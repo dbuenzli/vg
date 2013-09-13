@@ -1,18 +1,16 @@
 # Before first release 
 
-* Check fill open path semantics
 * Review ellipse things. There are a few TODOs and wrong things in there.
-* Add blocks to glyph_run printer.
 * Final code review.
 * Final doc review.
 * Review conversion of earc to bezier. 
 * git grep TODO
 
-
 #  After first release
 
 ## Current backend improvements
 
+* git grep FIXME
 * SVG renderer, try to handle more glyph cuts.
 * SVG renderer, give the opportunity to use SVG glyphs ? The idea 
   would be that if no font resolver is provided, do it like now 

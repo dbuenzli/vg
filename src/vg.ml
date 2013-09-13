@@ -701,14 +701,20 @@ module I = struct
     { font : font;
       text : string option; 
       o : p2;
-      blocks : (bool * (int * int) list) option;
+      blocks : bool * (int * int) list;
       advances : v2 list; 
       glyphs : glyph list; }
-    
+
+  let eq_blocks (rev0, bs0) (rev1, bs1) = rev0 = rev1 && bs0 = bs1
   let eq_advances eq r1 r2 =
     try List.for_all2 (V2.equal_f eq) r1.advances r2.advances with 
     | Invalid_argument _ -> false
-    
+      
+  let cmp_blocks (rev0, bs0) (rev1, bs1) = 
+    let c = Pervasives.compare rev0 rev1 in 
+    if c <> 0 then c else 
+    Pervasives.compare bs0 bs1
+
   let cmp_advances cmp a1s a2s =
     let rec adv a1s a2s = match a1s, a2s with 
     | a1 :: a1s, a2 :: a2s -> 
@@ -720,7 +726,8 @@ module I = struct
                 
   let eq_glyph_run eq r1 r2 =
     Font.equal_f eq r1.font r2.font && r1.text = r2.text && 
-    V2.equal_f eq r1.o r2.o && eq_advances eq r1 r2 && r1.glyphs = r2.glyphs
+    V2.equal_f eq r1.o r2.o && eq_blocks r1.blocks r2.blocks && 
+    eq_advances eq r1 r2 && r1.glyphs = r2.glyphs
                                                                      
   let cmp_glyph_run cmp r1 r2 =
     let c = Font.compare_f cmp r1.font r2.font in 
@@ -729,6 +736,8 @@ module I = struct
     if c <> 0 then c else 
     let c = V2.compare_f cmp r1.o r2.o in 
     if c <> 0 then c else 
+    let c = cmp_blocks r1.blocks r2.blocks in 
+    if c <> 0 then c else
     let c = cmp_advances cmp r1.advances r2.advances in 
     if c <> 0 then c else
     Pervasives.compare r1.glyphs r2.glyphs
@@ -738,13 +747,19 @@ module I = struct
     | None -> () 
     | Some t -> pp ppf "@ @[<1>(text \"%s\")@]" t
     in
+    let pp_blocks ppf (rev, blocks) =
+      pp ppf "@ @[<1>(blocks@ (rev %b)" rev; 
+      List.iter (fun (ul, gl) -> pp ppf "@ (%d,%d)" ul gl) blocks; 
+      pp ppf "@)"
+    in
     let pp_advances ppf advs =
       pp ppf "@ @[<1>(advances";
       List.iter (fun a -> pp ppf "@ %a" V2.pp a) advs; 
       pp ppf ")@]"
     in
-    pp ppf "%a%a@ @[<1>(o %a)@]%a@ (glyphs" 
-      Font.pp r.font pp_text r.text V2.pp r.o pp_advances r.advances;
+    pp ppf "%a%a@ @[<1>(o %a)@]%a%a@ (glyphs" 
+      Font.pp r.font pp_text r.text V2.pp r.o pp_blocks r.blocks 
+      pp_advances r.advances;
     List.iter (fun g -> pp ppf " %d" g) r.glyphs; 
     pp ppf ")"
       
@@ -770,7 +785,8 @@ module I = struct
   (* Cutting images *)
       
   let cut ?(area = `Anz) p i = Cut (area, p, i)  
-  let cut_glyphs ?area ?text ?blocks ?(advances = []) font glyphs i =
+  let cut_glyphs ?area ?text ?(blocks = (false, [])) ?(advances = []) 
+      font glyphs i =
     let area = match area with None -> `Anz | Some o -> (o :> P.area) in
     let run = { font; text; o = P2.o; blocks; advances; glyphs; } in 
     Cut_glyphs (area, run , i)
@@ -1148,7 +1164,7 @@ module Vgr = struct
         { font : font;
           text : string option; 
           o : p2;
-          blocks : (bool * (int * int) list) option;
+          blocks : (bool * (int * int) list);
           advances : v2 list; 
           glyphs : glyph list; }
         
