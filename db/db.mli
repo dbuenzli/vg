@@ -51,8 +51,8 @@ val indexes : unit -> string list * string list
 (** [indexes ()] is the lexicographically sorted lists of ids and
     tags present in the database. *)
 
-val xmp_metadata : create_date:float -> creator_tool:string -> image -> string
-(** [xmp_meta create_date creator_tool i] is an XMP metadata packet for [i] *)
+val xmp : create_date:float -> creator_tool:string -> image -> string
+(** [xmp create_date creator_tool i] is an XMP metadata packet for [i] *)
 
 val renderable : image -> Vg.Vgr.renderable
 (** [renderable i] is a renderable for [i]. *)

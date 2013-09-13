@@ -9,9 +9,7 @@ open Vg
 
 include Db_contents
 
-let renderer dst is =
-  let xmp = Rstored.xmp_metadata is in 
-  Vgr.create (Vgr_svg.target ~xmp ()) dst
+let renderer dst is = Vgr.create (Vgr_svg.target ~xmp:(Rstored.xmp is) ()) dst
 
 let () = Rstored.main ~no_pack:true "SVG" "svg" renderer
 

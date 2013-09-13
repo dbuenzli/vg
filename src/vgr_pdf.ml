@@ -814,7 +814,7 @@ let w_catalog s id_catalog id_meta k r =
   b_obj_end s;
   w_buf s k r
     
-let w_xmp_metadata s id_meta k r = match id_meta with 
+let w_xmp s id_meta k r = match id_meta with 
 | None -> k r 
 | Some id -> 
     let xmp = match s.xmp with Some xmp -> xmp | None -> assert false in
@@ -874,7 +874,7 @@ let w_end s k r =
   w_linear_srgb s @@
   w_info s id_info @@
   w_catalog s id_catalog id_meta @@ 
-  w_xmp_metadata s id_meta @@ 
+  w_xmp s id_meta @@ 
   w_xref_table s @@
   w_trailer s id_catalog id_info @@ 
   k 

@@ -18,8 +18,7 @@ let renderer dst is =
   | "Open Sans", `W800 -> open_sans_xbold
   | _ -> Vgr_pdf.font f
   in
-  let xmp = Rstored.xmp_metadata is in
-  Vgr.create (Vgr_pdf.target ~font ~xmp ()) dst
+  Vgr.create (Vgr_pdf.target ~font ~xmp:(Rstored.xmp is) ()) dst
 
 let () = Rstored.main "PDF" "pdf" renderer
 

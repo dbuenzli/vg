@@ -543,10 +543,10 @@ module Vgr : sig
       The following convenience function returns a well-formed, correctly 
       escaped, metadata packet according to the information you provide. *)
 
-  val xmp_metadata : ?title:string -> ?authors:string list -> 
+  val xmp : ?title:string -> ?authors:string list -> 
     ?subjects:string list -> ?description:string -> ?rights:string -> 
     ?creator_tool:string -> ?create_date:float -> unit -> string
-  (** [xmp_medata title authors creator_tool subject description create_date]
+  (** [xmp title authors creator_tool subject description create_date]
       is an XML XMP metadata packet. 
       {ul 
       {- [title] is mapped to dc:title.}
@@ -679,7 +679,7 @@ module Vgr : sig
          are writing a batch renderer provide support for each of the 
          {!dst} types and especially the non-blocking interface.}
       {- Whenever possible use an XMP metadata packet for metadata, 
-         see {!Vgr.xmp_metadata}.}
+         see {!Vgr.xmp}.}
       {- The renderer should implement the rendering cost model, 
          see the [limit] parameter of {!render}.} 
       {- Follow [Vg]'s 
@@ -1329,7 +1329,7 @@ let image = I.const (Color.v_srgb 0.314 0.784 0.471)
 let () =
   let title = "Vgr_pdf minimal example" in
   let description = "Emerald Color" in
-  let xmp = Vgr.xmp_metadata ~title ~description () in
+  let xmp = Vgr.xmp ~title ~description () in
   let warn w = Vgr.pp_warning Format.err_formatter w in
   let r = Vgr.create ~warn (Vgr_pdf.target ~xmp ()) (`Channel stdout) in
   ignore (Vgr.render r (`Image (size, view, image)));
@@ -1364,7 +1364,7 @@ let image = I.const (Color.v_srgb 0.314 0.784 0.471)
 let () = 
   let title = "Vgr_svg minimal example" in 
   let description = "Emerald Color" in 
-  let xmp = Vgr.xmp_metadata ~title ~description () in
+  let xmp = Vgr.xmp ~title ~description () in
   let warn w = Vgr.pp_warning Format.err_formatter w in
   let r = Vgr.create ~warn (Vgr_svg.target ~xmp ()) (`Channel stdout) in
   ignore (Vgr.render r (`Image (size, view, image))); 

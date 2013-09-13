@@ -986,7 +986,7 @@ module Vgr = struct
     done;
     Buffer.add_substring b str !start (!last - !start)
       
-  let xmp_metadata ?title ?authors ?subjects ?description ?rights ?creator_tool
+  let xmp ?title ?authors ?subjects ?description ?rights ?creator_tool
       ?create_date () =
     let fmt = Printf.bprintf in
     let esc = add_xml_data in

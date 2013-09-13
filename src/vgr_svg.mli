@@ -25,7 +25,7 @@ val target : ?xml_decl:bool -> ?xmp:string ->unit ->
     {- [xmp] is an optional UTF-8 encoded XML XMP metadata packet describing
        the SVG document (see ISO 16684-1 or the equivalent
         {{:http://www.adobe.com/devnet/xmp.html}Adobe spec.}). 
-       The convenience function {!Vg.Vgr.xmp_metadata} can be used to 
+       The convenience function {!Vg.Vgr.xmp} can be used to 
        generate a packet.}} 
 
     {b Multiple images.} Multiple image renders on the target are not 

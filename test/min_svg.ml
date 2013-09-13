@@ -21,7 +21,7 @@ let image = I.const (Color.v_srgb 0.314 0.784 0.471)
 let () = 
   let title = "Vgr_svg minimal example" in 
   let description = "Emerald Color" in 
-  let xmp = Vgr.xmp_metadata ~title ~description () in
+  let xmp = Vgr.xmp ~title ~description () in
   let warn w = Vgr.pp_warning Format.err_formatter w in
   let r = Vgr.create ~warn (Vgr_svg.target ~xmp ()) (`Channel stdout) in
   ignore (Vgr.render r (`Image (size, view, image))); 

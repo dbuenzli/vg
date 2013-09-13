@@ -257,7 +257,7 @@ let ui_render_targets () =
           show_target i `SVG
         in
         let create_date, creator_tool = Time.now (), app_name in
-        let xmp = Db.xmp_metadata ~create_date ~creator_tool i in
+        let xmp = Db.xmp ~create_date ~creator_tool i in
         let t = Vgr_svg.target ~xml_decl:true ~xmp () in
         render ~limit:20 ~warn t (`Buffer b) i finish;
     | `TXT -> 
@@ -297,7 +297,7 @@ let ui_render_targets () =
           show_target i `PDF
         in
         let create_date, creator_tool = Time.now (), app_name in
-        let xmp = Db.xmp_metadata ~create_date ~creator_tool i in
+        let xmp = Db.xmp ~create_date ~creator_tool i in
         let t = Vgr_pdf.target ~font ~xmp () in
         render ~limit:20 ~warn t (`Buffer b) i finish;
   in

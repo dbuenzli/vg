@@ -42,12 +42,12 @@ let duration f x =
 
 (* Metadata *)
 
-let xmp_metadata is = 
+let xmp is = 
   let create_date = Unix.gettimeofday () in
   let creator_tool = exec in
   match is with 
-  | [i] -> Db.xmp_metadata ~create_date ~creator_tool i
-  | _ -> Vgr.xmp_metadata ~create_date ~creator_tool ()
+  | [i] -> Db.xmp ~create_date ~creator_tool i
+  | _ -> Vgr.xmp ~create_date ~creator_tool ()
   
 (* Render *)
 

@@ -61,8 +61,8 @@ let indexes () =
   let ids, tags = Hashtbl.fold add images ([],[]) in
   List.sort compare ids, List.sort compare tags
 
-let xmp_metadata ~create_date ~creator_tool i = 
-  Vgr.xmp_metadata ~title:i.title ~authors:[fst i.author] ~subjects:i.tags 
+let xmp ~create_date ~creator_tool i = 
+  Vgr.xmp ~title:i.title ~authors:[fst i.author] ~subjects:i.tags 
     ?description:i.note ~creator_tool ~create_date () 
 
 let renderable i = i.size, i.view, i.image i.view

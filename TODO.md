@@ -5,7 +5,6 @@
 * Add blocks to glyph_run printer.
 * Final code review.
 * Final doc review.
-* Rename Vgr.xmp_metadata to Vgr.xmp
 * Review conversion of earc to bezier. 
 * git grep TODO
 
