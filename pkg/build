@@ -38,6 +38,8 @@ if [ "$UUTF" != "false" ]; then
         add lib src/vgr_pdf.a
         add lib src/vgr_pdf.cmxa
         add lib src/vgr_pdf.cmxs
+        
+        add bin test/vecho
     fi
 fi
 
@@ -50,8 +52,6 @@ if [ "$JSOO" != "false" ]; then
     add lib src/vgr_htmlc.cmxa
     add lib src/vgr_htmlc.cmxs
 fi
-
-add bin test/vecho.native
 
 add doc README.md
 add doc CHANGES.md
