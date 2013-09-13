@@ -12,7 +12,6 @@
 
     {e Release %%VERSION%% — %%MAINTAINER%% } *)
 
-
 (** {1:target HTML canvas render targets} *)
 
 val target : ?resolution:Gg.v2 -> Dom_html.canvasElement Js.t -> 
@@ -28,7 +27,7 @@ val target : ?resolution:Gg.v2 -> Dom_html.canvasElement Js.t ->
     {b Multiple images.} Multiple images render on the target is supported. 
     Each new render clears the HTML canvas. *)
 
-(** {1:text Text rendering support} 
+(** {1:text Text rendering} 
 
     Fonts use the CSS font selection mechanism. Make sure that the
     fonts you use are embedded (and {e loaded}) in your DOM via

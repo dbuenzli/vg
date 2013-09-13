@@ -7,10 +7,10 @@
 open Gg
 open Vg
 open Vgr.Private.Data
-
+       
 let str = Format.sprintf 
 let pp = Format.fprintf 
-
+           
 let warn_dash = "Outline dashes unsupported in this browser"
 
 (* JS bindings, those are not in js_of_ocaml *)
@@ -28,11 +28,11 @@ let dash_support ctx = Js.Optdef.test ((Js.Unsafe.coerce ctx) ## setLineDash)
 
 type js_font = Js.js_string Js.t                       (* lovely isn't it ? *) 
 type js_primitive = 
-| Color of Js.js_string Js.t                                  (* even more. *)
-| Gradient of Dom_html.canvasGradient Js.t          (* Oh! a datastructure. *)
-
+  | Color of Js.js_string Js.t                                (* even more. *)
+  | Gradient of Dom_html.canvasGradient Js.t        (* Oh! a datastructure. *)
+        
 let dumb_prim = Color (Js.string "")
-
+    
 type gstate =    (* Subset of the graphics state saved by a ctx ## save (). *)
   { g_alpha : float;                                     (* unused for now. *)
     g_blender : Vgr.Private.Data.blender;                (* unused for now. *)
@@ -61,7 +61,7 @@ type state =
     mutable s_outline : P.outline;         (* current outline stroke state. *)
     mutable s_stroke : js_primitive;               (* current stroke color. *)
     mutable s_fill : js_primitive; }                 (* current fill color. *)
-
+  
 let partial = Vgr.Private.partial
 let limit s = Vgr.Private.limit s.r
 let warn s w = Vgr.Private.warn s.r w
@@ -69,15 +69,15 @@ let image i = Vgr.Private.I.of_data i
 let pop_gstate s = 
   Pop { g_alpha = s.s_alpha; g_blender = s.s_blender; g_outline = s.s_outline; 
         g_stroke = s.s_stroke; g_fill = s.s_fill; g_tr = s.s_tr }
-
+    
 let set_gstate s g = 
   s.s_alpha <- g.g_alpha; s.s_blender <- g.g_blender; 
   s.s_outline <- g.g_outline; s.s_stroke <- g.g_stroke; 
   s.s_fill <- g.g_fill; s.s_tr <- g.g_tr
-
+                                    
 let uncut_bounds s =
   Vgr.Private.Data.of_path (P.empty >> P.rect (Box2.tr (M3.inv s.s_tr) s.view))
-  
+    
 let css_color c =                               (* w3c bureaucrats are pigs. *)
   let srgb = Color.to_srgb c in
   let r = Float.int_of_round (Color.r srgb *. 255.) in 
@@ -86,24 +86,24 @@ let css_color c =                               (* w3c bureaucrats are pigs. *)
   let a = Color.a srgb in
   if a = 1.0 then Js.string (str "rgb(%d,%d,%d)" r g b) else
   Js.string (str "rgba(%d,%d,%d,%g)" r g b a)
-
+    
 let cap_str = 
   let butt = Js.string "butt" in
   let round = Js.string "round" in
   let square = Js.string "square" in
   function `Butt -> butt | `Round -> round | `Square -> square
-
+    
 let join_str = 
   let bevel = Js.string "bevel" in
   let round = Js.string "round" in
   let miter = Js.string "miter" in
   function `Bevel -> bevel | `Round -> round | `Miter -> miter 
-
+    
 let area_str = 
   let nz = Js.string "nonzero" in 
   let eo = Js.string "evenodd" in 
   function `Anz -> nz | `Aeo -> eo | `O _ -> assert false
-
+    
 let get_primitive s p = try Hashtbl.find s.prims p with 
 | Not_found -> 
     let add_stop g (t, c) = g ## addColorStop (t, css_color c) in 
@@ -119,7 +119,7 @@ let get_primitive s p = try Hashtbl.find s.prims p with
     in
     let js_prim = create p in 
     Hashtbl.add s.prims p js_prim; js_prim
-
+    
 let get_font s (font, size as spec) = try Hashtbl.find s.fonts spec with
 | Not_found -> 
     let js_font =
@@ -127,7 +127,7 @@ let get_font s (font, size as spec) = try Hashtbl.find s.fonts spec with
       Js.string (Vgr.Private.Font.css_font ~unit:"px" font)
     in
     Hashtbl.add s.fonts spec js_font; js_font
-
+    
 let set_dashes ?(warning = true) s dashes = 
   if not s.dash_support then (if warning then warn s (`Other warn_dash)) else
   let ctx : ctx_ext Js.t = Js.Unsafe.coerce s.ctx in 
@@ -138,7 +138,7 @@ let set_dashes ?(warning = true) s dashes =
       List.iteri (fun i v -> Js.array_set da i v) dashes; 
       ctx ## lineDashOffset <- offset;
       ctx ## setLineDash(da)
-
+        
 let init_ctx s =
   let o = s.s_outline in
   let m = s.view_tr in 
@@ -148,7 +148,7 @@ let init_ctx s =
   s.ctx ## lineJoin <- join_str o.P.join; 
   s.ctx ## miterLimit <- (Vgr.Private.P.miter_limit o);
   set_dashes ~warning:false s o.P.dashes
-
+    
 let push_transform s = function 
 | Move v -> 
     s.ctx ## translate (V2.x v, V2.y v); 
@@ -162,7 +162,7 @@ let push_transform s = function
 | Matrix m -> 
     M3.(s.ctx ## transform (e00 m, e10 m, e01 m, e11 m, e02 m, e12 m));
     s.s_tr <- M3.mul s.s_tr m
-
+        
 let set_outline s o =       
   if s.s_outline == o then () else
   let old = s.s_outline in  
@@ -174,28 +174,28 @@ let set_outline s o =
     (s.ctx ## miterLimit <- Vgr.Private.P.miter_limit o);
   if old.P.dashes <> o.P.dashes then set_dashes s o.P.dashes; 
   ()
-
+  
 let set_stroke s p = 
   let p = get_primitive s p in 
   if s.s_stroke != p then begin match p with 
   | Color c -> s.ctx ## strokeStyle <- c; s.s_stroke <- p
   | Gradient g -> s.ctx ## strokeStyle_gradient <- g; s.s_stroke <- p
   end
-
+  
 let set_fill s p = 
   let p = get_primitive s p in 
   if (s.s_fill != p) then begin match p with 
   | Color c -> s.ctx ## fillStyle <- c; s.s_fill <- p
   | Gradient g -> s.ctx ## fillStyle_gradient <- g; s.s_fill <- p
   end
-
+  
 let set_font s f = 
   let f = get_font s f in 
   s.ctx ## font <- f
-
+    
 (* N.B. In the future, if browsers begin supporting them we could in r_path,
    1) construct and cache path objects 2) use ctx ## ellipse. *)
-
+    
 let set_path s p =
   let rec loop last = function
   | [] -> ()
@@ -225,7 +225,7 @@ let set_path s p =
   in
   s.ctx ## beginPath ();
   loop P2.o (List.rev p)
-
+    
 (* The way glyph_cuts is implemented is a little bit odd because
    current browsers are completly broken w.r.t. canvas text drawing:
    it is impossible to specify text that is smaller than 1px which
@@ -237,7 +237,7 @@ let set_path s p =
    untransformed, coordinate system and draw the glyphs there. 
    This however makes it tricky to integrate with gradients, for 
    now we just disallow gradient cuts. *)
-
+    
 let rec r_cut_glyphs s a run = function 
 | Primitive (Raster _ | Axial _ | Radial _) | Tr _ | Blend _ | Cut _ 
 | Cut_glyphs _ as i ->
@@ -264,8 +264,8 @@ let rec r_cut_glyphs s a run = function
         M3.(s.ctx ## setTransform 
               (   e00 s.s_tr *. x_scale, -. e10 s.s_tr *. x_scale,
                -. e01 s.s_tr *. y_scale,    e11 s.s_tr *. y_scale, 
-                  V2.x o,                   V2.y o));
-        begin match a with 
+                                 V2.x o,                   V2.y o));
+        begin match a with
         | `O o -> 
             warn s (`Unsupported_glyph_cut (a, image i))
             (* some work is needed here as the outline params won't 
@@ -276,7 +276,7 @@ let rec r_cut_glyphs s a run = function
             set_fill s p; s.ctx ## fillText (text, 0., 0.)
         end;
     end
-
+    
 let rec r_cut s a = function 
 | Primitive (Raster _) as i -> 
     begin match a with 
@@ -307,7 +307,7 @@ let rec r_cut s a = function
     s.ctx ## save ();
     (Js.Unsafe.coerce s.ctx : ctx_ext Js.t) ## clip (area_str a);
     s.todo <- (Draw i) :: (pop_gstate s) :: s.todo
-
+                                              
 let rec r_image s k r =
   if s.cost > limit s then (s.cost <- 0; partial (r_image s k) r) else 
   match s.todo with
@@ -341,7 +341,7 @@ let rec r_image s k r =
           s.todo <- (Draw i) :: (pop_gstate s) :: todo; 
           push_transform s tr; 
           r_image s k r
-
+            
 let render s v k r = match v with 
 | `End -> k r
 | `Image (size, view, i) -> 
@@ -373,7 +373,7 @@ let render s v k r = match v with
     s.s_fill <- dumb_prim;
     init_ctx s;
     r_image s k r
-
+      
 let ppi_300 = V2.v 11811. 11811.             (* 300 ppi in pixel per meters. *)
 let target ?(resolution = ppi_300) c =
   let target r _ =
