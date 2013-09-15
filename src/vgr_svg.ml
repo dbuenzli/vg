@@ -8,13 +8,11 @@ open Gg
 open Vg
 open Vgr.Private.Data
        
-(* Renderer *)
-
 type path_id = int
 type clip_id = int       
 type svg_font = string
 type svg_prim = Gradient of int | Color of string * string
-type gstate =               (* Subset of the graphics state saved by a <g>. *) 
+type gstate =               (* subset of the graphics state saved by a <g>. *) 
   { mutable g_tr : M3.t } (* current transformation without view transform. *)
 
 let init_gstate = { g_tr = M3.id }
@@ -90,8 +88,6 @@ let get_font s font = try Hashtbl.find s.fonts font with
       Buffer.contents s.t_buf
     in
     Hashtbl.add s.fonts font font_str; font_str
-
-
 
 let b_svg s xml_decl size =
   b_fmt s

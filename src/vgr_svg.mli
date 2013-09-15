@@ -43,23 +43,19 @@ val target : ?xml_decl:bool -> ?xmp:string ->unit ->
     
 {!Vg.I.cut_glyphs}[ ~text ~blocks ~advances font glyphs]
 
-    The [blocks], [advances] and [glyphs] parameters are ignored. 
-    The [text] argument must be provided and is used to define 
-    the text to render, [font] is used to select the font in a 
-    CSS stylesheet.
-    
-    Glyph cuts are currently limited to areas cuts in constant images. *)
+    The [blocks], [advances] and [glyphs] parameters are ignored.
+    [text] must be provided and is used to define the text to render
+    [font] is used to select the font in a CSS stylesheet. *)
 
 (** {1:limits Render warnings and limitations} 
    
     The following render warnings are reported.
     {ul
     {- [`Unsupported_cut (`O o, i)], outline cuts can be performed 
-       only on {!Vg.I.const}, {!Vg.I.axial} and {!Vg.I.radial} primitive 
-       images.}
+       only on {!Vg.I.const}, {!Vg.I.axial} and {!Vg.I.radial} images.}
     {- [`Unsupported_glyph_cut (a, i)], glyph cuts can be performed
-       only on {!Vg.I.const}, {!Vg.I.axial} and {!Vg.I.radial} primitive 
-       images.}}
+       only on {!Vg.I.const}, {!Vg.I.axial} and {!Vg.I.radial} images.}
+    {- [`Other msg] if no [text] argument is specified in a glyph cut.}}
 
     The following limitations should be taken into account. 
     {ul 

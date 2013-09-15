@@ -4,6 +4,7 @@
 * Final code review.
 * Final doc review.
 * Review conversion of earc to bezier. 
+* tr glyph_cuts 
 * git grep TODO
 
 #  After first release
