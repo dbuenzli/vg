@@ -20,7 +20,6 @@ let err_once = "a single `Image can be rendered"
 
 let unsafe_blit = String.unsafe_blit
 let unsafe_set_byte s j byte = String.unsafe_set s j (Char.unsafe_chr byte)
-let unsafe_byte s j = Char.code (String.unsafe_get s j)
     
 (* A few useful definitions *)
 
@@ -31,13 +30,8 @@ let io_buffer_size = 65536                          (* IO_BUFFER_SIZE 4.0.0 *)
 (* Pretty printing *)
 
 let pp ppf fmt = Format.fprintf ppf fmt
-let pp_str = Format.pp_print_string
 let pp_space = Format.pp_print_space 
 let pp_float ppf v = pp ppf "%g" v
-let pp_comma ppf () = pp ppf ",@ "
-let pp_date ppf ((y, m, d), (hh, mm, ss)) = 
-  pp ppf "%4d-%2d-%2dT%2d:%2d:%2dZ" y m d hh mm ss
-
 let rec pp_list ?(pp_sep = Format.pp_print_cut) pp_v ppf = function 
 | [] -> ()
 | v :: vs -> 
@@ -50,7 +44,6 @@ let to_string_of_formatter pp v =                       (* NOT thread safe. *)
 (* Fonts *)
 
 module Font = struct
-
   type slant = [ `Normal | `Italic | `Oblique ]
   type weight = 
     [ `W100 | `W200 | `W300 | `W400 | `W500 | `W600 | `W700 | `W800 | `W900 ]
@@ -67,12 +60,12 @@ module Font = struct
   let compare = Pervasives.compare
   let compare_f cmp font font' = 
     let c = Pervasives.compare font.name font'.name in 
-    if c <> 0 then c else 
-    let c = cmp font.size font'.size in 
-    if c <> 0 then c else 
-    let c = Pervasives.compare font.weight font'.weight in 
     if c <> 0 then c else
     let c = Pervasives.compare font.slant font'.slant in 
+    if c <> 0 then c else 
+    let c = Pervasives.compare font.weight font'.weight in 
+    if c <> 0 then c else 
+    let c = cmp font.size font'.size in 
     c
       
   (* Printers *)
@@ -86,8 +79,8 @@ module Font = struct
   | `Normal -> "normal" | `Italic -> "italic" | `Oblique -> "oblique"
     
   let pp ppf font =     
-    pp ppf "@[<1>(font@ (name %s)@ (size %g)@ (weight %s)@ (slant %s))@]"
-      font.name font.size (weight_to_str font.weight) (slant_to_str font.slant)
+    pp ppf "@[<1>(font@ (name %s)@ (weight %s)@ (slant %s)@ (size %g))@]"
+      font.name (weight_to_str font.weight) (slant_to_str font.slant) font.size
       
   let to_string p = to_string_of_formatter pp p 
 end
@@ -150,7 +143,21 @@ module P = struct
   let o = { width = 1.; cap = `Butt; join = `Miter; 
             miter_angle = Float.rad_of_deg 11.5; 
             dashes = None }
-          
+
+  let eq_outline eq o o' =
+    eq o.width o'.width && o.cap = o'.cap && o.join = o'.join &&
+    eq o.miter_angle o'.miter_angle && eq_dashes eq o.dashes o'.dashes
+
+  let cmp_outline cmp o o' = 
+    let c = cmp o.width o'.width in 
+    if c <> 0 then c else 
+    let c = Pervasives.compare o.cap o'.cap in 
+    if c <> 0 then c else
+    let c = Pervasives.compare o.join o'.join in 
+    if c <> 0 then c else
+    let c = cmp o.miter_angle o'.miter_angle in 
+    if c <> 0 then c else cmp_dashes cmp o.dashes o'.dashes
+
   let pp_outline_f pp_f ppf o =
     pp ppf "@[<1>(outline@ (width %a)@ (cap %a)@ (join %a)\
             @ (miter-angle %a)%a)@]"
@@ -164,21 +171,11 @@ module P = struct
   type area = [ `Aeo | `Anz | `O of outline ]
               
   let eq_area eq a a' = match a, a' with
-  | `O o, `O o' ->
-      eq o.width o'.width && o.cap = o'.cap && o.join = o'.join &&
-      eq o.miter_angle o'.miter_angle && eq_dashes eq o.dashes o'.dashes
+  | `O o, `O o' -> eq_outline eq o o'
   | a, a' -> a = a'
              
   let cmp_area cmp a a' = match a, a' with
-  | `O o, `O o' ->
-      let c = cmp o.width o'.width in 
-      if c <> 0 then c else 
-      let c = Pervasives.compare o.cap o'.cap in 
-      if c <> 0 then c else
-      let c = Pervasives.compare o.join o'.join in 
-      if c <> 0 then c else
-      let c = cmp o.miter_angle o'.miter_angle in 
-      if c <> 0 then c else cmp_dashes cmp o.dashes o'.dashes
+  | `O o, `O o' -> cmp_outline cmp o o'
   | a, a' -> Pervasives.compare a a'
                
   let pp_area_f pp_f ppf = function 
@@ -608,7 +605,7 @@ module I = struct
   | Matrix m, Matrix m' -> M3.equal_f eq m m' 
   | _, _ -> false
     
-  let compare_tr cmp tr tr' = match tr, tr' with 
+  let cmp_tr cmp tr tr' = match tr, tr' with 
   | Move v, Move v' -> V2.compare_f cmp v v' 
   | Rot r, Rot r' -> cmp r r' 
   | Scale s, Scale s' -> V2.compare_f cmp s s' 
@@ -622,9 +619,7 @@ module I = struct
   | Matrix m -> pp ppf "%a" (M3.pp_f pp_f) m
                   
   (* Color stops *)
-                  
-  type stops = Color.stops
-                 
+                                   
   let pp_stops pp_f ppf ss =
     let pp_stop ppf (s, c) = pp ppf "@ %a@ %a" pp_f s (V4.pp_f pp_f) c in 
     pp ppf "@[<1>(stops%a)@]" (fun ppf ss -> List.iter (pp_stop ppf) ss) ss
@@ -635,12 +630,12 @@ module I = struct
   | [], [] -> true
   | _, _ -> false
     
-  let rec compare_stops cmp ss ss' = match ss, ss' with
+  let rec cmp_stops cmp ss ss' = match ss, ss' with
   | (s, sc) :: ss, (s', sc') :: ss' -> 
       let c = cmp s s' in
       if c <> 0 then c else 
       let c = V4.compare_f cmp sc sc' in 
-      if c <> 0 then c else compare_stops cmp ss ss' 
+      if c <> 0 then c else cmp_stops cmp ss ss' 
   | ss, ss' -> Pervasives.compare ss ss'
                  
   (* Primitives *)
@@ -663,16 +658,16 @@ module I = struct
       Box2.equal_f eq r r' && Raster.equal ri ri'
   | _, _ -> false
     
-  let compare_primitive cmp i i' = match i, i' with 
+  let cmp_primitive cmp i i' = match i, i' with 
   | Const c, Const c' -> 
       V4.compare_f cmp c c' 
   | Axial (stops, p1, p2), Axial (stops', p1', p2') -> 
-      let c = compare_stops cmp stops stops' in 
+      let c = cmp_stops cmp stops stops' in 
       if c <> 0 then c else 
       let c = V2.compare_f cmp p1 p1' in 
       if c <> 0 then c else V2.compare_f cmp p2 p2'
   | Radial (stops, p1, p2, r), Radial (stops', p1', p2', r') -> 
-      let c = compare_stops cmp stops stops' in 
+      let c = cmp_stops cmp stops stops' in 
       if c <> 0 then c else 
       let c = V2.compare_f cmp p1 p1' in 
       if c <> 0 then c else 
@@ -706,15 +701,12 @@ module I = struct
       glyphs : glyph list; }
 
   let eq_blocks (rev0, bs0) (rev1, bs1) = rev0 = rev1 && bs0 = bs1
+  let cmp_blocks b0 b1 = Pervasives.compare b0 b1
+
   let eq_advances eq r1 r2 =
     try List.for_all2 (V2.equal_f eq) r1.advances r2.advances with 
     | Invalid_argument _ -> false
       
-  let cmp_blocks (rev0, bs0) (rev1, bs1) = 
-    let c = Pervasives.compare rev0 rev1 in 
-    if c <> 0 then c else 
-    Pervasives.compare bs0 bs1
-
   let cmp_advances cmp a1s a2s =
     let rec adv a1s a2s = match a1s, a2s with 
     | a1 :: a1s, a2 :: a2s -> 
@@ -809,8 +801,7 @@ module I = struct
   let equal_f eq i i' = 
     let eq_alpha eq a a' = match a, a' with 
     | Some a, Some a' -> eq a a' 
-    | None, None -> true
-    | _, _ -> false
+    | a, a' -> a = a'
     in
     let rec loop = function
     | [] -> false 
@@ -832,7 +823,7 @@ module I = struct
       
   let compare i i' = Pervasives.compare i i' 
   let compare_f cmp i i' =
-    let compare_alpha cmp a a' = match a, a' with 
+    let cmp_alpha cmp a a' = match a, a' with 
     | Some a, Some a' -> cmp a a' 
     | a, a' -> Pervasives.compare a a'
     in
@@ -841,7 +832,7 @@ module I = struct
     | (i, i') :: acc -> 
         match i, i' with
         | Primitive i, Primitive i' -> 
-            compare_primitive cmp i i'
+            cmp_primitive cmp i i'
         | Cut (a, p, i), Cut (a', p', i') ->
             let c = P.cmp_area cmp a a' in 
             if c <> 0 then c else 
@@ -855,11 +846,11 @@ module I = struct
         | Blend (b, a, i1, i2), Blend (b', a', i1', i2') -> 
             let c = Pervasives.compare b b' in 
             if c <> 0 then c else 
-            let c = compare_alpha cmp a a' in 
+            let c = cmp_alpha cmp a a' in 
             if c <> 0 then c else 
             loop ((i1, i1') :: (i2, i2') :: acc)
         | Tr (tr, i), Tr (tr', i') -> 
-            let c = compare_tr cmp tr tr' in 
+            let c = cmp_tr cmp tr tr' in 
             if c <> 0 then c else 
             loop ((i, i') :: acc)
         | i, i' -> Pervasives.compare i i'
@@ -993,8 +984,8 @@ module Vgr = struct
     done;
     Buffer.add_substring b str !start (!last - !start)
       
-  let xmp ?title ?authors ?subjects ?description ?rights ?creator_tool
-      ?create_date () =
+  let xmp ?title ?(authors = []) ?(subjects = []) ?description ?rights 
+      ?creator_tool ?create_date () =
     let fmt = Printf.bprintf in
     let esc = add_xml_data in
     let rec b_list b = function 
@@ -1005,12 +996,10 @@ module Vgr = struct
                        </r:li></r:Alt></d:title>" esc t
     in
     let b_authors b = function 
-    | None | Some [] -> () 
-    | Some l -> fmt b "<d:creator><r:Seq>%a</r:Seq></d:creator>" b_list l
+    | [] -> () | l -> fmt b "<d:creator><r:Seq>%a</r:Seq></d:creator>" b_list l
     in
     let b_subjects b = function 
-    | None | Some [] -> () 
-    | Some l -> fmt b "<d:subject><r:Bag>%a</r:Bag></d:subject>" b_list l
+    | [] -> () | l -> fmt b "<d:subject><r:Bag>%a</r:Bag></d:subject>" b_list l
     in
     let b_description b = function 
     | None -> () 
@@ -1023,8 +1012,7 @@ module Vgr = struct
                        </r:li></r:Alt></d:rights>" esc r
     in
     let b_creator_tool b = function 
-    | None -> () 
-    | Some c -> fmt b "<x:CreatorTool>%a</x:CreatorTool>" esc c
+    | None -> () | Some c -> fmt b "<x:CreatorTool>%a</x:CreatorTool>" esc c
     in
     let b_create_date b = function 
     | None -> () 
