@@ -49,6 +49,22 @@ Db.image "glyph-revolt-outline" ~author:Db.dbuenzli
     I.move (V2.v 0.23 0.25)
   end;
 
+Db.image "glyph-revolt-fade" ~author:Db.dbuenzli
+  ~title:"Revolt from black to white"
+  ~tags:["glyph"; "gradient" ]
+  ~note:"Characters “Revolt!”, approximatively centered \
+         in the image and fading from black to white"
+  ~size:(Size2.v 135. 45.)
+  ~view:(Box2.v P2.o (Size2.v 3. 1.))
+  begin fun _ -> 
+    let font = { open_sans_xbold with Font.size = 0.7 } in
+    let text = "Revolt!" in 
+    let stops = [0.0, Color.black; 1.0, Color.white] in 
+    I.axial stops P2.o (P2.v 3. 0.) >> I.cut_glyphs ~text font glyphs >> 
+    I.move (V2.v 0.23 0.25)
+  end;
+
+
 Db.image "glyph-aspect" ~author:Db.dbuenzli
   ~title:"Glyph aspect"
   ~tags:["glyph"]
