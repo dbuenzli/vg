@@ -742,18 +742,21 @@ module I = struct
     let pp_blocks ppf (rev, blocks) =
       pp ppf "@ @[<1>(blocks@ (rev %b)" rev; 
       List.iter (fun (ul, gl) -> pp ppf "@ (%d,%d)" ul gl) blocks; 
-      pp ppf "@)"
+      pp ppf ")@]"
     in
     let pp_advances ppf advs =
       pp ppf "@ @[<1>(advances";
       List.iter (fun a -> pp ppf "@ %a" V2.pp a) advs; 
       pp ppf ")@]"
     in
-    pp ppf "%a%a@ @[<1>(o %a)@]%a%a@ (glyphs" 
+    let pp_glyphs ppf glyphs = 
+      pp ppf "@ @[<1>(glyphs"; 
+      List.iter (fun g -> pp ppf "@ %d" g) r.glyphs;
+      pp ppf ")@]"
+    in
+    pp ppf "@[<1>(glyph_run %a%a@ @[<1>(o %a)@]%a%a%a)@]" 
       Font.pp r.font pp_text r.text V2.pp r.o pp_blocks r.blocks 
-      pp_advances r.advances;
-    List.iter (fun g -> pp ppf " %d" g) r.glyphs; 
-    pp ppf ")"
+      pp_advances r.advances pp_glyphs r.glyphs
       
   (* Images *)
       
