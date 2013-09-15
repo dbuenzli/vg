@@ -36,22 +36,30 @@ val target : ?xml_decl:bool -> ?xmp:string ->unit ->
 
     {b Warning.} The following is subject to change in the future. 
 
-    Fonts use the CSS font selection mechanism. For now no mechanism
-    is provided for including external references to the fonts.
+    Currently text rendering uses SVG's CSS font selection mechanism
+    and doesn't support the glyph API. 
 
-    The advances and glyph arguments of {!Vg.I.cut_glyphs} are ignored
-    and you will need to provide the [text] argument. 
+    Given a glyph cut:
+    
+{!Vg.I.cut_glyphs}[ ~text ~blocks ~advances font glyphs]
 
+    The [blocks], [advances] and [glyphs] parameters are ignored. 
+    The [text] argument must be provided and is used to define 
+    the text to render, [font] is used to select the font in a 
+    CSS stylesheet.
+    
     Glyph cuts are currently limited to areas cuts in constant images. *)
 
 (** {1:limits Render warnings and limitations} 
    
     The following render warnings are reported.
-    {ul 
-    {- [`Unsupported_cut (`O o)], outline cuts can be performed 
-       only on [I.const], [I.axial] and [I.radial] primitive images.}
+    {ul
+    {- [`Unsupported_cut (`O o, i)], outline cuts can be performed 
+       only on {!Vg.I.const}, {!Vg.I.axial} and {!Vg.I.radial} primitive 
+       images.}
     {- [`Unsupported_glyph_cut (a, i)], glyph cuts can be performed
-       only on bare {!Vg.I.const} primitive images.}}
+       only on {!Vg.I.const}, {!Vg.I.axial} and {!Vg.I.radial} primitive 
+       images.}}
 
     The following limitations should be taken into account. 
     {ul 
