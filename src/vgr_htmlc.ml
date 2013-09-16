@@ -8,9 +8,7 @@ open Gg
 open Vg
 open Vgr.Private.Data
        
-let str = Format.sprintf 
-let pp = Format.fprintf 
-           
+let str = Format.sprintf   
 let warn_dash = "Outline dashes unsupported in this browser"
 
 (* JS bindings, those are not in js_of_ocaml *)
@@ -33,15 +31,16 @@ type js_primitive =
         
 let dumb_prim = Color (Js.string "")
     
-type gstate =    (* Subset of the graphics state saved by a ctx ## save (). *)
-  { g_alpha : float;                                     (* unused for now. *)
-    g_blender : Vgr.Private.Data.blender;                (* unused for now. *)
-    g_outline : P.outline; 
-    g_stroke : js_primitive; 
-    g_fill : js_primitive;
-    g_tr : M3.t }
+type gstate =    (* subset of the graphics state saved by a ctx ## save (). *)
+  { mutable g_tr : M3.t;              (* current transform without view_tr. *)
+    mutable g_outline : P.outline;               (* current outline stroke. *) 
+    mutable g_stroke : js_primitive;               (* current stroke color. *) 
+    mutable g_fill : js_primitive; }                 (* current fill color. *)
 
-type cmd = Pop of gstate | Draw of Vgr.Private.Data.image
+let init_gstate = 
+  { g_tr = M3.id; g_outline = P.o; g_stroke = dumb_prim; g_fill = dumb_prim }
+
+type cmd = Set of gstate | Draw of Vgr.Private.Data.image
 type state = 
   { r : Vgr.Private.renderer;                    (* corresponding renderer. *)
     resolution : Gg.v2;                        (* resolution of the canvas. *)
@@ -55,28 +54,19 @@ type state =
     fonts : (Vg.font * float, js_font) Hashtbl.t;          (* cached fonts. *)
     prims :                                           (* cached primitives. *)
       (Vgr.Private.Data.primitive, js_primitive) Hashtbl.t;     
-    mutable s_tr : M3.t;         (* current transformation without view_tr. *)
-    mutable s_alpha : float;                       (* current global alpha. *)
-    mutable s_blender : Vgr.Private.Data.blender; (* current blending mode. *)
-    mutable s_outline : P.outline;         (* current outline stroke state. *)
-    mutable s_stroke : js_primitive;               (* current stroke color. *)
-    mutable s_fill : js_primitive; }                 (* current fill color. *)
+    mutable gstate : gstate; }                    (* current graphic state. *) 
+
+let save_gstate s = Set { s.gstate with g_tr = s.gstate.g_tr }
+let set_gstate s g = s.gstate <- g
   
 let partial = Vgr.Private.partial
 let limit s = Vgr.Private.limit s.r
 let warn s w = Vgr.Private.warn s.r w
 let image i = Vgr.Private.I.of_data i
-let pop_gstate s = 
-  Pop { g_alpha = s.s_alpha; g_blender = s.s_blender; g_outline = s.s_outline; 
-        g_stroke = s.s_stroke; g_fill = s.s_fill; g_tr = s.s_tr }
-    
-let set_gstate s g = 
-  s.s_alpha <- g.g_alpha; s.s_blender <- g.g_blender; 
-  s.s_outline <- g.g_outline; s.s_stroke <- g.g_stroke; 
-  s.s_fill <- g.g_fill; s.s_tr <- g.g_tr
                                     
-let uncut_bounds s =
-  Vgr.Private.Data.of_path (P.empty >> P.rect (Box2.tr (M3.inv s.s_tr) s.view))
+let view_rect s =           (* image view rect in current coordinate system. *) 
+  let tr = M3.inv s.gstate.g_tr in
+  Vgr.Private.Data.of_path (P.empty >> P.rect (Box2.tr tr s.view))
     
 let css_color c =                               (* w3c bureaucrats are pigs. *)
   let srgb = Color.to_srgb c in
@@ -140,7 +130,7 @@ let set_dashes ?(warning = true) s dashes =
       ctx ## setLineDash(da)
         
 let init_ctx s =
-  let o = s.s_outline in
+  let o = s.gstate.g_outline in
   let m = s.view_tr in 
   M3.(s.ctx ## transform (e00 m, e10 m, e01 m, e11 m, e02 m, e12 m));
   s.ctx ## lineWidth <- o.P.width; 
@@ -149,24 +139,20 @@ let init_ctx s =
   s.ctx ## miterLimit <- (Vgr.Private.P.miter_limit o);
   set_dashes ~warning:false s o.P.dashes
     
-let push_transform s = function 
-| Move v -> 
-    s.ctx ## translate (V2.x v, V2.y v); 
-    s.s_tr <- M3.mul s.s_tr (M3.move2 v)
-| Rot a -> 
-    s.ctx ## rotate (a); 
-    s.s_tr <- M3.mul s.s_tr (M3.rot2 a)
-| Scale sv -> 
-    s.ctx ## scale (V2.x sv, V2.y sv); 
-    s.s_tr <- M3.mul s.s_tr (M3.scale2 sv)
-| Matrix m -> 
-    M3.(s.ctx ## transform (e00 m, e10 m, e01 m, e11 m, e02 m, e12 m));
-    s.s_tr <- M3.mul s.s_tr m
+let push_transform s tr = 
+  let m = match tr with
+  | Move v -> s.ctx ## translate (V2.x v, V2.y v); M3.move2 v
+  | Rot a -> s.ctx ## rotate (a); M3.rot2 a
+  | Scale sv -> s.ctx ## scale (V2.x sv, V2.y sv); M3.scale2 sv
+  | Matrix m -> 
+      M3.(s.ctx ## transform (e00 m, e10 m, e01 m, e11 m, e02 m, e12 m)); m
+  in
+  s.gstate.g_tr <- M3.mul s.gstate.g_tr m
         
 let set_outline s o =       
-  if s.s_outline == o then () else
-  let old = s.s_outline in  
-  s.s_outline <- o;
+  if s.gstate.g_outline == o then () else
+  let old = s.gstate.g_outline in  
+  s.gstate.g_outline <- o;
   if old.P.width <> o.P.width then (s.ctx ## lineWidth <- o.P.width);
   if old.P.cap <> o.P.cap then (s.ctx ## lineCap <- cap_str o.P.cap);
   if old.P.join <> o.P.join then (s.ctx ## lineJoin <- join_str o.P.join);
@@ -177,16 +163,16 @@ let set_outline s o =
   
 let set_stroke s p = 
   let p = get_primitive s p in 
-  if s.s_stroke != p then begin match p with 
-  | Color c -> s.ctx ## strokeStyle <- c; s.s_stroke <- p
-  | Gradient g -> s.ctx ## strokeStyle_gradient <- g; s.s_stroke <- p
+  if s.gstate.g_stroke != p then begin match p with 
+  | Color c -> s.ctx ## strokeStyle <- c; s.gstate.g_stroke <- p
+  | Gradient g -> s.ctx ## strokeStyle_gradient <- g; s.gstate.g_stroke <- p
   end
   
 let set_fill s p = 
   let p = get_primitive s p in 
-  if (s.s_fill != p) then begin match p with 
-  | Color c -> s.ctx ## fillStyle <- c; s.s_fill <- p
-  | Gradient g -> s.ctx ## fillStyle_gradient <- g; s.s_fill <- p
+  if (s.gstate.g_fill != p) then begin match p with 
+  | Color c -> s.ctx ## fillStyle <- c; s.gstate.g_fill <- p
+  | Gradient g -> s.ctx ## fillStyle_gradient <- g; s.gstate.g_fill <- p
   end
   
 let set_font s f = 
@@ -248,11 +234,11 @@ let rec r_cut_glyphs s a run = function
     | Some text -> 
         let text = Js.string text in
         s.ctx ## save ();
-        s.todo <- (pop_gstate s) :: s.todo;
-        let m = M3.mul s.view_tr s.s_tr in
+        s.todo <- (save_gstate s) :: s.todo;
+        let m = M3.mul s.view_tr s.gstate.g_tr in
         let o = P2.tr m run.o in
         let font_size = V2.norm (V2.tr m (V2.v 0. run.font.Font.size)) in
-        let y_scale = 1. /. V2.norm (V2.tr s.s_tr V2.oy) in
+        let y_scale = 1. /. V2.norm (V2.tr s.gstate.g_tr V2.oy) in
         let x_scale =
           (* we don't apply the view transform but still need to scale
              for aspect ratio distortions. *)
@@ -262,8 +248,8 @@ let rec r_cut_glyphs s a run = function
         in
         set_font s (run.font, font_size);
         M3.(s.ctx ## setTransform 
-              (   e00 s.s_tr *. x_scale, -. e10 s.s_tr *. x_scale,
-               -. e01 s.s_tr *. y_scale,    e11 s.s_tr *. y_scale, 
+              (   e00 s.gstate.g_tr *. x_scale, -. e10 s.gstate.g_tr *. x_scale,
+               -. e01 s.gstate.g_tr *. y_scale,    e11 s.gstate.g_tr *. y_scale,
                                  V2.x o,                   V2.y o));
         begin match a with
         | `O o -> 
@@ -296,7 +282,7 @@ let rec r_cut s a = function
     end
 | Tr (tr, i) ->
     s.ctx ## save ();
-    s.todo <- (pop_gstate s) :: s.todo;
+    s.todo <- (save_gstate s) :: s.todo;
     push_transform s tr;
     r_cut s a i
 | Blend _ | Cut _ | Cut_glyphs _ as i ->
@@ -306,13 +292,13 @@ let rec r_cut s a = function
     in
     s.ctx ## save ();
     (Js.Unsafe.coerce s.ctx : ctx_ext Js.t) ## clip (area_str a);
-    s.todo <- (Draw i) :: (pop_gstate s) :: s.todo
+    s.todo <- (Draw i) :: (save_gstate s) :: s.todo
                                               
 let rec r_image s k r =
   if s.cost > limit s then (s.cost <- 0; partial (r_image s k) r) else 
   match s.todo with
   | [] -> Hashtbl.reset s.prims; Hashtbl.reset s.fonts; k r
-  | Pop gs :: todo -> 
+  | Set gs :: todo -> 
       s.ctx ## restore ();
       set_gstate s gs;
       s.todo <- todo;
@@ -321,7 +307,7 @@ let rec r_image s k r =
       s.cost <- s.cost + 1;
       match i with
       | Primitive _ as i ->            (* Uncut primitive, just cut to view. *)
-          let p = uncut_bounds s in
+          let p = view_rect s in
           s.todo <- (Draw (Cut (`Anz, p, i))) :: todo;
           r_image s k r
       | Cut (a, p, i) -> 
@@ -338,7 +324,7 @@ let rec r_image s k r =
           r_image s k r
       | Tr (tr, i) ->
           s.ctx ## save ();
-          s.todo <- (Draw i) :: (pop_gstate s) :: todo; 
+          s.todo <- (Draw i) :: (save_gstate s) :: todo; 
           push_transform s tr; 
           r_image s k r
             
@@ -365,12 +351,7 @@ let render s v k r = match v with
     s.view <- view; 
     s.view_tr <- view_tr;
     s.todo <- [ Draw i ];
-    s.s_tr <- M3.id; 
-    s.s_blender <- `Over; 
-    s.s_alpha <- 1.0; 
-    s.s_outline <- P.o; 
-    s.s_stroke <- dumb_prim; 
-    s.s_fill <- dumb_prim;
+    s.gstate <- { init_gstate with g_tr = init_gstate.g_tr }; (* copy *) 
     init_ctx s;
     r_image s k r
       
@@ -387,12 +368,7 @@ let target ?(resolution = ppi_300) c =
                    todo = [];
                    fonts = Hashtbl.create 20; 
                    prims = Hashtbl.create 231;
-                   s_tr = M3.id;
-                   s_blender = `Over;
-                   s_alpha = 1.0; 
-                   s_outline = P.o; 
-                   s_stroke = dumb_prim; 
-                   s_fill = dumb_prim; }
+                   gstate = init_gstate; }
   in
   Vgr.Private.create_target target
 
