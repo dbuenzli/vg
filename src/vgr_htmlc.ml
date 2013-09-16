@@ -113,7 +113,7 @@ let get_primitive s p = try Hashtbl.find s.prims p with
 let get_font s (font, size as spec) = try Hashtbl.find s.fonts spec with
 | Not_found -> 
     let js_font =
-      let font = { font with Font.size } in
+      let font = { font with Font.size = size } in
       Js.string (Vgr.Private.Font.css_font ~unit:"px" font)
     in
     Hashtbl.add s.fonts spec js_font; js_font
@@ -170,7 +170,7 @@ let set_stroke s p =
   
 let set_fill s p = 
   let p = get_primitive s p in 
-  if (s.gstate.g_fill != p) then begin match p with 
+  if s.gstate.g_fill != p then begin match p with 
   | Color c -> s.ctx ## fillStyle <- c; s.gstate.g_fill <- p
   | Gradient g -> s.ctx ## fillStyle_gradient <- g; s.gstate.g_fill <- p
   end
@@ -264,15 +264,7 @@ let rec r_cut_glyphs s a run = function
     end
     
 let rec r_cut s a = function 
-| Primitive (Raster _) as i -> 
-    begin match a with 
-    | `O _ -> warn s (`Unsupported_cut (a, image i))
-    | `Aeo | `Anz -> 
-        s.ctx ## save ();
-        (Js.Unsafe.coerce s.ctx : ctx_ext Js.t) ## clip (area_str a); 
-        warn s (`Other "TODO raster unimplemented");
-        s.ctx ## restore ()
-    end
+| Primitive (Raster _) -> assert false
 | Primitive p ->
     begin match a with 
     | `O o -> set_outline s o; set_stroke s p; s.ctx ## stroke ()
@@ -303,7 +295,7 @@ let rec r_image s k r =
       set_gstate s gs;
       s.todo <- todo;
       r_image s k r
-  | (Draw i) :: todo ->
+  | Draw i :: todo ->
       s.cost <- s.cost + 1;
       match i with
       | Primitive _ as i ->            (* Uncut primitive, just cut to view. *)
@@ -343,9 +335,9 @@ let render s v k r = match v with
     let sy = ch /. Box2.h view in
     let dx = -. Box2.ox view *. sx in
     let dy = ch +. Box2.oy view *. sy in 
-    let view_tr = M3.v sx      0. dx 
-                      0. (-. sy)  dy
-                      0.       0. 1.
+    let view_tr = M3.v sx       0. dx 
+                       0. (-. sy)  dy
+                       0.       0. 1.
     in
     s.cost <- 0;
     s.view <- view; 
