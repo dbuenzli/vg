@@ -907,6 +907,7 @@ module Vgr = struct
   type warning =  
     [ `Unsupported_cut of P.area * I.t 
     | `Unsupported_glyph_cut of P.area * I.t
+    | `Textless_glyph_cut of I.t
     | `Other of string ]
     
   type warn = warning -> unit
@@ -924,6 +925,8 @@ module Vgr = struct
         pp ppf "Unsupported cut: %a" pp_area a
     | `Unsupported_glyph_cut (a, _) -> 
         pp ppf "Unsupported glyph cut: %a" pp_area a
+    | `Textless_glyph_cut _ -> 
+        pp ppf "Missing text in glyph cut"
           
   (* Render metadata *) 
 

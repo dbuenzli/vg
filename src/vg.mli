@@ -526,6 +526,7 @@ module Vgr : sig
   type warning = 
     [ `Unsupported_cut of P.area * I.t
     | `Unsupported_glyph_cut of P.area * I.t
+    | `Textless_glyph_cut of I.t
     | `Other of string ]
   (** The type for render warnings. *)
 
@@ -678,6 +679,7 @@ module Vgr : sig
       {- Images must be rendered via the {!render} function. If you 
          are writing a batch renderer provide support for each of the 
          {!dst} types and especially the non-blocking interface.}
+      {- Respect Vg's linear sRGB color model.}
       {- Whenever possible use an XMP metadata packet for metadata, 
          see {!Vgr.xmp}.}
       {- The renderer should implement the rendering cost model, 

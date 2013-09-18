@@ -230,7 +230,7 @@ let rec r_cut_glyphs s a run = function
     warn s (`Unsupported_glyph_cut (a, image i))
 | Primitive p as i ->
     begin match run.text with 
-    | None -> warn s (`Other "No text specified in glyph cut")
+    | None -> warn s (`Textless_glyph_cut (image (Cut_glyphs (a, run, i))))
     | Some text -> 
         let text = Js.string text in
         s.ctx ## save ();

@@ -29,36 +29,43 @@ val target : ?resolution:Gg.v2 -> Dom_html.canvasElement Js.t ->
 
 (** {1:text Text rendering} 
 
-    Fonts use the CSS font selection mechanism. Make sure that the
-    fonts you use are embedded (and {e loaded}) in your DOM via
+    Text rendering uses the HTML canvas CSS font selection mechanism.
+    As there is no control over glyph rendering in the HTML canvas, 
+    the glyph API is unsupported.
+
+    Given a glyph cut:
+    
+{!Vg.I.cut_glyphs}[ ~text ~blocks ~advances font glyphs]
+
+    The [blocks], [advances] and [glyphs] parameters are ignored.
+    [text] must be provided and is used to define the text to render.
+    [font] is used to select the font in the CSS stylesheet. Make sure
+    that the fonts you use are embedded and {b loaded} in your DOM via
     [\@font-face].
 
-    The text rendering API of HTML canvas doesn't give control over
-    glyph rendering. This means that the [advances] and glyph list
-    arguments of {!Vg.I.cut_glyphs} are ignored and you will need to
-    provide the [text] argument.
-
     At the moment the renderer also needs to work around a particular
-    browser bug which means that glyphs cut are currently limited to
-    non-outline area cuts in constant images.  *)
+    browser bug which means that glyph cuts are currently limited to
+    non-outline area cuts in {!I.const} images.  *)
 
 (** {1:limits Render warnings and limitations} 
     
     The following render warnings are reported.
     {ul
-    {- [`Unsupported_cut ((`O o), i)], outline cuts can be performed only on 
-       (possibly transformed) {!I.const}, {!I.axial} and {!I.radial} 
+    {- [`Unsupported_cut ((`O o), i)], outline area cuts can be performed 
+       only on (possibly transformed) {!I.const}, {!I.axial} and {!I.radial} 
        primitive images.}
     {- [`Unsupported_glyph_cut (a, i)], glyph cuts can be performed only
-       on bare {!I.const} primitive images and outline cuts are currently
-       unsupported.}
+       on bare {!I.const} primitive images and outline area glyph cuts are 
+       currently unsupported.}
+    {- [`Textless_glyph_cut i] if no [text] argument is specified in a glyph
+       cut.}
     {- [`Other _] if dashes are rendered but unsupported by the browser.}}
 
     The following limitations should be taken into account. 
     {ul 
     {- The even-odd area rule is supported according to the
        latest whatwg spec. This may not work in all browsers.}
-    {- In the canvas gradient color interpolation is performed 
+    {- In the HTML canvas gradient color interpolation is performed 
        in (non-linear) sRGB space. This doesn't respect Vg's semantics.}} *)
 
 (*---------------------------------------------------------------------------

@@ -294,9 +294,9 @@ let rec w_cut_glyphs s a run i k r = match i with
 | Primitive (Raster _) -> assert false
 | Tr _ | Blend _ | Cut _ | Cut_glyphs _ as i -> 
     warn s (`Unsupported_glyph_cut (a, image i)); k r
-| Primitive p ->
+| Primitive p as i ->
     begin match run.text with 
-    | None -> warn s (`Other "No text specified in glyph cut"); k r
+    | None -> warn s (`Textless_glyph_cut (image (Cut_glyphs (a, run, i)))); k r
     | Some text ->
         let font = get_font s run.font in
         w_primitive s ([], p) begin fun svg_prim r -> 
