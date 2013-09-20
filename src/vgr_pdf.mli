@@ -38,7 +38,7 @@ type font =
 
 val font : Vg.font -> font 
 (** [font] is the default font resolver. Given a {!Vg.font} [f] it performs the 
-    following resolutions according to the result of {!Vg.Font.name}[ f]: 
+    following resolutions according to value of [f.Font.name]: 
     {ul 
     {- ["Helvetica"], returns [`Sans]}
     {- ["Times"], returns [`Serif]}
@@ -61,7 +61,7 @@ val target : ?font:(Vg.font -> font) -> ?xmp:string ->
        The convenience function {!Vg.Vgr.xmp} can be used to 
        generate a packet.}}
 
-    {b Multiple image.} Multiple images render is supported. Each image
+    {b Multiple image.} Multiple image render is supported. Each image
     defines a page of the resulting PDF file. *)
 
 (** {1:text Text rendering} 
@@ -80,7 +80,7 @@ val target : ?font:(Vg.font -> font) -> ?xmp:string ->
     {- [`Otf otf], the values in [glyphs] are glyph indexes of 
        the OpenType font [otf]. If [advances] is specified these vectors
        are used to position the glyphs (e.g. you need to use this to perform 
-       kerning), otherwise the font's glyph widths, as found in [otf], are 
+       kerning), otherwise the font's glyph advances, as found in [otf], are 
        used.}
     {- [`Helvetica], uses one of the standard PDF font Helvetica, 
        Helvetica-Bold, Helvetica, Helvetica-Bold, Helvetica-Oblique, 
@@ -96,7 +96,7 @@ val target : ?font:(Vg.font -> font) -> ?xmp:string ->
        additional characters (those at rows 0x80-0x9F in that document). 
        If a glyph index is not supported it is replaced by [0]. If 
        [advances] is specified these vectors are used to position the glyphs,
-       otherwise the internal font's glyphs width are used.}
+       otherwise the internal font's glyphs advances are used.}
     {- [`Times], same as [`Helvetica] but uses one of the standard PDF font 
        Times-Roman, Times-Bold, Times-Italic or Times-BoldItalic.}
     {- [`Courier], same as [`Helvetica] but uses one of the standard PDF font 
@@ -130,14 +130,28 @@ val target : ?font:(Vg.font -> font) -> ?xmp:string ->
 
 (** {1:limits Render warnings and limitations}
 
+    The following render warnings are reported. 
+    {ul 
+    {- [`Unsupported_cut (`O o, i)], outline area cuts can be performed only 
+       on (possibly transformed) {!Vg.I.const}, {!Vg.I.axial}, {!Vg.I.radial}
+       images.}
+    {- [`Unsupported_glyph_cut (`O o, i)], outline area glyph cuts can 
+       be performed only on (possibly transformed) {!Vg.I.const}, 
+       {!Vg.I.axial}, {!Vg.I.radial} images.}}
+
+    The following limitations should be taken into account:
     {ul
-    {-  The page content streams in the PDF files are currently uncompressed. 
-        This will be lifted in future versions of the library. If you need to 
-        reduce the size of generated PDFs you can, for example, filter them 
-        through {{:http://www.ghostscript.com}ghostscript} with:
-{[
-gs -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=output.pdf input.pdf
-]}}}
+    {- Streams in the PDF files are currently uncompressed and fonts
+       are embedded without subsetting which may result in large file
+       sizes. This will be lifted in future versions of the
+       library. Meanwhile if you need to reduce the size of generated
+       PDFs you can pass them through
+       {{:http://community.coherentpdf.com}cpdf} or
+       {{:http://www.ghostscript.com}ghostscript}.
+{v
+> cpdf -compress -o output.pdf input.pdf
+> gs -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=output.pdf input.pdf
+v}}}
 *)
 
 (*---------------------------------------------------------------------------

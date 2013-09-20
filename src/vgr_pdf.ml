@@ -857,7 +857,7 @@ let w_end s k r =
 let render s v k r = match v with 
 | `End -> w_end s (flush s (Vgr.Private.flush k)) r 
 | `Image (size, view, img) ->
-    s.todo <- [Draw img]; 
+    s.todo <- [Draw img];
     s.view <- view;
     s.gstate <- { init_gstate with g_tr = init_gstate.g_tr }; (* copy *) 
     begin match List.length s.page_objs with 
