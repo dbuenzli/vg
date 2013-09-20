@@ -96,10 +96,9 @@ val ( *> ) : 'a Ui.t -> 'b Ui.t -> 'a Ui.t
 
     Safe if nobody messes with the storage outside of the program. 
 
-    {b WARNING/TODO} During developement code reorderings of {!key}
-    will corrupt existing storage. {!Store.force_version} can mitigate
-    that problem. 
-*)
+    {b WARNING} During developement code reorderings of {!key} will
+    corrupt existing storage. {!Store.force_version} can mitigate that
+    problem. *)
 module Store : sig
   
   (** {1 Storage scope and support} *)

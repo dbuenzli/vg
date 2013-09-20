@@ -196,12 +196,11 @@ let set_path s p =
           P2.(s.ctx ## bezierCurveTo (x c, y c, x c', y c', x pt, y pt));
           loop pt segs
       | `Earc (large, cw, r, a, pt) ->
-          (* TODO if r.x = r.y optimize. *)
           begin match Vgr.Private.P.earc_params last large cw r a pt with 
           | None -> P2.(s.ctx ## lineTo (x pt, y pt)); loop pt segs 
           | Some (c, m, a, a') -> 
               s.ctx ## save ();
-              let c = V2.ltr (M2.inv m) c in  (* TODO avoid that *)
+              let c = V2.ltr (M2.inv m) c in
               M2.(s.ctx ## transform (e00 m, e10 m, e01 m, e11 m, 0., 0.));
               P2.(s.ctx ## arc (x c, y c, 1.0, a, a', (Js.bool cw))); 
               s.ctx ## restore ();

@@ -89,15 +89,15 @@ module Ui = struct
       let s = el Dom_html.createSpan [c_label_text] <*> txt str in
       let l = el ?id ?title Dom_html.createLabel [c_label] <*> s in
       let ui = { n = (l :> Dom_html.element Js.t); on_change = nop } in
-      let set _ = failwith "TODO" in 
-      let cb _ _ = Log.msg "TODO"; false in 
+      let set _ = failwith "Unimplemented" in 
+      let cb _ _ = Log.msg "Unimplemented"; false in 
       Ev.cb s Ev.change cb;
       ui, set
     else
       let l = el ?id Dom_html.createH1 [c_label; c_label_text] <*> txt str in
       let ui = { n = l; on_change = nop } in 
-      let set _ = failwith "TODO" in 
-      let cb _ _ = Log.msg "TODO"; false in 
+      let set _ = failwith "Unimplemented" in 
+      let cb _ _ = Log.msg "Unimplemented"; false in 
       Ev.cb l Ev.change cb;
       ui, set
 
@@ -111,7 +111,7 @@ module Ui = struct
     | Some t -> ignore (p ## replaceChild (((txt str) :> Dom.node Js.t), t))
     | None -> assert false
     in
-    let cb _ _ = Log.msg "TODO"; false in
+    let cb _ _ = Log.msg "Unimplemented"; false in
     Ev.cb p Ev.change cb; 
     ui, set
       
@@ -278,7 +278,7 @@ module Ui = struct
 
   let c_canvas = Js.string "mu-canvas" 
   let canvas_data c = Js.to_string (c ## toDataURL ())
-  let canvas ?id () =  (* TODO don't use createCanvas because of exn. *)
+  let canvas ?id () =
     let c = el ?id canvas [c_canvas] in 
     let ui = { n = (c :> Dom_html.element Js.t); on_change = nop } in 
     ui, c

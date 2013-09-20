@@ -295,7 +295,7 @@ let cubic_earc tol cubic acc p0 large cw a r p1 =
       let c1 = V2.add (V2.smul one_div_3 p0) (V2.smul two_div_3 p1) in
       cubic c0 c1 p1 acc
   | Some (c, m, t0, t1) -> 
-      let mt = M2.v (* TODO something better *)
+      let mt = M2.v
           (-. (M2.e00 m)) (M2.e10 m) (* gives the tngt to a point *)
           (-. (M2.e01 m)) (M2.e11 m)
       in

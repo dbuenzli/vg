@@ -27,7 +27,7 @@ let to_str_of_pp pp v =
   Format.fprintf Format.str_formatter "%a" pp v; 
   Format.flush_str_formatter ()
 
-let src_link = (* TODO use %%VERSION%% *)
+let src_link =
   format_of_string "https://github.com/dbuenzli/vg/blob/master/db/%s#L%d"
 
 let open_sans_xbold = match Vgr_pdf.otf_font Open_sans.extra_bold with 

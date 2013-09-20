@@ -1,10 +1,6 @@
 # Before first release 
 
-* Review ellipse things. There are a few TODOs and wrong things in there.
-* Final code review.
-* Final doc review.
 * Review conversion of earc to bezier. 
-* tr glyph_cuts 
 * git grep TODO
 
 #  After first release
@@ -13,13 +9,13 @@
 
 * git grep FIXME
 * SVG renderer, try to handle more glyph cuts.
-* SVG renderer, give the opportunity to use SVG glyphs ? The idea 
-  would be that if no font resolver is provided, do it like now 
-  otherwise embed glyphs.
+* SVG renderer, give the opportunity to use SVG glyphs ? If no font
+  resolver is provided, do it like now otherwise embed glyphs.
 * Canvas, try to handle more glyph cuts.
-* PDF, implement page content stream compression. LZW would be
-  easiest.  Deflate would be nice.
-* PDF, implement gradients with alpha.
+* PDF, implement stream compression. LZW would be easiest, deflate
+  would be nice.
+* PDF, implement gradients with alpha, have a look at how Inkscape
+  encodes them. 
 * PDF, implement font subsetting.
 * PDF, text extraction, consider using /ToUnicode maps instead of 
   solely /ActualText.
