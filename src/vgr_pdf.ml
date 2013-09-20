@@ -104,7 +104,6 @@ type cmd = Set of gstate | Draw of Vgr.Private.Data.image
 type state = 
   { r : Vgr.Private.renderer;                    (* corresponding renderer. *)
     font : Vg.font -> font;                               (* font resolver. *)
-    share : int;                            (* page resource sharing limit. *)
     xmp : string option;                            (* XMP metadata packet. *)
     buf : Buffer.t;                                   (* formatting buffer. *) 
     mutable cost : int;                          (* cost counter for limit. *) 
@@ -116,7 +115,6 @@ type state =
     mutable          (* length object id and offset of current page stream. *) 
       stream_info : int * int;   
     mutable index : (int * int) list;      (* object id, byte offset index. *)
-    mutable id_resources : int;                (* current resource dict id. *) 
     mutable page_objs : int list;                      (* pages object ids. *)
     prims : (Vgr.Private.Data.primitive, (m3 * id) list) Hashtbl.t;
     alphas : (float * [`S | `F], id) Hashtbl.t;
@@ -142,7 +140,7 @@ let w_buf s k r = if Buffer.length s.buf >= max_buf then flush s k r else k r
 let byte_offset s = s.bytes + Buffer.length s.buf
 let id_page_root = 1
 let id_linear_srgb = 2
-let id_first_resources = 3
+let id_resources = 3
 let new_obj_id s = s.id <- s.id + 1; s.id
 let obj_count s = s.id + 1
 let new_page s =
@@ -507,7 +505,7 @@ let w_page size s k r =
            /MediaBox [0 0 %f %f]\n\
            /Contents %d 0 R\n\
            >>\n" 
-    id_page_root s.id_resources
+    id_page_root id_resources
     (V2.x size *. mm_to_pt) (V2.y size *. mm_to_pt)
     contents_id;
   b_obj_end s;
@@ -648,7 +646,7 @@ let rec w_prims s k r =
   in
   loop s prims k r
 
-let w_resources ?(last = false) s k r =
+let w_resources s k r =
   let b_refs op b refs = 
     let ref id = Printf.bprintf b "/%s%d %d 0 R " op id id in 
     List.iter ref refs
@@ -657,7 +655,7 @@ let w_resources ?(last = false) s k r =
   let font_ids = Hashtbl.fold (fun _ (id, _) acc -> id :: acc) s.fonts [] in
   let ids _ shs acc = List.fold_left (fun acc (_, id) -> id :: acc) acc shs in
   let prim_ids = Hashtbl.fold ids s.prims [] in
-  b_obj_start s s.id_resources;
+  b_obj_start s id_resources;
   b_fmt s "<<\n\
            /ColorSpace << %s %d 0 R >>\n\
            /ExtGState << %a>>\n\
@@ -667,7 +665,6 @@ let w_resources ?(last = false) s k r =
     n_linear_srgb id_linear_srgb (b_refs "gs") alpha_ids (b_refs "sh") 
     prim_ids (b_refs "f") font_ids;
   b_obj_end s;
-  if not last then s.id_resources <- new_obj_id s;
   w_alphas s (w_prims s k) r
   
 let w_pdf_font s id n k r = 
@@ -846,7 +843,7 @@ let w_end s k r =
   let id_catalog = new_obj_id s in 
   let id_meta = match s.xmp with None -> None | Some _ -> Some (new_obj_id s) in
   r >> 
-  w_resources ~last:true s @@
+  w_resources s @@
   w_fonts s @@
   w_page_root s @@
   w_linear_srgb s @@
@@ -865,26 +862,23 @@ let render s v k r = match v with
     s.gstate <- { init_gstate with g_tr = init_gstate.g_tr }; (* copy *) 
     begin match List.length s.page_objs with 
     | 0 -> b_start s; w_page size s k r
-    | n when n mod s.share = 0 -> w_resources s (w_page size s k) r
     | n -> w_page size s k r
     end
 
 let target ?(font = font) ?xmp () = 
   let target r _ = 
     true, render { r; 
-                   font; 
-                   share = max_int; (* TODO remove ? *) 
+                   font;
                    xmp;
                    buf = Buffer.create (max_buf + 8);
                    cost = 0; 
                    view = Box2.empty; 
                    inv_view_tr = M3.id;
                    todo = []; 
-                   id = id_first_resources; 
+                   id = id_resources; 
                    stream_info = (0, 0);
                    bytes = 0; 
                    index = []; 
-                   id_resources = id_first_resources;
                    page_objs = []; 
                    prims = Hashtbl.create 255; 
                    alphas = Hashtbl.create 255;
