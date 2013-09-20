@@ -12,29 +12,22 @@ open Vgr.Private.Data
    invariants, replacing with safe versions makes everything safe in
    the module. He won't be upset. *)
 
-let unsafe_byte s j = Char.code (String.unsafe_get s j)
-let unsafe_array_get = Array.unsafe_get
 let unsafe_chr = Char.unsafe_chr
 
 (* Constants and convenience functions. *)
 
 external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
 
+let u_lpar   = 0x0028 (* U+0028 *)
+let u_rpar   = 0x0029 (* U+0029 *)
+let u_bslash = 0x005C (* U+005C *)
+
+let n_linear_srgb = "/srgb_l" 
+let max_buf = 65528 
 let mm_to_pt = 72. /. 25.4
+let em_to_userspace = 1000
 
-(* Constant Unicode scalar values *) 
-
-let u_bom    = 0xFEFF                                                (* BOM. *)
-let u_rep    = 0xFFFD                              (* replacement character. *)
-let u_lpar   = 0x0028           
-let u_rpar   = 0x0029 
-let u_bslash = 0x005C
-
-(* Render target *)
-
-type id = int                                             (* PDF object ids. *)
-
-(* Font resolution *) 
+(* Fonts *) 
 
 type otf_font = 
   { otf_program : string; 
@@ -61,7 +54,7 @@ let pdf_times_programs =
 let pdf_courier_programs = 
   ("Courier", "Courier-Bold"), ("Courier-Oblique", "Courier-BoldOblique")
 
-let pdf_font_program font (normal, slant) = 
+let pdf_font_program (normal, slant) font = 
   let (regular, bold) = if font.Font.slant = `Normal then normal else slant in 
   `Pdf_font (if font.Font.weight < `W700 then regular else bold)
 
@@ -82,12 +75,8 @@ let otf_font s =
   let otf_ascent = hhea.Otfm.hhea_ascender in 
   let otf_descent = hhea.Otfm.hhea_descender in
   let otf_widths = List.rev widths in
-  `Otf { otf_program = s; 
-         otf_flavour; 
-         otf_postscript_name;
-         otf_units_per_em; 
-         otf_xmin; otf_ymin; otf_xmax; otf_ymax;
-         otf_ascent; otf_descent;
+  `Otf { otf_program = s; otf_flavour; otf_postscript_name; otf_units_per_em; 
+         otf_xmin; otf_ymin; otf_xmax; otf_ymax; otf_ascent; otf_descent;
          otf_widths; }
   
 let font font = match font.Font.name with 
@@ -98,18 +87,17 @@ let font font = match font.Font.name with
 
 (* Render state *)
 
+type id = int                                             (* PDF object ids. *)
 type gstate =                  (* Subset of the graphics state saved by a q. *) 
   { mutable g_tr : M3.t;           (* current transform with view transform. *) 
     mutable g_scolor : Vgr.Private.Data.primitive;  (* current stroke color. *) 
     mutable g_fcolor : Vgr.Private.Data.primitive;    (* current fill color. *) 
     mutable g_outline : P.outline;       (* current path outline parameters. *)
-    mutable g_font_id : id;                              (* current font id. *) 
-    mutable g_alpha : float;                              (* unused for now. *) 
-    mutable g_blender : Vgr.Private.Data.blender; }       (* unused for now. *)
+    mutable g_font_id : id; }                            (* current font id. *) 
 
 let init_gstate = 
   { g_tr = M3.id; g_scolor = Const Color.black; g_fcolor = Const Color.black;
-    g_outline = P.o; g_font_id = -1; g_alpha = 1.0; g_blender = `Over } 
+    g_outline = P.o; g_font_id = -1; } 
 
 type cmd = Set of gstate | Draw of Vgr.Private.Data.image
 
@@ -125,7 +113,7 @@ type state =
     mutable todo : cmd list;                        (* commands to perform. *) 
     mutable id : int;                (* PDF object id (and name) generator. *) 
     mutable bytes : int;                     (* current output byte offset. *) 
-    mutable             (* length obj id and offset of current page stream. *) 
+    mutable          (* length object id and offset of current page stream. *) 
       stream_info : int * int;   
     mutable index : (int * int) list;      (* object id, byte offset index. *)
     mutable id_resources : int;                (* current resource dict id. *) 
@@ -136,18 +124,25 @@ type state =
     font_programs : (font_program, id) Hashtbl.t;             
     mutable gstate : gstate; }                    (* current graphic state. *) 
 
+let save_gstate s = Set { s.gstate with g_tr = s.gstate.g_tr (* copy *) } 
+let set_gstate s g = s.gstate <- g
+
+let image i = Vgr.Private.I.of_data i 
 let partial = Vgr.Private.partial
 let limit s = Vgr.Private.limit s.r 
 let warn s w = Vgr.Private.warn s.r w 
-let image i = Vgr.Private.I.of_data i 
+let flush s k r = 
+  let clear k r = Buffer.clear s.buf; k r in 
+  let len = Buffer.length s.buf in
+  s.bytes <- s.bytes + len; 
+  Vgr.Private.writebuf s.buf 0 len (clear k) r
 
-let n_linear_srgb = "/srgb_l" 
+let w_buf s k r = if Buffer.length s.buf >= max_buf then flush s k r else k r
+
+let byte_offset s = s.bytes + Buffer.length s.buf
 let id_page_root = 1
 let id_linear_srgb = 2
 let id_first_resources = 3
-
-let max_buf = 65528 
-let byte_offset s = s.bytes + Buffer.length s.buf
 let new_obj_id s = s.id <- s.id + 1; s.id
 let obj_count s = s.id + 1
 let new_page s =
@@ -160,17 +155,16 @@ let get_id s h v = try Hashtbl.find h v with
     Hashtbl.add h v id; id
 
 let get_alpha_id s alpha = get_id s s.alphas alpha
-
 let rec get_font_id s font = try Hashtbl.find s.fonts font with 
 | Not_found ->
     let program, mode = match s.font font with
     | `Otf _ as p -> p, `Otf_glyphs
-    | `Helvetica  -> pdf_font_program font pdf_helvetica_programs, `Pdf_glyphs
-    | `Sans       -> pdf_font_program font pdf_helvetica_programs, `Pdf_text
-    | `Times      -> pdf_font_program font pdf_times_programs, `Pdf_glyphs
-    | `Serif      -> pdf_font_program font pdf_times_programs, `Pdf_text
-    | `Courier    -> pdf_font_program font pdf_courier_programs, `Pdf_glyphs
-    | `Fixed      -> pdf_font_program font pdf_courier_programs, `Pdf_text
+    | `Helvetica  -> pdf_font_program pdf_helvetica_programs font, `Pdf_glyphs
+    | `Sans       -> pdf_font_program pdf_helvetica_programs font, `Pdf_text
+    | `Times      -> pdf_font_program pdf_times_programs font, `Pdf_glyphs
+    | `Serif      -> pdf_font_program pdf_times_programs font, `Pdf_text
+    | `Courier    -> pdf_font_program pdf_courier_programs font, `Pdf_glyphs
+    | `Fixed      -> pdf_font_program pdf_courier_programs font, `Pdf_text
     in
     let id = try Hashtbl.find s.font_programs program with 
     | Not_found -> get_id s s.font_programs program 
@@ -184,7 +178,7 @@ let get_prim_id s ctm prim =
   Hashtbl.replace s.prims prim ((ctm, id) :: patts); 
   id
 
-let uncut_bounds s =
+let view_rect s =           (* image view rect in current coordinate system. *) 
   let userspace = M3.mul s.inv_view_tr s.gstate.g_tr in    (* remove view tr *)
   Vgr.Private.Data.of_path 
     (P.empty >> P.rect (Box2.tr (M3.inv userspace) s.view))
@@ -192,26 +186,15 @@ let uncut_bounds s =
 let b_c3 b c = Printf.bprintf b "%f %f %f" (Color.r c) (Color.g c) (Color.b c)
 let b_v2 b v = Printf.bprintf b "%f %f" (V2.x v) (V2.y v)
 let b_m3 b m = 
-  Printf.bprintf b "%f %f %f %f %f %f" 
-    (M3.e00 m) (M3.e10 m) (M3.e01 m) (M3.e11 m) (M3.e02 m) (M3.e12 m)
+  M3.(Printf.bprintf b "%f %f %f %f %f %f"
+        (e00 m) (e10 m) (e01 m) (e11 m) (e02 m) (e12 m))
 
-let rec b_id_list b = function 
-| [] -> () | id :: ids -> Printf.bprintf b " %d 0 R" id; b_id_list b ids
-
-let b_fmt s fmt = Printf.bprintf s.buf fmt
-let b_str s str = Buffer.add_string s.buf str
-let b_str_byte s byte = 
-  let b s byte = Buffer.add_char s.buf (unsafe_chr byte) in
-  if byte = u_lpar || byte = u_rpar || byte = u_bslash     
-  then (b s u_bslash; b s byte)                              (* PDF escape. *)
-  else (b s byte)
-
-let b_str_text buf str =     (* adds UTF-8 [str] as an UTF-16BE text string. *) 
+let b_str_text b str =     (* adds UTF-8 [str] as an UTF-16BE text string. *) 
   let rec add_utf16_be () i = function 
   | `Malformed _ -> add_utf16_be () i (`Uchar Uutf.u_rep)
   | `Uchar u ->
       (* Can't use Uutf.Buffer.add_utf16_be because of the PDF escape rules. *) 
-      let w byte = Buffer.add_char buf (unsafe_chr byte) in
+      let w byte = Buffer.add_char b (unsafe_chr byte) in
       if u < 0x10000 then begin 
         if u = u_lpar || u = u_rpar || u = u_bslash           (* PDF escape. *)
         then (w 0x00; w u_bslash (* escape next *byte* *) ; w u) 
@@ -224,8 +207,16 @@ let b_str_text buf str =     (* adds UTF-8 [str] as an UTF-16BE text string. *)
         w (lo lsr 8); w (lo land 0xFF)
       end
   in
-  Buffer.add_string buf "\xFE\xFF"; (* BOM *) 
+  Buffer.add_string b "\xFE\xFF"; (* BOM *) 
   Uutf.String.fold_utf_8 add_utf16_be () str
+
+let b_fmt s fmt = Printf.bprintf s.buf fmt
+let b_str s str = Buffer.add_string s.buf str
+let b_str_byte s byte =        (* escapes bytes that need to in PDF strings. *) 
+  let b s byte = Buffer.add_char s.buf (unsafe_chr byte) in
+  if byte = u_lpar || byte = u_rpar || byte = u_bslash     
+  then (b s u_bslash; b s byte)                  
+  else (b s byte)
   
 let b_start s = b_str s "%PDF-1.7\n%\xCF\xC3\xE1\xED\xEC\n"
 let b_obj_end s = b_str s "endobj\n"
@@ -237,19 +228,6 @@ let b_length_obj s id len =
   b_obj_start s id; 
   b_fmt s "%i\n" len;
   b_obj_end s
-
-let flush s k r = 
-  let clear k r = Buffer.clear s.buf; k r in 
-  let len = Buffer.length s.buf in
-  s.bytes <- s.bytes + len; 
-  Vgr.Private.writebuf s.buf 0 len (clear k) r
-
-let w_buf s k r = if Buffer.length s.buf >= max_buf then flush s k r else k r
-
-let save_gstate s = 
-  b_fmt s "\nq"; Set { s.gstate with g_tr = s.gstate.g_tr (* copy *) } 
-
-let set_gstate s g = b_fmt s "\nQ"; s.gstate <- g
 
 let b_miter_limit s o = b_fmt s "\n%f M" (Vgr.Private.P.miter_limit o)
 let b_dashes s = function
@@ -275,7 +253,7 @@ let rec set_color s ctm old fill c = match c with
     b_fmt s "\n/Pattern %s" cs_op;
     b_fmt s "\n/sh%d %s" id op
 | Raster _ -> assert false
-    
+  
 let set_fcolor s ctm c =
   let old = s.gstate.g_fcolor in
   if  old <> c then (s.gstate.g_fcolor <- c; set_color s ctm old true c)
@@ -283,7 +261,7 @@ let set_fcolor s ctm c =
 let set_scolor s ctm c = 
   let old = s.gstate.g_scolor in
   if old <> c then (s.gstate.g_scolor <- c; set_color s ctm old false c)
-    
+                   
 let set_outline s ot = 
   let open P in
   let cap_c = function `Butt -> '0' | `Round -> '1' | `Square -> '2' in
@@ -342,7 +320,7 @@ let cubic_earc tol cubic acc p0 large cw a r p1 =
         
 let w_path s p op k r =
   let b_cubic c0 c1 pt () = b_fmt s "\n%a %a %a c" b_v2 c0 b_v2 c1 b_v2 pt in
-  let rec b_seg last = function 
+  let b_seg last = function 
   | `Sub pt -> 
       b_fmt s "\n%a m" b_v2 pt; pt
   | `Line pt -> 
@@ -372,11 +350,12 @@ let tr_primitive ctm i =
   loop ctm i
 
 let w_clip s a p i k r = 
-  s.todo <- (Draw i) :: save_gstate s :: s.todo;
   let op = match a with 
   | `Anz -> " W n" | `Aeo -> " W* n"
   | `O _ -> warn s (`Unsupported_cut (a, image i)); " W n"
   in
+  s.todo <- (Draw i) :: save_gstate s :: s.todo;
+  b_fmt s "\nq";
   w_path s p op k r 
     
 let w_primitive_cut s ctm a p prim k r = match a with
@@ -384,9 +363,16 @@ let w_primitive_cut s ctm a p prim k r = match a with
 | `Aeo -> set_fcolor s ctm prim; w_path s p " f*" k r
 | `O o -> set_scolor s ctm prim; set_outline s o; w_path s p " S" k r
 
-(* There's room for a lot of improvements e.g. to avoid using to 
-   many td operators. *) 
-
+let rec w_cut s a p i k r = match i with 
+| Primitive (Raster _ ) -> assert false
+| Primitive prim -> w_primitive_cut s s.gstate.g_tr a p prim k r
+| Blend _ | Cut _ | Cut_glyphs _ as i -> w_clip s a p i k r
+| Tr (tr, _) as i ->
+    begin match tr_primitive s.gstate.g_tr i with
+    | None -> w_clip s a p i k r 
+    | Some (tr, prim) -> w_primitive_cut s tr a p prim k r
+    end
+    
 (* The non straightforward mappings from unicode to Windows Code Page 1252.
    http://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1252.TXT *)
 let uchar_to_cp1252 = 
@@ -414,7 +400,7 @@ let rec b_glyphs_advs s encode gs advs = match gs, advs with
 | g :: gs, a :: advs -> 
     b_fmt s "("; (encode s g); b_fmt s ") Tj %f %f Td " (V2.x a) (V2.y a);
     b_glyphs_advs s encode gs advs
-| g :: _ as gs, [] -> (* finish without advances *) 
+| g :: _ as gs, [] -> (* without advances *) 
     b_fmt s "("; List.iter (encode s) gs; b_fmt s ") Tj"
 | [], _ -> () 
 
@@ -449,10 +435,11 @@ let w_glyph_run s run op k r =
   w_buf s k r
 
 let w_clip_glyph_cut s a run i k r = 
-  s.todo <- (Draw i) :: save_gstate s :: s.todo; 
   let op = match a with 
   | `O _ -> warn s (`Unsupported_cut (a, image i)); " 7 Tr" | _ -> " 7 Tr"
   in
+  s.todo <- (Draw i) :: save_gstate s :: s.todo; 
+  b_fmt s "\nq";
   w_glyph_run s run op k r 
   
 let w_primitive_glyph_cut s ctm a run prim k r = match a with 
@@ -462,23 +449,13 @@ let w_primitive_glyph_cut s ctm a run prim k r = match a with
     set_fcolor s ctm prim; w_glyph_run s run " 0 Tr" k r 
     
 let w_cut_glyphs s a run i k r = match i with 
-| Primitive (Raster _) -> warn s (`Other ("TODO raster unimplemented")); k r
+| Primitive (Raster _) -> assert false
 | Primitive prim -> w_primitive_glyph_cut s s.gstate.g_tr a run prim k r 
 | Blend _ | Cut _ | Cut_glyphs _ as i -> w_clip_glyph_cut s a run i k r
 | Tr (tr, tr_i) as i ->
     begin match tr_primitive s.gstate.g_tr i with 
     | None -> w_clip_glyph_cut s a run i k r
     | Some (tr, prim) -> w_primitive_glyph_cut s tr a run prim k r 
-    end
-
-let rec w_cut s a p i k r = match i with 
-| Primitive (Raster _ ) -> warn s (`Other ("TODO raster unimplemented")); k r 
-| Primitive prim -> w_primitive_cut s s.gstate.g_tr a p prim k r
-| Blend _ | Cut _ | Cut_glyphs _ as i -> w_clip s a p i k r
-| Tr (tr, _) as i ->
-    begin match tr_primitive s.gstate.g_tr i with
-    | None -> w_clip s a p i k r 
-    | Some (tr, prim) -> w_primitive_cut s tr a p prim k r
     end
 
 let rec w_image s k r = 
@@ -493,13 +470,14 @@ let rec w_image s k r =
       w_buf s k r
   | Set gstate :: todo ->
       s.todo <- todo;
-      set_gstate s gstate; 
+      set_gstate s gstate;
+      b_fmt s "\nQ";
       w_image s k r
   | (Draw i) :: todo -> 
       s.cost <- s.cost + 1; 
       match i with 
       | Primitive _ as i -> (* Uncut primitive just cut to view. *)
-          let p = uncut_bounds s in 
+          let p = view_rect s in 
           s.todo <- todo;
           w_cut s `Anz p i (w_image s k) r
       | Cut (a, p, i) ->
@@ -513,6 +491,7 @@ let rec w_image s k r =
           w_image s k r
       | Tr (tr, i) -> 
           s.todo <- (Draw i) :: save_gstate s :: todo;
+          b_fmt s "\nq";
           push_transform s tr;
           w_image s k r
   
@@ -590,21 +569,7 @@ let b_pattern s shade_id (m, id) =
            >>\n" shade_id b_m3 m;
   b_obj_end s
 
-let b_shadefun b stops = 
-  let bounds = 
-    let add_start = function 
-    | (0., _) :: _ as stops -> stops
-    | (t, c) :: _ as stops -> (0., c) :: stops
-    | [] -> assert false
-    in
-    let rec add_end acc = function 
-    | (1., _) as stop :: [] -> List.rev (stop :: acc)
-    | (t, c) as stop :: [] -> List.rev ((1., c) :: stop :: acc)
-    | stop :: stops -> add_end (stop :: acc) stops 
-    | [] -> assert false
-    in
-    add_start (add_end [] stops)
-  in
+let b_shadefun b stops =                              (* assert(stops <> []) *) 
   let rec b_funs b = function 
   | (_, c0) :: ((_, c1) :: _ as next) -> 
       Printf.bprintf b 
@@ -622,6 +587,20 @@ let b_shadefun b stops =
   | (_, c0) :: ((_, c1) :: _ as next) -> 
       Printf.bprintf b "0 1 "; b_encode b next 
   | _ -> () 
+  in
+  let bounds = 
+    let add_start = function 
+    | (0., _) :: _ as stops -> stops
+    | (t, c) :: _ as stops -> (0., c) :: stops
+    | [] -> assert false
+    in
+    let rec add_end acc = function 
+    | (1., _) as stop :: [] -> List.rev (stop :: acc)
+    | (t, c) as stop :: [] -> List.rev ((1., c) :: stop :: acc)
+    | stop :: stops -> add_end (stop :: acc) stops 
+    | [] -> assert false
+    in
+    add_start (add_end [] stops)
   in
   Printf.bprintf b "<<\n\
                     /FunctionType 3\n\
@@ -668,12 +647,12 @@ let rec w_prims s k r =
       w_buf s (loop s prims k) r
   in
   loop s prims k r
-  
-let b_refs op b refs = 
-  let ref id = Printf.bprintf b "/%s%d %d 0 R " op id id in 
-  List.iter ref refs
 
 let w_resources ?(last = false) s k r =
+  let b_refs op b refs = 
+    let ref id = Printf.bprintf b "/%s%d %d 0 R " op id id in 
+    List.iter ref refs
+  in
   let alpha_ids = Hashtbl.fold (fun _ id acc -> id :: acc) s.alphas [] in
   let font_ids = Hashtbl.fold (fun _ (id, _) acc -> id :: acc) s.fonts [] in
   let ids _ shs acc = List.fold_left (fun acc (_, id) -> id :: acc) acc shs in
@@ -690,7 +669,7 @@ let w_resources ?(last = false) s k r =
   b_obj_end s;
   if not last then s.id_resources <- new_obj_id s;
   w_alphas s (w_prims s k) r
-
+  
 let w_pdf_font s id n k r = 
   b_obj_start s id; 
   b_fmt s "<<\n\
@@ -702,20 +681,18 @@ let w_pdf_font s id n k r =
   b_obj_end s;
   w_buf s k r
 
-let em_to_user = 1000
-
-let rec b_widths u_per_em b = function 
-| [] -> () 
-| w :: ws -> 
-    Printf.bprintf b " %d" ((w * em_to_user) / u_per_em); 
-    b_widths u_per_em b ws
-
 let w_font s (id, fp) k r = match fp with 
 | `Pdf_font n -> w_pdf_font s id n k r 
 | `Otf otf ->
+    let rec b_widths u_per_em b = function 
+    | [] -> () 
+    | w :: ws -> 
+        Printf.bprintf b " %d" ((w * em_to_userspace) / u_per_em); 
+        b_widths u_per_em b ws
+    in
     let cid_id = new_obj_id s in
     let ps_name = match otf.otf_postscript_name with 
-    | None -> "f" ^ string_of_int cid_id (* XXX: just make up something *) 
+    | None -> "f" ^ string_of_int cid_id           (* just make up something *) 
     | Some n -> n 
     in
     let subtype, name = match otf.otf_flavour with 
@@ -754,16 +731,16 @@ let w_font s (id, fp) k r = match fp with
              /ItalicAngle 0\n\
              /Ascent %d\n\
              /Descent %d\n\
-             /StemV 80\n\
+             /StemV 0\n\
              /FontFile3 %d 0 R\n\
              >>\n"
       ps_name
-      ((otf.otf_xmin * em_to_user) / otf.otf_units_per_em) 
-      ((otf.otf_ymin * em_to_user) / otf.otf_units_per_em) 
-      ((otf.otf_xmax * em_to_user) / otf.otf_units_per_em) 
-      ((otf.otf_ymax * em_to_user) / otf.otf_units_per_em)
-      ((otf.otf_ascent * em_to_user) / otf.otf_units_per_em) 
-      ((otf.otf_descent * em_to_user) / otf.otf_units_per_em)
+      ((otf.otf_xmin * em_to_userspace) / otf.otf_units_per_em) 
+      ((otf.otf_ymin * em_to_userspace) / otf.otf_units_per_em) 
+      ((otf.otf_xmax * em_to_userspace) / otf.otf_units_per_em) 
+      ((otf.otf_ymax * em_to_userspace) / otf.otf_units_per_em)
+      ((otf.otf_ascent * em_to_userspace) / otf.otf_units_per_em) 
+      ((otf.otf_descent * em_to_userspace) / otf.otf_units_per_em)
       fp_id;
     b_obj_end s; 
     let len_id = new_obj_id s in
@@ -779,12 +756,16 @@ let w_font s (id, fp) k r = match fp with
 
 let w_fonts s k r = 
   let rec loop s fs k r = match fs with
-  | f :: fs -> w_font s f (loop s fs k) r | [] -> k r
+  | f :: fs -> w_font s f (loop s fs k) r 
+  | [] -> Hashtbl.clear s.fonts; Hashtbl.clear s.font_programs; k r
   in
   let fs = Hashtbl.fold (fun fp id acc -> (id, fp) :: acc) s.font_programs [] in
   loop s fs k r
 
 let w_page_root s k r = 
+  let rec b_id_list b = function 
+  | [] -> () | id :: ids -> Printf.bprintf b " %d 0 R" id; b_id_list b ids
+  in
   let page_count = List.length s.page_objs in 
   let pages = List.rev s.page_objs in
   b_obj_start s id_page_root; 
