@@ -234,17 +234,7 @@ module P : sig
       
       {b Warning.} To accomodate {!(>>)} the argument order is the opposite of
       {!List.append}. *)
-    
-  val bounds : ?ctrl:bool -> path -> box2
-  (** [bounds ctrl p] is an axis-aligned rectangle containing [p]. If
-      [ctrl] is [true] (defaults to [false]) control points are also
-      included in the rectangle. Returns {!Gg.Box2.empty} if the path 
-      is [empty].
-      
-      {b Warning.} This function computes the bounds of the ideal
-      path (without width). Path {!outline}s areas will exceed these 
-      bounds. *)
-    
+  
   val tr : Gg.m3 -> path -> path 
   (** [tr m p] is the affine transform in homogenous 2D space of the path
       [p] by [m]. 
@@ -356,15 +346,13 @@ module I : sig
       on the circle defined by radius [t * r] and center [f + t * (c - f)].}} *)
 
 (*
-
   val raster : box2 -> Raster.t -> image 
   (** [raster r ri] is an image with [ri] framed in the rectangle
       [r] 
 
-      {b TODO} Semantics and filtering.
-
+      To define: proper semantics and filtering.
       {ul 
-      {- \[[raster r ri]\]{_[p]} [=] TODO if [p] is in {{!Gg.aboxes}S([r])}.}
+      {- \[[raster r ri]\]{_[p]} [=] if [p] is in {{!Gg.aboxes}S([r])}.}
       {- \[[raster r ri]\]{_[p]} [= Gg.color.void] otherwise.}} *)
 *)
 

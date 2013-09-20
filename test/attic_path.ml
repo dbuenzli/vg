@@ -37,6 +37,16 @@ module P : sig
       [`Sample]s at every distance [dt] along the curve. If the subpath
       is closed [`Close] is called aswell. [tol] has the same meaning
       as in {!linear_fold}. *)
+
+  val bounds : ?ctrl:bool -> path -> box2
+  (** [bounds ctrl p] is an axis-aligned rectangle containing [p]. If
+      [ctrl] is [true] (defaults to [false]) control points are also
+      included in the rectangle. Returns {!Gg.Box2.empty} if the path 
+      is [empty].
+      
+      {b Warning.} This function computes the bounds of the ideal
+      path (without width). Path {!outline}s areas will exceed these 
+      bounds. *)
 end = struct 
 
   (* linear_{qcurve,ccurve,earc} functions are not t.r. but the recursion
@@ -145,6 +155,103 @@ end = struct
     in
     let acc, _, _ = linear_fold ?tol sample (acc, P2.o, 0.) p in
     acc
+
+  (* Needs fixing in certain cases, see comments. *) 
+  let bounds ?(ctrl = false) = function   
+  | [] -> Box2.empty
+  | p ->
+      let xmin = ref max_float in
+      let ymin = ref max_float in
+      let xmax = ref ~-.max_float in
+      let ymax = ref ~-.max_float in
+      let update pt = 
+        let x = P2.x pt in
+        let y = P2.y pt in
+        if x < !xmin then xmin := x;
+        if x > !xmax then xmax := x;
+        if y < !ymin then ymin := y;
+        if y > !ymax then ymax := y
+      in
+      let rec seg_ctrl = function
+      | `Sub pt :: l -> update pt; seg_ctrl l
+      | `Line pt :: l -> update pt; seg_ctrl l
+      | `Qcurve (c, pt) :: l -> update c; update pt; seg_ctrl l
+      | `Ccurve (c, c', pt) :: l -> update c; update c'; update pt; seg_ctrl l
+      | `Earc (large, cw, angle, radii, pt) :: l ->
+          let last = last_pt l in
+          begin match earc_params last large cw angle radii pt with
+          | None -> update pt; seg_ctrl l
+          | Some (c, m, a1, a2) ->
+              (* Wrong in general. There are many cases to consider.
+                 Depending on a1 - a2 < pi or crosses the ellipses axes. 
+                 Do proper development on paper. *)
+              let t = (a1 +. a2) /. 2. in
+              let b = V2.add c (V2.ltr m (V2.v (cos t) (sin t))) in
+              update b; update pt; seg_ctrl l
+          end
+      | `Close :: l -> seg_ctrl l
+      | [] -> ()
+      in
+      let rec seg = function 
+      | `Sub pt :: l -> update pt; seg l
+      | `Line pt :: l -> update pt; seg l
+      | `Qcurve (c, pt) :: l -> 
+          (* Wrong, compute bound *) update c; update pt; seg l
+      | `Ccurve (c, c', pt) :: l -> 
+          let last = last_pt l in
+          let update_z dim = (* Kallay, computing tight bounds *)
+            let fuzz = 1e-12 in
+            let solve a b c f = 
+              let d = b *. b -. a *. c in
+              if (d <= 0.) then () else 
+              begin
+                let d = sqrt d in
+                let b = -. b in
+                let b = if (b > 0.) then b +. d else b -. d in
+                if (b *. a > 0.) then f (b /. a);
+                let a = d *. c in
+                let b = c *. c *. fuzz in 
+                if (a > b || -. a < -. b) then f (c /. d);
+              end
+            in
+            let a = dim last in 
+            let b = dim c in
+            let cc = dim c' in
+            let d = dim pt in
+            if (a < b && b < d) && (a < cc && cc < d) then () else
+            let a = b -. a in
+            let b = cc -. b in
+            let cc = d -. cc in
+            let fa = abs_float a in
+            let fb = abs_float b *. fuzz in
+            let fc = abs_float cc in
+            if (fa < fb && fc < fb) then () else
+            if (fa > fc) then
+              let upd s = 
+                update (casteljau last c c' pt (1.0 /. (1.0 +. s))) 
+              in
+              solve a b cc upd;   
+            else
+            let upd s = update (casteljau last c c' pt (s /. (1.0 +. s))) in
+            solve cc b a upd
+          in
+          update_z V2.x; update_z V2.y; update pt; seg l
+      | `Earc (large, cw, angle, radii, pt) :: l ->
+          let last = last_pt l in
+          begin match earc_params last large cw angle radii pt with
+          | None -> update pt; seg l
+          | Some (c, m, a1, a2) ->
+              (* Wrong in general, see above. *)
+              let t = (a1 +. a2) /. 2. in
+              let b = V2.add c (V2.ltr m (V2.v (cos t) (sin t))) in
+              update b;  update pt; seg l
+          end
+      | `Close :: l -> seg l
+      | [] -> ()
+      in
+      if ctrl then seg_ctrl p else seg p;
+      Box2.v (P2.v !xmin !ymin) (Size2.v (!xmax -. !xmin) (!ymax -. !ymin))
+
 end
 
 (*---------------------------------------------------------------------------
