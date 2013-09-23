@@ -1045,14 +1045,14 @@ module Vgr = struct
       type tr = I.tr = Move of v2 | Rot of float | Scale of v2 | Matrix of m3
                          
       let tr_to_m3 = function 
-      | Move v -> M3.move2 v
-      | Rot a -> M3.rot2 a 
+      | Move v -> M3.move v
+      | Rot a -> M3.rot a 
       | Scale s -> M3.scale2 s 
       | Matrix m -> m
         
       let inv_tr_to_m3 = function
-      | Move v -> M3.move2 (V2.neg v) 
-      | Rot a -> M3.rot2 (-. a) 
+      | Move v -> M3.move (V2.neg v) 
+      | Rot a -> M3.rot (-. a) 
       | Scale s -> M3.scale2 (V2.v (1. /. V2.x s) (1. /. V2.y s))
       | Matrix m -> M3.inv m
                       
