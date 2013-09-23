@@ -17,7 +17,7 @@
 * PDF, implement gradients with alpha, have a look at how Inkscape
   encodes them. 
 * PDF, implement font subsetting.
-* PDF, text extraction, consider using /ToUnicode maps instead of 
+* PDF, text extraction, consider also using /ToUnicode maps instead of 
   solely /ActualText.
   http://lists.cairographics.org/archives/cairo/2007-September/011427.html
   

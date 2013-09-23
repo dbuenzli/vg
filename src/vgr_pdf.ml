@@ -187,23 +187,25 @@ let b_m3 b m =
   M3.(Printf.bprintf b "%f %f %f %f %f %f"
         (e00 m) (e10 m) (e01 m) (e11 m) (e02 m) (e12 m))
 
-let b_str_text b str =     (* adds UTF-8 [str] as an UTF-16BE text string. *) 
+let b_utf16_be b u = 
+  (* Can't use Uutf.Buffer.add_utf16_be because of the PDF escape rules. *) 
+  let w byte = Buffer.add_char b (unsafe_chr byte) in
+  if u < 0x10000 then begin 
+    if u = u_lpar || u = u_rpar || u = u_bslash           (* PDF escape. *)
+    then (w 0x00; w u_bslash (* escape next *byte* *) ; w u) 
+    else (w (u lsr 8); w (u land 0xFF)) 
+  end else begin 
+    let u' = u - 0x10000 in
+    let hi = (0xD800 lor (u' lsr 10)) in
+    let lo = (0xDC00 lor (u' land 0x3FF)) in
+    w (hi lsr 8); w (hi land 0xFF);
+    w (lo lsr 8); w (lo land 0xFF)
+  end
+
+let b_str_text b str =      (* adds UTF-8 [str] as an UTF-16BE text string. *) 
   let rec add_utf16_be () i = function 
   | `Malformed _ -> add_utf16_be () i (`Uchar Uutf.u_rep)
-  | `Uchar u ->
-      (* Can't use Uutf.Buffer.add_utf16_be because of the PDF escape rules. *) 
-      let w byte = Buffer.add_char b (unsafe_chr byte) in
-      if u < 0x10000 then begin 
-        if u = u_lpar || u = u_rpar || u = u_bslash           (* PDF escape. *)
-        then (w 0x00; w u_bslash (* escape next *byte* *) ; w u) 
-        else (w (u lsr 8); w (u land 0xFF)) 
-      end else begin 
-        let u' = u - 0x10000 in
-        let hi = (0xD800 lor (u' lsr 10)) in
-        let lo = (0xDC00 lor (u' land 0x3FF)) in
-        w (hi lsr 8); w (hi land 0xFF);
-        w (lo lsr 8); w (lo land 0xFF)
-      end
+  | `Uchar u -> b_utf16_be b u 
   in
   Buffer.add_string b "\xFE\xFF"; (* BOM *) 
   Uutf.String.fold_utf_8 add_utf16_be () str
@@ -394,6 +396,9 @@ let glyph_identity_h_encode s glyph =
   b_str_byte s ((glyph land 0xFF00) lsr 8); 
   b_str_byte s ((glyph land 0x00FF))
 
+type block = 
+  { bk_text : string; bk_glyphs : glyph list; bk_advances : v2 list } 
+
 let rec b_glyphs_advs s encode gs advs = match gs, advs with
 | g :: gs, a :: advs -> 
     b_fmt s "("; (encode s g); b_fmt s ") Tj %f %f Td " (V2.x a) (V2.y a);
@@ -401,35 +406,88 @@ let rec b_glyphs_advs s encode gs advs = match gs, advs with
 | g :: _ as gs, [] -> (* without advances *) 
     b_fmt s "("; List.iter (encode s) gs; b_fmt s ") Tj"
 | [], _ -> () 
+  
+let b_block s encode block = 
+  let rec b_glyph_block s encode gs advs = match gs, advs with 
+  | g :: gs, a :: advs ->
+      b_fmt s "("; (encode s g); b_fmt s ") Tj %f %f Td " (V2.x a) (V2.y a);
+      b_glyph_block s encode gs advs
+  | g :: _ as gs, [] -> (* without advances *) 
+      b_fmt s "("; List.iter (encode s) gs; b_fmt s ") Tj"
+  | [], _ -> ()
+  in
+  b_fmt s "\n/Span << /ActualText (%s)>> BDC\n" block.bk_text; 
+  b_glyph_block s encode block.bk_glyphs block.bk_advances; 
+  b_fmt s "\nEMC"
+
+let make_blocks run =
+  let b = Buffer.create 255 in
+  let uchars = function 
+  | None -> [] 
+  | Some s ->
+      let add_uchar acc _ = function 
+      | `Malformed _ -> Uutf.u_rep :: acc | `Uchar u -> u :: acc
+      in
+      List.rev (Uutf.String.fold_utf_8 add_uchar [] s)
+  in
+  let rec blocks_one_to_one acc us gs = match us, gs with 
+  | u :: _ as us , g :: [] -> List.rev (((List.length us), 1) :: acc)
+  | [], g :: gs -> blocks_one_to_one ((0, 1) :: acc) [] gs
+  | u :: us, g :: gs -> blocks_one_to_one ((1,1) :: acc) us gs
+  | _, [] -> List.rev acc
+  in
+  let text_n n us =
+    let rec add n us =
+      if n <= 0 then Buffer.contents b, us else match us with
+      | u :: us -> b_utf16_be b u; add (n - 1) us
+      | [] -> add 0 us
+    in
+    Buffer.clear b; Buffer.add_string b "\xFE\xFF"; (* BOM *) add n us
+  in
+  let rec glyphs_n n glyphs advances gs advs =
+    if n <= 0 then glyphs, advances, gs, advs else match gs, advs with 
+    | g :: gs, adv :: advs -> 
+        glyphs_n (n - 1) (g :: glyphs) (adv :: advances) gs advs 
+    | g :: gs, [] -> 
+        glyphs_n (n - 1) (g :: glyphs) [] gs []
+    | [], _ -> glyphs, advances, gs, advs
+  in
+  let rec loop rev acc us gs advs = function
+  | (cc, gc) :: blocks -> 
+      let bk_text, us = text_n cc us in
+      let bk_glyphs, bk_advances, gs, advs = glyphs_n gc [] [] gs advs in 
+      let bk_glyphs = if rev then List.rev bk_glyphs else bk_glyphs in
+      loop rev ({ bk_text; bk_glyphs; bk_advances } :: acc) us gs advs blocks
+  | [] -> if rev then acc else List.rev acc
+  in
+  let rev, blocks = run.blocks in
+  let us = uchars run.text in
+  let gs = if rev then List.rev run.glyphs else run.glyphs in
+  let bs = if blocks = [] then blocks_one_to_one [] us gs else blocks in
+  loop rev [] us gs run.advances bs
+  
+let pdf_text_glyphs run = match run.Vgr.Private.Data.text with
+| None -> [] 
+| Some text ->
+    let add_glyph acc _ = function 
+    | `Uchar u -> u :: acc | `Malformed _ -> Uutf.u_rep :: acc 
+    in
+    List.rev (Uutf.String.fold_utf_8 add_glyph [] text)
 
 let w_glyph_run s run op k r = 
   let font_mode = set_font s run.Vgr.Private.Data.font in
-  b_fmt s "%s" op;
-  begin match run.Vgr.Private.Data.text with 
-  | None -> b_fmt s "\nBT"
-  | Some t -> b_fmt s "\nBT /Span << /ActualText (%a)>> BDC\n" b_str_text t
-  end; 
+  b_fmt s "%s BT" op;
   let encode = match font_mode with 
   | `Otf_glyphs -> glyph_identity_h_encode
   | `Pdf_glyphs | `Pdf_text -> glyph_pdf_encode
   in
-  let glyphs = match font_mode with 
-  | `Otf_glyphs | `Pdf_glyphs -> run.glyphs
-  | `Pdf_text ->
-      begin match run.text with 
-      | None -> [] 
-      | Some text ->
-          let add_glyph acc _ = function 
-          | `Uchar u -> u :: acc | `Malformed _ -> Uutf.u_rep :: acc 
-          in
-          List.rev (Uutf.String.fold_utf_8 add_glyph [] text)
-      end
+  let run = match font_mode with 
+  | `Otf_glyphs | `Pdf_glyphs -> run
+  | `Pdf_text -> { run with Vgr.Private.Data.glyphs = pdf_text_glyphs run }
   in
-  b_glyphs_advs s encode glyphs run.Vgr.Private.Data.advances;
-  begin match run.text with 
-  | None -> b_fmt s "\nET"
-  | Some _ -> b_fmt s "\nEMC ET"
-  end;
+  let blocks = make_blocks run in
+  List.iter (b_block s encode) blocks;
+  b_fmt s "\nET";
   w_buf s k r
 
 let w_clip_glyph_cut s a run i k r = 

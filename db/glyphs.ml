@@ -145,6 +145,22 @@ Db.image "glyph-advances" ~author:Db.dbuenzli
   end
 ;;
 
+Db.image "glyph-affiche-blocks" ~author:Db.dbuenzli
+  ~title:"Affiché with ligature and text to glyph correspondance"
+  ~tags:["glyph"]
+  ~note:"The ffi is a single glyph and the é glyph is encoded as the sequence
+         <U+0065, U+0301> in the text string."
+  ~size:(Size2.v 135. 45.)
+  ~view:(Box2.v P2.o (Size2.v 3. 1.))
+  begin fun _ -> 
+    let font = { open_sans_xbold with Font.size = 0.7 } in
+    let glyphs = [ 36; 605; 70; 75; 171 ] in
+    let text = "Affiche\xCC\x81" in 
+    let blocks = false, [(1,1); (3,1); (1,1); (1,1); (2,1)] in
+    I.const Color.black >> I.cut_glyphs ~text ~blocks font glyphs >> 
+    I.move (V2.v 0.23 0.25)
+  end
+;;
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

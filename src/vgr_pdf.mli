@@ -70,12 +70,13 @@ val target : ?font:(Vg.font -> font) -> ?xmp:string ->
     function specified in the rendering {!target}. Given a glyph
     cut:
 
-{!Vg.I.cut_glyphs}[ ~text ~advances font glyphs]
+{!Vg.I.cut_glyphs}[ ~text ~blocks ~advances font glyphs]
 
-    First, if the optional [text] argument is specified, it is always used to 
-    map the rendered glyphs to this UTF-8 text for PDF text extraction. Then 
-    the following happens according to the resolution of the [font] argument 
-    by the render target:
+    First, if the optional [text] and [blocks] arguments are
+    specified, they are always used to map the rendered glyphs to
+    text for PDF text extraction. Then the following happens
+    according to the resolution of the [font] argument by the render
+    target:
     {ul 
     {- [`Otf otf], the values in [glyphs] are glyph indexes of 
        the OpenType font [otf]. If [advances] is specified these vectors
