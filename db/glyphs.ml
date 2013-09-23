@@ -146,7 +146,7 @@ Db.image "glyph-advances" ~author:Db.dbuenzli
 ;;
 
 Db.image "glyph-affiche-blocks" ~author:Db.dbuenzli
-  ~title:"Affiché with ligature and text to glyph correspondance"
+  ~title:"Affiché with ligature and text to glyph correspondence"
   ~tags:["glyph"]
   ~note:"The ffi is a single glyph and the é glyph is encoded as the sequence
          <U+0065, U+0301> in the text string."

@@ -385,8 +385,10 @@ module P = struct
         let ry = V2.y r in
         let ax = V2.v (cosa *. rx) (sina *. rx) in 
         let ay = V2.v (-. sina *. ry) (cosa *. ry) in 
-        (* TODO this won't work, ax' and ay' may no longer be orthnormal
-           with m shears or doesn't scale uniformly. *)
+        (* FIXME this won't work, ax' and ay' may no longer be orthnormal
+           with m shears or doesn't scale uniformly. Need to go through
+           center parameterization transform there and then back to end point 
+           parameterization. *)
         let ax' = V2.tr m ax in    
         let ay' = V2.tr m ay in
         let a' = atan2 (V2.y ax') (V2.x ax') in 

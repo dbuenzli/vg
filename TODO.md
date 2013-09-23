@@ -1,17 +1,10 @@
-# Before first release 
-
-* Review conversion of earc to bezier. 
-* git grep TODO
-
-#  After first release
-
-## Current backend improvements
+# Current backend improvements
 
 * git grep FIXME
 * SVG renderer, try to handle more glyph cuts.
 * SVG renderer, give the opportunity to use SVG glyphs ? If no font
   resolver is provided, do it like now otherwise embed glyphs.
-* Canvas, try to handle more glyph cuts.
+* Canvas, try to handle more glyph cuts, transform mess.
 * PDF, implement stream compression. LZW would be easiest, deflate
   would be nice.
 * PDF, implement gradients with alpha, have a look at how Inkscape
@@ -21,7 +14,7 @@
   solely /ActualText.
   http://lists.cairographics.org/archives/cairo/2007-September/011427.html
   
-## Raster image primitive
+# Raster image primitive
 
 val Image.raster : Gg.box2 -> Gg.raster -> image
 
@@ -34,7 +27,7 @@ val Image.raster : Gg.box2 -> Gg.raster -> image
   {- Images are said to be immutable. This is only true if you 
      don't change the samples of raster images given to {!I.raster}.}
 
-## Path convenience
+# Path convenience
 
 Quite a few convience operations on paths could be added. This would
 be only at the Vg level, renderers wouldn't need to be extended. But
@@ -55,7 +48,7 @@ I'm more and more convinced that this doesn't belong in Vg though, the
 folds in `attic_path.ml` also show that this can be provided as
 an external component with minimal reliance on `Vg.Vgr.Private`. 
 
-## Blending groups and operators 
+# Blending groups and operators 
 
 Support more blending operators, but is it really that used in
 practice ? Support group opacity, that would be really useful, however
@@ -70,7 +63,7 @@ I.blend : ?a:float -> ?blender:blender -> image -> image -> image
 * http://lists.cairographics.org/archives/cairo/2008-October/015362.html
 * http://www.w3.org/TR/compositing/
 
-## Software rasterizer and OpenGL backend 
+# Software rasterizer and OpenGL backend 
 
 * http://processingjs.nihongoresources.com/bezierinfo/
 * http://www.codeproject.com/Articles/226569/Drawing-polylines-by-tessellation
