@@ -1,4 +1,5 @@
-v0.0.1 YYYY-MM-DD Location
+v0.8.0 2013-09-24 Lausanne
 --------------------------
 
-First release.
+First release.   
+Sponsored by Citrix Systems R&D and OCaml Labs.
