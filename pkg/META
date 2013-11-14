@@ -21,7 +21,7 @@ package "svg" (
 package "pdf" (
   version = "%%VERSION%%"
   description = "Vg's PDF renderer"
-  requires = "vg otfm"
+  requires = "vg uutf otfm"
   archive(byte) = "vgr_pdf.cma"
   archive(byte, plugin) = "vgr_pdf.cma"
   archive(native) = "vgr_pdf.cmxa"
