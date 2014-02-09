@@ -13,7 +13,8 @@ OTFM=$3
 JSOO=$4
 
 add lib pkg/META		
-add lib src/vg.mli	
+add lib src/vg.mli
+add lib src/vg.cmti
 add lib src/vg.cmi
 add lib src/vg.cmx
 add lib src/vg.cma
@@ -22,6 +23,7 @@ add lib src/vg.cmxa
 add lib src/vg.cmxs
 
 add lib src/vgr_svg.mli
+add lib src/vgr_svg.cmti
 add lib src/vgr_svg.cmi
 add lib src/vgr_svg.cmx	
 add lib src/vgr_svg.cma
@@ -32,8 +34,9 @@ add lib src/vgr_svg.cmxs
 if [ "$UUTF" != "false" ]; then 
     if [ "$OTFM" != "false" ]; then
         add lib src/vgr_pdf.mli	
-        add lib src/vgr_pdf.cmx 
+        add lib src/vgr_pdf.cmti 
         add lib src/vgr_pdf.cmi
+        add lib src/vgr_pdf.cmx
         add lib src/vgr_pdf.cma
         add lib src/vgr_pdf.a
         add lib src/vgr_pdf.cmxa
@@ -44,9 +47,10 @@ if [ "$UUTF" != "false" ]; then
 fi
 
 if [ "$JSOO" != "false" ]; then 
-    add lib src/vgr_htmlc.mli	
-    add lib src/vgr_htmlc.cmx 
+    add lib src/vgr_htmlc.mli
+    add lib src/vgr_htmlc.cmti	
     add lib src/vgr_htmlc.cmi
+    add lib src/vgr_htmlc.cmx
     add lib src/vgr_htmlc.cma
     add lib src/vgr_htmlc.a
     add lib src/vgr_htmlc.cmxa
