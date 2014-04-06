@@ -66,8 +66,8 @@ let pr_color buf c =
   pr buf "#%02X%02X%02X" r g b
 
 let pr_tr b = function 
-| Move v -> pr b "translate(%g %g)" (V2.x v) (V2.y v); M3.move v
-| Rot a -> pr b "rotate(%g)" (Float.deg_of_rad a); M3.rot a
+| Move v -> pr b "translate(%g %g)" (V2.x v) (V2.y v); M3.move2 v
+| Rot a -> pr b "rotate(%g)" (Float.deg_of_rad a); M3.rot2 a
 | Scale sv -> pr b "scale(%g %g)" (V2.x sv) (V2.y sv); M3.scale2 sv
 | Matrix m -> 
     pr b "transform(%g %g %g %g %g %g)"

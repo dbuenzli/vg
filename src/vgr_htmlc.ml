@@ -141,8 +141,8 @@ let init_ctx s =
     
 let push_transform s tr = 
   let m = match tr with
-  | Move v -> s.ctx ## translate (V2.x v, V2.y v); M3.move v
-  | Rot a -> s.ctx ## rotate (a); M3.rot a
+  | Move v -> s.ctx ## translate (V2.x v, V2.y v); M3.move2 v
+  | Rot a -> s.ctx ## rotate (a); M3.rot2 a
   | Scale sv -> s.ctx ## scale (V2.x sv, V2.y sv); M3.scale2 sv
   | Matrix m -> 
       M3.(s.ctx ## transform (e00 m, e10 m, e01 m, e11 m, e02 m, e12 m)); m
