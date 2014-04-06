@@ -8,12 +8,25 @@ LOC=`dirname $0`
 
 SED=${SED:="sed"}
 
+VARSUBSTS_SKIPS="$VARSUBSTS_SKIPS .png .jpeg .otf .ttf .pdf"
 VARSUBSTS="$VARSUBST s|%%NAME%%|$NAME|g; \
            s|%%VERSION%%|$VERSION|g; \
            s|%%MAINTAINER%%|$MAINTAINER|g;"
 
 for file in `git ls-files`; do
-    if [ ! -x "$file" ]; then                # skip scripts
+    DO_SUBST="true"
+
+    for SUFF in $VARSUBSTS_SKIPS; do # skip these files
+        case $file in 
+        *$SUFF) DO_SUBST="false" ;;
+        esac
+    done
+    
+    if [ -x "$file" ]; then      # skip scripts
+        DO_SUBST="false"
+    fi
+
+    if [ "$DO_SUBST" = "true" ]; then 
         $SED "$VARSUBSTS" $file > $file.tmp
         mv -f $file.tmp $file
     fi
