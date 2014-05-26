@@ -10,9 +10,11 @@ depends: [ "ocamlfind" "gg" ]
 depopts: [ "uutf" "otfm" "js_of_ocaml"  ]
 build: 
 [
-  ["./pkg/pkg-git" ] 
-  ["./pkg/build" "true" 
-                 "%{uutf:installed}%" "%{otfm:installed}%" 
-                 "%{js_of_ocaml:installed}%" ]
+  [ "ocaml" "pkg/git.ml" ] 
+  [ "ocaml" "pkg/build.ml" "native=%{ocaml-native}%"
+                           "native-dynlink=%{ocaml-native}%"
+                           "uutf=%{uutf:installed}%" 
+                           "otfm=%{otfm:installed}%" 
+                           "jsoo=%{js_of_ocaml:installed}%" ]
 ]
 
