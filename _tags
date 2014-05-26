@@ -42,3 +42,4 @@
 <test/examples.{ml,byte,native}> : package(gg)
 
 <test/vecho.{ml,byte,native}> : package(gg), package(uutf), package(otfm)
+<test/fglyphs.{ml,byte,native}> : package(gg), package(uutf), package(otfm)

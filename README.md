@@ -69,3 +69,6 @@ The resulting binaries are in `_build/test` :
    the HTML canvas, PDF and SVG renderers.   
 - `vecho.native`, like echo(1) but produces a PDF file on stdout, the 
   font file can be specified, invoke with `-help` for options. 
+- `fglyphs.native`, renders a font's glyphs to a PDF file (without using
+  Vg's glyph API).
+

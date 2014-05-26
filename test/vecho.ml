@@ -4,6 +4,8 @@
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
+(* Like echo(1) but produces a PDF file on stdout *) 
+
 open Gg
 open Vg
 
