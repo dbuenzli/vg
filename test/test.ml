@@ -8,20 +8,20 @@ open Gg;;
 open Vg;;
 
 let str = Format.sprintf
-let log f = Format.printf (f ^^ "@?") 
-let fail fmt = 
+let log f = Format.printf (f ^^ "@?")
+let fail fmt =
   let fail _ = failwith (Format.flush_str_formatter ()) in
   Format.kfprintf fail Format.str_formatter fmt
-  
-let paths () = 
+
+let paths () =
   log "Paths.\n";
   ()
 
-let test () = 
-  Printexc.record_backtrace true; 
+let test () =
+  Printexc.record_backtrace true;
   log "All tests succeded.\n"
 
-let () = if not (!Sys.interactive) then test () 
+let () = if not (!Sys.interactive) then test ()
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
@@ -30,7 +30,7 @@ let () = if not (!Sys.interactive) then test ()
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
-     
+
    1. Redistributions of source code must retain the above copyright
       notice, this list of conditions and the following disclaimer.
 

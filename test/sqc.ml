@@ -4,7 +4,7 @@
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
-(* Illusion taken from http://bl.ocks.org/mbostock/1386444 
+(* Illusion taken from http://bl.ocks.org/mbostock/1386444
    For now won't run smoothly on most machines/browsers. *)
 
 open Gg
@@ -12,7 +12,7 @@ open Vg
 
 (* [animate] is reusable, it hides browser bureaucracy and jsoo *)
 
-let animate ~size ~view next acc = 
+let animate ~size ~view next acc =
   let now () = Js.to_float (jsnew Js.date_now () ## getTime ()) /. 1000. in
   let start = now () in
   let d = Dom_html.window ## document in
@@ -25,8 +25,8 @@ let animate ~size ~view next acc =
     acc := acc';
     Dom_html._requestAnimationFrame (Js.wrap_callback loop)
   in
-  let start _ = 
-    Dom.appendChild d ## body c;    
+  let start _ =
+    Dom.appendChild d ## body c;
     Dom_html._requestAnimationFrame (Js.wrap_callback loop);
     Js._false
   in
@@ -53,24 +53,24 @@ let background = I.const (Color.gray 0.53)
 
 let ring dt r =
   let rot = Float.rad_of_deg (r.speed *. dt) in
-  let white_square = white_square >> I.rot rot in 
-  let black_square = black_square >> I.rot rot in 
-  let n = Float.two_pi *. r.radius /. sq_width *. (sqrt 0.5) in 
+  let white_square = white_square >> I.rot rot in
+  let black_square = black_square >> I.rot rot in
+  let n = Float.two_pi *. r.radius /. sq_width *. (sqrt 0.5) in
   let k = Float.two_pi /. n in
   let radius = V2.v 0. r.radius in
-   let rec squares acc n = 
+   let rec squares acc n =
     if n = 0 then acc else
     let sq = if n mod 2 = 0 then white_square else black_square in
     let acc' = acc >> I.blend (sq >> I.move radius >> I.rot ((float n) *. k)) in
     squares acc' (n - 1)
-  in 
+  in
   squares I.void (truncate n) >> I.rot rot
 
-let image ~start ~now () = 
-  let dt = now -. start in 
+let image ~start ~now () =
+  let dt = now -. start in
   let add_ring acc r = acc >> I.blend (ring dt r) in
-  let rings = List.fold_left add_ring I.void rings in 
-  let next = background >> I.blend rings >> I.scale (V2.v 0.6 0.6) in 
+  let rings = List.fold_left add_ring I.void rings in
+  let next = background >> I.blend rings >> I.scale (V2.v 0.6 0.6) in
   next, ()
 
 let size = Size2.v 150. 150.
@@ -85,7 +85,7 @@ let () = animate ~size ~view image ()
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
-     
+
    1. Redistributions of source code must retain the above copyright
       notice, this list of conditions and the following disclaimer.
 

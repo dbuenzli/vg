@@ -6,8 +6,8 @@
 
 (** Vg HTML canvas renderer.
 
-    {b References.} 
-    {ul {- Rik Cabanier et al. {e {{:http://www.w3.org/TR/2dcontext/}HTML 
+    {b References.}
+    {ul {- Rik Cabanier et al. {e {{:http://www.w3.org/TR/2dcontext/}HTML
      Canvas 2D Context}}, 2012-12-17.}}
 
     {e Release %%VERSION%% — %%MAINTAINER%% } *)
@@ -19,25 +19,25 @@ val screen_resolution : Gg.v2
 
 val target : ?resolution:Gg.v2 -> Dom_html.canvasElement Js.t ->
   [`Other] Vg.Vgr.target
-(** [target resolution c] is a render target for rendering to the canvas 
-    element [c]. 
-    
-    {ul 
-    {- [resolution], specifies the rendering resolution in samples per 
-       meters. If unspecified 11811 pixels per meters (300 ppi) is used in both 
-       dimensions.}} 
-    
-    {b Multiple images.} Multiple images render on the target is supported. 
+(** [target resolution c] is a render target for rendering to the canvas
+    element [c].
+
+    {ul
+    {- [resolution], specifies the rendering resolution in samples per
+       meters. If unspecified the {!screen_resolution} is used in both
+       dimensions.}}
+
+    {b Multiple images.} Multiple images render on the target is supported.
     Each new render clears the HTML canvas. *)
 
-(** {1:text Text rendering} 
+(** {1:text Text rendering}
 
     Text rendering uses the HTML canvas CSS font selection mechanism.
-    As there is no control over glyph rendering in the HTML canvas, 
+    As there is no control over glyph rendering in the HTML canvas,
     the glyph API is unsupported.
 
     Given a glyph cut:
-    
+
 {!Vg.I.cut_glyphs}[ ~text ~blocks ~advances font glyphs]
 
     The [blocks], [advances] and [glyphs] parameters are ignored.
@@ -50,25 +50,25 @@ val target : ?resolution:Gg.v2 -> Dom_html.canvasElement Js.t ->
     browser bug which means that glyph cuts are currently limited to
     non-outline area cuts in {!I.const} images.  *)
 
-(** {1:limits Render warnings and limitations} 
-    
+(** {1:limits Render warnings and limitations}
+
     The following render warnings are reported.
     {ul
-    {- [`Unsupported_cut ((`O o), i)], outline area cuts can be performed 
-       only on (possibly transformed) {!I.const}, {!I.axial} and {!I.radial} 
+    {- [`Unsupported_cut ((`O o), i)], outline area cuts can be performed
+       only on (possibly transformed) {!I.const}, {!I.axial} and {!I.radial}
        primitive images.}
     {- [`Unsupported_glyph_cut (a, i)], glyph cuts can be performed only
-       on bare {!I.const} primitive images and outline area glyph cuts are 
+       on bare {!I.const} primitive images and outline area glyph cuts are
        currently unsupported.}
     {- [`Textless_glyph_cut i] if no [text] argument is specified in a glyph
        cut.}
     {- [`Other _] if dashes are rendered but unsupported by the browser.}}
 
-    The following limitations should be taken into account. 
-    {ul 
+    The following limitations should be taken into account.
+    {ul
     {- The even-odd area rule is supported according to the
        latest whatwg spec. This may not work in all browsers.}
-    {- In the HTML canvas gradient color interpolation is performed 
+    {- In the HTML canvas gradient color interpolation is performed
        in (non-linear) sRGB space. This doesn't respect Vg's semantics.}} *)
 
 (*---------------------------------------------------------------------------
@@ -78,7 +78,7 @@ val target : ?resolution:Gg.v2 -> Dom_html.canvasElement Js.t ->
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
-     
+
    1. Redistributions of source code must retain the above copyright
       notice, this list of conditions and the following disclaimer.
 

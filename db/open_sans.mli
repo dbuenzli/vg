@@ -4,8 +4,8 @@
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
-val extra_bold : string 
-(** [extra_bold] is the OpenType font 
+val extra_bold : string
+(** [extra_bold] is the OpenType font
     {{:http://www.google.com/fonts/specimen/Open+Sans}Open Sans} extra bold. *)
 
 (*---------------------------------------------------------------------------
@@ -15,7 +15,7 @@ val extra_bold : string
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
-     
+
    1. Redistributions of source code must retain the above copyright
       notice, this list of conditions and the following disclaimer.
 

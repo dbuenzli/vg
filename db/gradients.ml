@@ -15,9 +15,9 @@ Db.image "gradient-axial" ~author:Db.dbuenzli
   ~tags:["gradient"]
   ~size:(Size2.v 60. 20.)
   ~view:(Box2.v P2.o (Size2.v 2. 1.))
-  begin fun _ -> 
-    let r = P.empty >> P.rect (Box2.v P2.o (Size2.v 2. 1.)) in 
-    let stops = [0.0, Color.black; 0.5, Color.red; 1.0, Color.white] in 
+  begin fun _ ->
+    let r = P.empty >> P.rect (Box2.v P2.o (Size2.v 2. 1.)) in
+    let stops = [0.0, Color.black; 0.5, Color.red; 1.0, Color.white] in
     I.cut r (I.axial stops P2.o (P2.v 2. 0.))
   end;
 
@@ -29,20 +29,20 @@ Db.image "gradient-radial" ~author:Db.dbuenzli
          circle edge."
   ~size:(Size2.v 60. 60.)
   ~view:(Box2.v P2.o (Size2.v 2. 2.))
-  begin fun _ -> 
-    let radial x y f  = 
-      let r = P.empty >> P.rect (Box2.v P2.o (Size2.v 1. 1.)) in 
-      let stops = [0.0, Color.white; 0.5, Color.red; 1.0, Color.black] in 
+  begin fun _ ->
+    let radial x y f  =
+      let r = P.empty >> P.rect (Box2.v P2.o (Size2.v 1. 1.)) in
+      let stops = [0.0, Color.white; 0.5, Color.red; 1.0, Color.black] in
       let c = P2.v 0.5 0.5 in
-      I.cut r (I.radial stops ~f c 0.5) >> I.move (P2.v x y) 
+      I.cut r (I.radial stops ~f c 0.5) >> I.move (P2.v x y)
     in
-    let d45 = Float.pi_div_4 in 
+    let d45 = Float.pi_div_4 in
     let d120 = 2. *. Float.pi /. 3. in
     let f0 = P2.v 0.5 0.5 in
     let f1 = V2.(f0 + 0.25 * P2.v (cos d45) (sin d45)) in
     let f2 = V2.(f0 + 0.499 * P2.v (cos d45) (sin d45)) in
     let f3 = V2.(f0 + 0.25 * P2.v (cos d120) (sin d120)) in
-    radial 0. 1. f0 >> 
+    radial 0. 1. f0 >>
     I.blend (radial 1. 1. f1) >>
     I.blend (radial 1. 0. f2) >>
     I.blend (radial 0. 0. f3)
@@ -52,20 +52,20 @@ Db.image "gradient-axial-move" ~author:Db.dbuenzli
   ~title:"Move axial gradient and outline cut"
   ~tags:["gradient"]
   ~note:"Left, the circle is inscribed in the unit square and the gradient \
-         is black at the center. On the right a circle outline is cut but due 
+         is black at the center. On the right a circle outline is cut but due
          to the parameters used the result should be the same as on the left."
   ~size:(Size2.v 60. 30.)
   ~view:(Box2.v P2.o (Size2.v 2. 1.))
-  begin fun _ -> 
+  begin fun _ ->
     let c = P2.v 0.5 0.5 in
     let r = 0.5 in
     let stops = [ 0., Color.red; 0.5, Color.black; 1.0, Color.red ] in
     let axial = I.axial stops (V2.v (-0.5) 0.) (V2.v 0.5 0.) in
-    let left = 
+    let left =
       let circle = P.empty >> P.circle c r in
       axial >> I.move c >> I.cut circle
     in
-    let right = 
+    let right =
       let circle' = P.empty >> P.circle c 0.25 in
       let area = `O { P.o with P.width = 0.5 } in
       axial >> I.move c >> I.cut ~area circle' >> I.move (V2.v 1.0 0.)
@@ -81,16 +81,16 @@ Db.image "gradient-radial-move" ~author:Db.dbuenzli
          the parameters used the result should be the same as on the left."
   ~size:(Size2.v 60. 30.)
   ~view:(Box2.v P2.o (Size2.v 2. 1.))
-  begin fun _ -> 
+  begin fun _ ->
     let c = P2.v 0.5 0.5 in
     let r = 0.5 in
     let stops = [ 0., Color.red; 1.0, Color.black ] in
     let radial = I.radial stops P2.o r in
-    let left = 
+    let left =
       let circle = P.empty >> P.circle c r in
-      radial >> I.move c >> I.cut circle 
-    in 
-    let right = 
+      radial >> I.move c >> I.cut circle
+    in
+    let right =
       let circle' = P.empty >> P.circle c 0.25 in
       let area = `O { P.o with P.width = 0.5 } in
       radial >> I.move c >> I.cut ~area circle' >> I.move (V2.v 1.0 0.)
@@ -101,23 +101,23 @@ Db.image "gradient-radial-move" ~author:Db.dbuenzli
 Db.image "gradient-scaling" ~author:Db.dbuenzli
   ~title:"Gradients and scaled ones side-by-side"
   ~tags:["gradient"]
-  ~note:"In the right column the gradient on the left is scaled by 
+  ~note:"In the right column the gradient on the left is scaled by
          (1/2, 1/3)."
   ~size:(Size2.v 60. 60.)
   ~view:(Box2.v (P2.v ~-.0.1 ~-.0.1) (Size2.v 1.2 1.2))
-  begin fun _ -> 
+  begin fun _ ->
     let y = Color.v_srgb 1.000 0.827 0.000 in
-    let b = Color.v_srgb 0.000 0.529 0.741 in     
-    let r = Color.v_srgb 0.769 0.008 0.200 in 
+    let b = Color.v_srgb 0.000 0.529 0.741 in
+    let r = Color.v_srgb 0.769 0.008 0.200 in
     let stops = [ 0.0, r; 0.5, b; 1.0, y] in
     let axial = I.axial stops P2.o (P2.v 0.45 0.) in
     let radial = I.radial stops ~f:(P2.v 0.25 0.25) (P2.v 0.5 0.5) 0.5 in
     let scaled i = i >> I.scale (Size2.v 0.5 0.333) in
     let r = P.empty >> P.rect (Box2.v (P2.v 0. 0.) (Size2.v 0.45 0.45)) in
     let square ~at i = i >> I.cut r >> I.move at in
-    square ~at:(P2.v 0.0 0.55) axial >> 
-    I.blend (square ~at:(P2.v 0.55 0.55) (scaled axial)) >> 
-    I.blend (square ~at:(P2.v 0.0 0.0) radial) >> 
+    square ~at:(P2.v 0.0 0.55) axial >>
+    I.blend (square ~at:(P2.v 0.55 0.55) (scaled axial)) >>
+    I.blend (square ~at:(P2.v 0.0 0.0) radial) >>
     I.blend (square ~at:(P2.v 0.55 0.0) (scaled radial))
   end;
 
@@ -127,13 +127,13 @@ Db.image "gradient-rgb-squares" ~author:Db.dbuenzli
   ~tags:["gradient"]
   ~size:(Size2.v 50. 50.)
   ~view:(Box2.v P2.o (Size2.v 4. 4.))
-  begin fun _ -> 
+  begin fun _ ->
     let w = 2. in
     let r = Box2.v P2.o (Size2.v w w) in
     let p = P.empty >> P.rect r in
     let shade c = I.axial [0., c; 1., Color.void] V2.ox V2.oy in
     let sq ~at c = shade c >> I.scale (Box2.size r) >> I.cut p >> I.move at in
-    sq ~at:P2.o Color.red >> 
+    sq ~at:P2.o Color.red >>
     I.blend (sq ~at:(P2.v w 0.) Color.green) >>
     I.blend (sq ~at:(P2.v w w) Color.blue)
   end
@@ -145,7 +145,7 @@ Db.image "gradient-rgb-squares" ~author:Db.dbuenzli
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
-     
+
    1. Redistributions of source code must retain the above copyright
       notice, this list of conditions and the following disclaimer.
 

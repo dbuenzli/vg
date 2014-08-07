@@ -17,7 +17,7 @@ Db.image "escape-xmp" ~author:Db.dbuenzli
          the meta data. The image is just a gray square."
   ~size:(Size2.v 50. 50.)
   ~view:Box2.unit
-  begin fun _ -> 
+  begin fun _ ->
     I.const (Color.gray 0.3) >> I.cut (P.empty >> P.rect Box2.unit)
   end;
 
@@ -31,7 +31,7 @@ Db.image "escape-xmp" ~author:Db.dbuenzli
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
-     
+
    1. Redistributions of source code must retain the above copyright
       notice, this list of conditions and the following disclaimer.
 

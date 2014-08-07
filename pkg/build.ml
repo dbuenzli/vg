@@ -1,4 +1,4 @@
-#!/usr/bin/env ocaml 
+#!/usr/bin/env ocaml
 #directory "pkg";;
 #use "topkg.ml";;
 
