@@ -3,7 +3,7 @@ maintainer: "Daniel Bünzli <daniel.buenzl i@erratique.ch>"
 homepage: "http://erratique.ch/software/vg"
 authors: ["Daniel Bünzli <daniel.buenzli i@erratique.ch>"]
 doc: "http://erratique.ch/software/vg/doc/Vg"
-tags: [ "pdf" "svg" "html-canvas" "declarative" "graphics" ]
+tags: [ "pdf" "svg" "html-canvas" "declarative" "graphics" "org:erratique" ]
 license: "BSD3"
 ocaml-version: [>= "4.00.0"]
 depends: [ "ocamlfind" "gg" ]
