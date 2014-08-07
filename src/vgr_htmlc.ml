@@ -352,7 +352,7 @@ let screen_resolution = (* in pixel per meters *)
     then (Js.Unsafe.coerce Dom_html.window) ## devicePixelRatio
     else 1.0
   in
-  let screen = 37.8 *. 100. *. device_pixel_ratio in
+  let screen = (96. /. 2.54) *. 100. *. device_pixel_ratio in
   V2.v screen screen
 
 let target ?(resolution = screen_resolution) c =
