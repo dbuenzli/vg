@@ -1,4 +1,0 @@
-NAME=vg
-VERSION=`git describe master | sed "s/^.//"`
-MAINTAINER="Daniel Bünzli <daniel.buenzl i\\\@erratique.ch>"
-WWWDEMOS="rhtmlc sqc"
