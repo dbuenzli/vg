@@ -14,7 +14,10 @@
 
 (** {1:target HTML canvas render targets} *)
 
-val target : ?resolution:Gg.v2 -> Dom_html.canvasElement Js.t -> 
+val screen_resolution : Gg.v2
+(** [screen_resolution] is the screen resolution in pixels per meters. *)
+
+val target : ?resolution:Gg.v2 -> Dom_html.canvasElement Js.t ->
   [`Other] Vg.Vgr.target
 (** [target resolution c] is a render target for rendering to the canvas 
     element [c]. 

@@ -345,9 +345,17 @@ let render s v k r = match v with
     s.gstate <- { init_gstate with g_tr = init_gstate.g_tr }; (* copy *) 
     init_ctx s;
     r_image s k r
-      
-let ppi_300 = V2.v 11811. 11811.             (* 300 ppi in pixel per meters. *)
-let target ?(resolution = ppi_300) c =
+
+let screen_resolution = (* in pixel per meters *)
+  let device_pixel_ratio =
+    if Js.Optdef.test ((Js.Unsafe.coerce Dom_html.window) ## devicePixelRatio)
+    then (Js.Unsafe.coerce Dom_html.window) ## devicePixelRatio
+    else 1.0
+  in
+  let screen = 37.8 *. 100. *. device_pixel_ratio in
+  V2.v screen screen
+
+let target ?(resolution = screen_resolution) c =
   let target r _ =
     let ctx = c ## getContext (Dom_html._2d_) in
     true, render { r; c; ctx; 
