@@ -17,12 +17,16 @@
 val screen_resolution : Gg.v2
 (** [screen_resolution] is the screen resolution in pixels per meters. *)
 
-val target : ?resolution:Gg.v2 -> Dom_html.canvasElement Js.t ->
-  [`Other] Vg.Vgr.target
-(** [target resolution c] is a render target for rendering to the canvas
-    element [c].
-
+val target : ?resize:bool -> ?resolution:Gg.v2 -> Dom_html.canvasElement Js.t
+  -> [`Other] Vg.Vgr.target
+(** [target resize resolution c] is a render target for rendering to the
+    canvas element [c].
     {ul
+    {- [resize] if [true] (default) sets the canvas CSS size to
+       the physical size of {{!Vg.Vgr.renderable}renderables}. If
+       [false] the physical size of renderables is ignored and the view
+       rectangle is simply mapped on the canvas size at the given
+       resolution.}
     {- [resolution], specifies the rendering resolution in samples per
        meters. If unspecified the {!screen_resolution} is used in both
        dimensions.}}

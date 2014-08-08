@@ -43,6 +43,7 @@ let init_gstate =
 type cmd = Set of gstate | Draw of Vgr.Private.Data.image
 type state =
   { r : Vgr.Private.renderer;                    (* corresponding renderer. *)
+    resize : bool;         (* [true] if canvas resizes to renderable sizes. *)
     resolution : Gg.v2;                        (* resolution of the canvas. *)
     c : Dom_html.canvasElement Js.t;         (* canvas element rendered to. *)
     ctx : Dom_html.canvasRenderingContext2D Js.t; (* canvas context of [c]. *)
@@ -322,9 +323,20 @@ let rec r_image s k r =
 let render s v k r = match v with
 | `End -> k r
 | `Image (size, view, i) ->
-    let to_css_mm = str "%gmm" in
-    s.c ## style ## width <- Js.string (to_css_mm (Size2.w size));
-    s.c ## style ## height <- Js.string (to_css_mm (Size2.h size));
+    let size =
+      if s.resize then begin
+        let to_css_mm = str "%gmm" in
+        s.c ## style ## width <- Js.string (to_css_mm (Size2.w size));
+        s.c ## style ## height <- Js.string (to_css_mm (Size2.h size));
+        size
+      end else begin
+        let r = (s.c :> Dom_html.element Js.t) ## getBoundingClientRect () in
+        let w = r ## right -. r ## left in (* in CSS pixels *)
+        let h = r ## bottom -. r ## top in (* in CSS pixels *)
+        let to_mm = (2.54 /. 96.) *. 10. in
+        Size2.v (w *. to_mm) (h *. to_mm)
+      end
+    in
     let cw = (Size2.w size /. 1000.) *. (V2.x s.resolution) in
     let ch = (Size2.h size /. 1000.) *. (V2.y s.resolution) in
     s.c ## width <- Float.int_of_round cw;
@@ -355,10 +367,11 @@ let screen_resolution = (* in pixel per meters *)
   let screen = (96. /. 2.54) *. 100. *. device_pixel_ratio in
   V2.v screen screen
 
-let target ?(resolution = screen_resolution) c =
+let target ?(resize = true) ?(resolution = screen_resolution) c =
   let target r _ =
     let ctx = c ## getContext (Dom_html._2d_) in
     true, render { r; c; ctx;
+                   resize;
                    resolution;
                    dash_support = dash_support ctx;
                    cost = 0;
