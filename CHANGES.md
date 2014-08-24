@@ -1,4 +1,4 @@
-v0.8.1 2013-08-23 Cambridge (UK)
+v0.8.1 2014-08-23 Cambridge (UK)
 --------------------------------
 
 - Use package builder topkg for distribution.
