@@ -130,9 +130,13 @@ let set_dashes ?(warning = true) s dashes =
       ctx ## lineDashOffset <- offset;
       ctx ## setLineDash(da)
 
-let init_ctx s =
+let init_ctx s w h =
   let o = s.gstate.g_outline in
   let m = s.view_tr in
+  (* clear canvas *)
+  s.ctx ## setTransform (1., 0., 0., 1., 0., 0.);
+  s.ctx ## clearRect (0., 0., w, h);
+  (* setup base state *)
   M3.(s.ctx ## transform (e00 m, e10 m, e01 m, e11 m, e02 m, e12 m));
   s.ctx ## lineWidth <- o.P.width;
   s.ctx ## lineCap <- cap_str o.P.cap;
@@ -326,8 +330,12 @@ let render s v k r = match v with
     let size =
       if s.resize then begin
         let to_css_mm = str "%gmm" in
-        s.c ## style ## width <- Js.string (to_css_mm (Size2.w size));
-        s.c ## style ## height <- Js.string (to_css_mm (Size2.h size));
+        let new_w = Js.string (to_css_mm (Size2.w size)) in
+        let new_h = Js.string (to_css_mm (Size2.h size)) in
+        let cw_css = s.c ## style ## width in
+        let ch_css = s.c ## style ## height in
+        if cw_css <> new_w then s.c ## style ## width <- new_w;
+        if ch_css <> new_h then s.c ## style ## height <- new_h;
         size
       end else begin
         let r = (s.c :> Dom_html.element Js.t) ## getBoundingClientRect () in
@@ -337,10 +345,12 @@ let render s v k r = match v with
         Size2.v (w *. to_mm) (h *. to_mm)
       end
     in
-    let cw = (Size2.w size /. 1000.) *. (V2.x s.resolution) in
-    let ch = (Size2.h size /. 1000.) *. (V2.y s.resolution) in
-    s.c ## width <- Float.int_of_round cw;
-    s.c ## height <- Float.int_of_round ch;
+    let cw = Float.round ((Size2.w size /. 1000.) *. (V2.x s.resolution)) in
+    let ch = Float.round ((Size2.h size /. 1000.) *. (V2.y s.resolution)) in
+    let cwi = int_of_float cw in
+    let chi = int_of_float ch in
+    if s.c ## width <> cwi then s.c ## width <- cwi;
+    if s.c ## height <> chi then s.c ## height <- chi;
     (* Map view rect (bot-left coords) to canvas (top-left coords) *)
     let sx = cw /. Box2.w view in
     let sy = ch /. Box2.h view in
@@ -355,7 +365,7 @@ let render s v k r = match v with
     s.view_tr <- view_tr;
     s.todo <- [ Draw i ];
     s.gstate <- { init_gstate with g_tr = init_gstate.g_tr }; (* copy *)
-    init_ctx s;
+    init_ctx s cw ch;
     r_image s k r
 
 let screen_resolution = (* in pixel per meters *)
