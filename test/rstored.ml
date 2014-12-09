@@ -157,13 +157,14 @@ let pp_image_info ppf i =
 
 (* Command line *)
 
-let main ?(no_pack = false) rname ftype renderer =
+let main_multiformats ?(no_pack = false) rname ftypes renderer =
   let usage = Printf.sprintf
       "Usage: %s [OPTION]... [ID1] [ID2]...\n\
       \ Renders images of the Vg image database to %s files.\n\
       \ Without any selector and ID specified renders all images.\n\
       Options:" exec rname
   in
+  let ftype = ref (List.hd ftypes) in
   let cmd = ref `Image_render in
   let set_cmd v () = cmd := v in
   let list () = let l = ref [] in (l, fun v -> l := v :: !l) in
@@ -176,7 +177,11 @@ let main ?(no_pack = false) rname ftype renderer =
   let use_unix = ref false in
   let usize = ref unix_buffer_size in
   let nat s r v = if v > 0 then r := v else log "%s must be > 0, ignored\n" s in
-  let options = [
+  let options =
+    (match ftypes with [] | [_] -> [] | _ -> [
+      "-format", Arg.Symbol (ftypes, ( := ) ftype),
+      Printf.sprintf "Selects the image format (default: %s)" !ftype
+    ]) @ [
     "-dump", Arg.Unit (set_cmd `Image_dump),
     (str " Output a textual internal representation");
     "-p", Arg.String add_prefix,
@@ -209,11 +214,12 @@ let main ?(no_pack = false) rname ftype renderer =
   in
   match !cmd with
   | `Image_render ->
-      let render = render !sout !use_unix !usize !dir ftype !pack renderer in
+      let renderer = renderer !ftype in
+      let render = render !sout !use_unix !usize !dir !ftype !pack renderer in
       let dur = duration render imgs in
       log "Wrote %d images in %a.@." (List.length imgs) pp_dur dur
   | `Image_dump ->
-      let dur = duration (List.iter (dump !dir ftype)) imgs in
+      let dur = duration (List.iter (dump !dir !ftype)) imgs in
       log "Wrote %d images in %a.@." (List.length imgs) pp_dur dur
   | `Image_info ->
       pp Format.std_formatter "@[<v>%a@]@." (pp_list pp_image_info) imgs
@@ -224,6 +230,9 @@ let main ?(no_pack = false) rname ftype renderer =
       let add_tags acc i = List.fold_left add_tag acc i.Db.tags in
       let tags = List.fold_left add_tags [] imgs in
       List.iter print_endline (List.sort compare tags)
+
+let main ?no_pack rname ftype renderer =
+  main_multiformats ?no_pack rname [ftype] (fun _ -> renderer)
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

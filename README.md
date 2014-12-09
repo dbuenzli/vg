@@ -7,18 +7,20 @@ images are values that denote functions mapping points of the
 cartesian plane to colors. The module provides combinators to define
 and compose these values.
 
-Renderers for PDF, SVG and the HTML canvas are distributed with the
+Renderers for PDF, SVG, Cairo and the HTML canvas are distributed with the
 module. An API allows to implement new renderers.
      
 Vg depends only on [Gg][1]. The SVG renderer has no dependency, the
 PDF renderer depends on [Uutf][2] and [Otfm][3], the HTML canvas
-renderer depends on [js_of_ocaml][4]. Vg and its renderers are
-distributed under the BSD3 license.
+renderer depends on [js_of_ocaml][4], the Cairo renderer depends on
+[cairo2][5]. Vg and its renderers are distributed under the BSD3
+license.
      
 [1]: http://erratique.ch/software/gg
 [2]: http://erratique.ch/software/uutf
 [3]: http://erratique.ch/software/otfm
 [4]: http://ocsigen.org/js_of_ocaml/ 
+[5]: https://forge.ocamlcore.org/projects/cairo/
 
 Home page: http://erratique.ch/software/vg  
 Contact: Daniel Bünzli `<daniel.buenzl i@erratique.ch>`
@@ -28,8 +30,8 @@ Contact: Daniel Bünzli `<daniel.buenzl i@erratique.ch>`
 
 Vg can be installed with `opam`:
 
-    opam install vg                        # SVG renderer only
-    opam install uutf otfm js_of_ocaml vg  # all renderers
+    opam install vg                               # SVG renderer only
+    opam install uutf otfm js_of_ocaml cairo2 vg  # all renderers
     
 If you don't use `opam` consult the [`opam`](opam) file for
 build instructions and a complete specification of the dependencies.
@@ -64,6 +66,8 @@ The resulting binaries are in `_build/test` :
 - `min_htmlc.byte`, minimal example to render with the HTML canvas.
 - `rsvg.native`, renders images of the Vg image database to SVG files.
 - `rpdf.native`, renders images of the Vg image database to PDF files.
+- `rcairo.native`, renders images of the Vg image database with Cairo
+   to PDF, PNG, PS or SVG files.
 - `rhtmlc.html` and `rhtmlc.byte` can be processed with `js_of_ocaml`,
    the resulting webapp renders images of the Vg image database with
    the HTML canvas, PDF and SVG renderers.   
