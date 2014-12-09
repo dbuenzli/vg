@@ -67,6 +67,12 @@ let cairo_fill_rule = function
   | `Aeo -> Cairo.EVEN_ODD
   | `O _ -> assert false
 
+let set_dashes s = function
+  | None -> Cairo.set_dash s.ctx [||]
+  | Some (offset, dashes) ->
+      let dashes = Array.of_list dashes in
+      Cairo.set_dash s.ctx ~ofs:offset dashes
+
 let init_ctx s =
   let o = s.gstate.g_outline in
   let m = s.view_tr in
@@ -75,8 +81,7 @@ let init_ctx s =
   Cairo.set_line_cap s.ctx (cairo_cap o.P.cap);
   Cairo.set_line_join s.ctx (cairo_join o.P.join);
   Cairo.set_miter_limit s.ctx (Vgr.Private.P.miter_limit o);
-  (*set_dashes ~warning:false s o.P.dashes*)
-  ()
+  set_dashes s o.P.dashes
 
 let push_transform s tr =
   let m = match tr with
@@ -96,7 +101,7 @@ let set_outline s o =
   if old.P.join <> o.P.join then (Cairo.set_line_join s.ctx (cairo_join o.P.join));
   if old.P.miter_angle <> o.P.miter_angle then
     (Cairo.set_miter_limit s.ctx (Vgr.Private.P.miter_limit o));
-  (*if old.P.dashes <> o.P.dashes then set_dashes s o.P.dashes;*)
+  if old.P.dashes <> o.P.dashes then set_dashes s o.P.dashes;
   ()
 
 let get_primitive s p = try Hashtbl.find s.prims p with
@@ -109,7 +114,12 @@ let get_primitive s p = try Hashtbl.find s.prims p with
     Hashtbl.add s.prims p js_prim; js_prim
 
 let set_stroke s p =
-  failwith "todo"
+  let p = get_primitive s p in
+  if s.gstate.g_stroke != p then begin match p with
+  | Color c ->
+      Color.(Cairo.set_source_rgba s.ctx (r c) (g c) (b c) (a c));
+      s.gstate.g_stroke <- p
+  end
 
 let set_fill s p =
   let p = get_primitive s p in
