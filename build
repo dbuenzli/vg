@@ -11,7 +11,7 @@ OCAMLBUILD=${OCAMLBUILD:="ocamlbuild -tag debug -classic-display \
 action () 
 {
     case $1 in
-      default)      $OCAMLBUILD vg.cmx vgr_pdf.cmx vgr_svg.cmx vgr_htmlc.cmx ;;
+      default)      $OCAMLBUILD vg.cmx vgr_pdf.cmx vgr_svg.cmx vgr_htmlc.cmx vgr_cairo2.cmx ;;
       tests)        $OCAMLBUILD rpdf.native rsvg.native; action rhtmlc ;;
       rhtmlc)       shift; 
                     pkg/db-locs

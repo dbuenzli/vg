@@ -39,3 +39,14 @@ package "htmlc" (
   archive(native, plugin) = "vgr_htmlc.cmxs"
   exists_if = "vgr_htmlc.cma"
 )
+
+package "cairo2" (
+  version = "%%VERSION%%"
+  description = "Vg's Cairo2 renderer"
+  requires = "vg cairo2"
+  archive(byte) = "vgr_cairo2.cma"
+  archive(byte, plugin) = "vgr_cairo2.cma"
+  archive(native) = "vgr_cairo2.cmxa"
+  archive(native, plugin) = "vgr_cairo2.cmxs"
+  exists_if = "vgr_cairo2.cma"
+)
