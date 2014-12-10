@@ -125,11 +125,13 @@ let set_outline s o =
 let get_primitive s p = try Hashtbl.find s.prims p with
 | Not_found ->
     let add_stop g (t, c) =
+      let c = Color.to_srgb c in
       Cairo.Pattern.add_color_stop_rgba g ~ofs:t
-        (Color.r c) (Color.g c) (Color.b c) (Color.a c) in
+        (V4.x c) (V4.y c) (V4.z c) (V4.w c) in
     let create = function
     | Const c ->
-        Pattern Color.(Cairo.Pattern.create_rgba (r c) (g c) (b c) (a c))
+        let c = Color.to_srgb c in
+        Pattern V4.(Cairo.Pattern.create_rgba (x c) (y c) (z c) (w c))
     | Axial (stops, pt, pt') ->
         let g = V2.(Cairo.Pattern.create_linear (x pt)  (y pt)
                                                 (x pt') (y pt')) in
