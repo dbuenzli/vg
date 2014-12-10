@@ -21,11 +21,7 @@ let image = I.const (Color.v_srgb 0.314 0.784 0.471)
 (* 2. Render *)
 
 let () =
-  let w = int_of_float (V2.x size) in
-  let h = int_of_float (V2.y size) in
-  let surface = Cairo.Image.create Cairo.Image.ARGB32 w h in
   let warn w = Vgr.pp_warning Format.err_formatter w in
-  let r = Vgr.create ~warn (Vgr_cairo2.target surface) `Other in
+  let r = Vgr.create ~warn (Vgr_cairo2.target `PNG) (`Channel stdout) in
   ignore (Vgr.render r (`Image (size, view, image)));
-  ignore (Vgr.render r `End);
-  Cairo.PNG.write surface "min_cairo2.png"
+  ignore (Vgr.render r `End)
