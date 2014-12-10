@@ -78,12 +78,21 @@ let set_dashes s = function
 let init_ctx s =
   let o = s.gstate.g_outline in
   let m = s.view_tr in
+  Cairo.restore s.ctx;
+  Cairo.save s.ctx;
   Cairo.transform s.ctx (cairo_matrix_of_m3 m);
   Cairo.set_line_width s.ctx o.P.width;
   Cairo.set_line_cap s.ctx (cairo_cap o.P.cap);
   Cairo.set_line_join s.ctx (cairo_join o.P.join);
   Cairo.set_miter_limit s.ctx (Vgr.Private.P.miter_limit o);
-  set_dashes s o.P.dashes
+  set_dashes s o.P.dashes;
+  Cairo.set_operator s.ctx Cairo.CLEAR;
+  let w = float (Cairo.Image.get_width s.surface) in
+  let h = float (Cairo.Image.get_height s.surface) in
+  Cairo.rectangle s.ctx 0. 0. w h;
+  Cairo.fill s.ctx;
+  Cairo.set_operator s.ctx Cairo.OVER
+
 
 let push_transform s tr =
   let m = match tr with
@@ -306,6 +315,7 @@ let render s v k r = match v with
 let target surface =
   let target r _ =
     let ctx = Cairo.create surface in
+    Cairo.save ctx;
     true, render { r; surface; ctx;
                    cost = 0;
                    view = Box2.empty;
