@@ -178,8 +178,12 @@ let set_path s p =
       match seg with
       | `Sub pt -> P2.(Cairo.move_to s.ctx (x pt) (y pt)); loop pt segs
       | `Line pt -> P2.(Cairo.line_to s.ctx (x pt) (y pt)); loop pt segs
-      | `Qcurve (c, pt) ->
-          failwith "todo";
+      | `Qcurve (q, pt) ->
+          let x,y = Cairo.Path.get_current_point s.ctx in
+          let p0 = V2.v x y in
+          let c  = V2.((q + 2. * p0) / 3.) in
+          let c' = V2.((pt + 2. * q) / 3.) in
+          P2.(Cairo.curve_to s.ctx (x c) (y c) (x c') (y c') (x pt) (y pt));
           loop pt segs
       | `Ccurve (c, c', pt) ->
           P2.(Cairo.curve_to s.ctx (x c) (y c) (x c') (y c') (x pt) (y pt));
