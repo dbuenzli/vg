@@ -44,7 +44,7 @@ let limit s = Vgr.Private.limit s.r
 let warn s w = Vgr.Private.warn s.r w
 let image i = Vgr.Private.I.of_data i
 
-let view_rect s =           (* image view rect in current coordinate system. *)
+let view_rect s =          (* image view rect in current coordinate system. *)
   let tr = M3.inv s.gstate.g_tr in
   Vgr.Private.Data.of_path (P.empty >> P.rect (Box2.tr tr s.view))
 
@@ -107,9 +107,12 @@ let set_outline s o =
   if s.gstate.g_outline == o then () else
   let old = s.gstate.g_outline in
   s.gstate.g_outline <- o;
-  if old.P.width <> o.P.width then (Cairo.set_line_width s.ctx o.P.width);
-  if old.P.cap <> o.P.cap then (Cairo.set_line_cap s.ctx (cairo_cap o.P.cap));
-  if old.P.join <> o.P.join then (Cairo.set_line_join s.ctx (cairo_join o.P.join));
+  if old.P.width <> o.P.width then
+    (Cairo.set_line_width s.ctx o.P.width);
+  if old.P.cap <> o.P.cap then
+    (Cairo.set_line_cap s.ctx (cairo_cap o.P.cap));
+  if old.P.join <> o.P.join then
+    (Cairo.set_line_join s.ctx (cairo_join o.P.join));
   if old.P.miter_angle <> o.P.miter_angle then
     (Cairo.set_miter_limit s.ctx (Vgr.Private.P.miter_limit o));
   if old.P.dashes <> o.P.dashes then set_dashes s o.P.dashes;
@@ -124,11 +127,12 @@ let get_primitive s p = try Hashtbl.find s.prims p with
     | Const c ->
         Pattern Color.(Cairo.Pattern.create_rgba (r c) (g c) (b c) (a c))
     | Axial (stops, pt, pt') ->
-        let g = V2.(Cairo.Pattern.create_linear (x pt) (y pt) (x pt') (y pt')) in
+        let g = V2.(Cairo.Pattern.create_linear (x pt)  (y pt)
+                                                (x pt') (y pt')) in
         List.iter (add_stop g) stops; Pattern g
     | Radial (stops, f, c, r) ->
         let g = V2.(Cairo.Pattern.create_radial
-                      ~x0:(x f) ~y0:(y f) ~x1:(x c) ~y1:(y c) ~r0:0.0 ~r1:r) in
+                      (x f) (y f) (x c) (y c) 0.0 r) in
         List.iter (add_stop g) stops; Pattern g
     | Raster _ -> assert false
     in
@@ -186,7 +190,9 @@ let set_path s p =
           | Some (c, m, a, a') ->
               Cairo.save s.ctx;
               let c = V2.ltr (M2.inv m) c in
-              M2.(Cairo.transform s.ctx (cairo_matrix (e00 m) (e10 m) (e01 m) (e11 m) 0. 0.));
+              M2.(Cairo.transform s.ctx (cairo_matrix (e00 m) (e10 m)
+                                                      (e01 m) (e11 m)
+                                                      0.      0.));
               let arc = if cw then Cairo.arc else Cairo.arc_negative in
               P2.(arc s.ctx ~x:(x c) ~y:(y c) ~r:1.0 ~a1:a ~a2:a');
               Cairo.restore s.ctx;
@@ -227,8 +233,6 @@ let rec r_cut_glyphs s a run i = match run.text with
 | Some text ->
     Cairo.save s.ctx;
     s.todo <- (save_gstate s) :: s.todo;
-    let m = M3.mul s.view_tr s.gstate.g_tr in
-    let o = P2.tr m run.o in
     let font_size = run.font.Font.size in
     set_font s (run.font, font_size);
     Cairo.Path.clear s.ctx;
@@ -268,7 +272,7 @@ let rec r_image s k r =
   | Draw i :: todo ->
       s.cost <- s.cost + 1;
       match i with
-      | Primitive _ as i ->            (* Uncut primitive, just cut to view. *)
+      | Primitive _ as i ->           (* Uncut primitive, just cut to view. *)
           let p = view_rect s in
           s.todo <- (Draw (Cut (`Anz, p, i))) :: todo;
           r_image s k r
