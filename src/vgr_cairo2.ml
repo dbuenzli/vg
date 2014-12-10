@@ -136,7 +136,7 @@ let get_primitive s p = try Hashtbl.find s.prims p with
         List.iter (add_stop g) stops; Pattern g
     | Radial (stops, f, c, r) ->
         let g = V2.(Cairo.Pattern.create_radial
-                      (x f) (y f) (x c) (y c) 0.0 r) in
+                      (x f) (y f) 0.0 (x c) (y c) r) in
         List.iter (add_stop g) stops; Pattern g
     | Raster _ -> assert false
     in
@@ -201,7 +201,7 @@ let set_path s p =
               M2.(Cairo.transform s.ctx (cairo_matrix (e00 m) (e10 m)
                                                       (e01 m) (e11 m)
                                                       0.      0.));
-              let arc = if cw then Cairo.arc else Cairo.arc_negative in
+              let arc = if cw then Cairo.arc_negative else Cairo.arc in
               P2.(arc s.ctx ~x:(x c) ~y:(y c) ~r:1.0 ~a1:a ~a2:a');
               Cairo.restore s.ctx;
               loop pt segs
