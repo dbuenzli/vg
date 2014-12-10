@@ -22,5 +22,6 @@ let () = Pkg.describe "vg" ~builder:`OCamlbuild [
     Pkg.doc "test/min_htmlc.ml";
     Pkg.doc "test/min_pdf.ml";
     Pkg.doc "test/min_svg.ml";
+    Pkg.doc "test/min_cairo2.ml";
     Pkg.doc "test/fglyphs.ml";
 ]
