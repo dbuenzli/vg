@@ -8,6 +8,7 @@ open Gg
 open Vg
 open Vgr.Private.Data
 
+type cairo_font = Font : 'a Cairo.Font_face.t -> cairo_font
 type cairo_primitive = Pattern : 'a Cairo.Pattern.t -> cairo_primitive
 
 let dumb_prim = Pattern (Cairo.Pattern.create_rgba 0.0 0.0 0.0 0.0)
@@ -30,6 +31,7 @@ type state =
     mutable view : Gg.box2;           (* current renderable view rectangle. *)
     mutable view_tr : M3.t;                    (* view to canvas transform. *)
     mutable todo : cmd list;                        (* commands to perform. *)
+    fonts : (Vg.font, cairo_font) Hashtbl.t;               (* cached fonts. *)
     prims :                                           (* cached primitives. *)
       (Vgr.Private.Data.primitive, cairo_primitive) Hashtbl.t;
     mutable gstate : gstate; }                    (* current graphic state. *)
@@ -124,6 +126,20 @@ let get_primitive s p = try Hashtbl.find s.prims p with
     let prim = create p in
     Hashtbl.add s.prims p prim; prim
 
+let get_font s font = try Hashtbl.find s.fonts font with
+| Not_found ->
+    let cairo_font =
+      let slant = match font.Font.slant with
+      | `Italic -> Cairo.Italic
+      | `Normal -> Cairo.Upright
+      | `Oblique -> Cairo.Oblique in
+      let weight = match font.Font.weight with
+      | `W600 | `W700 | `W800 | `W900 -> Cairo.Bold
+      | _ -> Cairo.Normal in
+      Font (Cairo.Font_face.create ~family:font.Font.name slant weight)
+    in
+    Hashtbl.add s.fonts font cairo_font; cairo_font
+
 let set_source s p =
   let p = get_primitive s p in
   if s.gstate.g_stroke != p then begin match p with
@@ -134,6 +150,12 @@ let set_source s p =
 let set_stroke s p = s.gstate.g_stroke <- set_source s p
 
 let set_fill s p = s.gstate.g_fill <- set_source s p
+
+let set_font s (font, size) =
+  let Font f = get_font s font in
+  Cairo.Font_face.set s.ctx f;
+  Cairo.set_font_size s.ctx size
+  (*Cairo.set_font_size s.ctx 25.0*)
 
 
 let set_path s p =
@@ -191,6 +213,40 @@ let rec r_cut s a = function
     Cairo.clip s.ctx;
     s.todo <- (Draw i) :: (save_gstate s) :: s.todo
 
+let rec r_cut_glyphs s a run i = match run.text with
+| None -> warn s (`Textless_glyph_cut (image (Cut_glyphs (a, run, i))))
+| Some text ->
+    Cairo.save s.ctx;
+    s.todo <- (save_gstate s) :: s.todo;
+    let m = M3.mul s.view_tr s.gstate.g_tr in
+    let o = P2.tr m run.o in
+    let font_size = run.font.Font.size in
+    set_font s (run.font, font_size);
+    Cairo.Path.clear s.ctx;
+    M3.(Cairo.transform s.ctx (cairo_matrix 1.0 0.0
+                                            0.0 (-1.0)
+                                            0.0 0.0));
+    Cairo.move_to s.ctx 0. 0.;
+    Cairo.Path.text s.ctx text;
+    begin match a with
+    | `O o ->
+        set_outline s o;
+        begin match i with
+        | Primitive p ->
+            set_stroke s p;
+            Cairo.stroke s.ctx
+        | _ ->
+            warn s (`Unsupported_glyph_cut (a, image i))
+        end
+    | `Aeo | `Anz ->
+        Cairo.clip s.ctx;
+        M3.(Cairo.transform s.ctx (cairo_matrix 1.0 0.0
+                                                0.0 (-1.0)
+                                                0.0 0.0));
+        s.todo <- Draw i :: s.todo
+    end
+
+
 let rec r_image s k r =
   if s.cost > limit s then (s.cost <- 0; partial (r_image s k) r) else
   match s.todo with
@@ -214,8 +270,7 @@ let rec r_image s k r =
           r_image s k r
       | Cut_glyphs (a, run, i) ->
           s.todo <- todo;
-          failwith "todo"
-          (*r_cut_glyphs s a run i;*)
+          r_cut_glyphs s a run i;
           r_image s k r
       | Blend (_, _, i, i') ->
           s.todo <- (Draw i') :: (Draw i) :: todo;
@@ -256,6 +311,7 @@ let target surface =
                    view = Box2.empty;
                    view_tr = M3.id;
                    todo = [];
+                   fonts = Hashtbl.create 20;
                    prims = Hashtbl.create 231;
                    gstate = init_gstate; }
   in
