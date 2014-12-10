@@ -3,6 +3,7 @@ min_pdf.native
 min_htmlc.byte
 rsvg.native
 rpdf.native
+rcairo2_pdf.native
 rhtmlc.byte
 examples.native
 sqc.byte
