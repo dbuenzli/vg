@@ -8,15 +8,15 @@ open Gg
 open Vg
 open Vgr.Private.Data
 
-type cairo_primitive =
-  | Color of Color.t
+type cairo_primitive = Pattern : 'a Cairo.Pattern.t -> cairo_primitive
+
+let dumb_prim = Pattern (Cairo.Pattern.create_rgba 0.0 0.0 0.0 0.0)
+
 type gstate =     (* subset of the graphics state saved by a Cairo.save ctx *)
   { mutable g_tr : M3.t;              (* current transform without view_tr. *)
     mutable g_outline : P.outline;               (* current outline stroke. *)
     mutable g_stroke : cairo_primitive;            (* current stroke color. *)
     mutable g_fill : cairo_primitive; }              (* current fill color. *)
-
-let dumb_prim = Color (Color.v 0.0 0.0 0.0 0.0)
 
 let init_gstate =
   { g_tr = M3.id; g_outline = P.o; g_stroke = dumb_prim; g_fill = dumb_prim }
@@ -106,28 +106,35 @@ let set_outline s o =
 
 let get_primitive s p = try Hashtbl.find s.prims p with
 | Not_found ->
+    let add_stop g (t, c) =
+      Cairo.Pattern.add_color_stop_rgba g ~ofs:t
+        (Color.r c) (Color.g c) (Color.b c) (Color.a c) in
     let create = function
-    | Const c -> Color c
-    | _ -> failwith "todo"
+    | Const c ->
+        Pattern Color.(Cairo.Pattern.create_rgba (r c) (g c) (b c) (a c))
+    | Axial (stops, pt, pt') ->
+        let g = V2.(Cairo.Pattern.create_linear (x pt) (y pt) (x pt') (y pt')) in
+        List.iter (add_stop g) stops; Pattern g
+    | Radial (stops, f, c, r) ->
+        let g = V2.(Cairo.Pattern.create_radial
+                      ~x0:(x f) ~y0:(y f) ~x1:(x c) ~y1:(y c) ~r0:0.0 ~r1:r) in
+        List.iter (add_stop g) stops; Pattern g
+    | Raster _ -> assert false
     in
-    let js_prim = create p in
-    Hashtbl.add s.prims p js_prim; js_prim
+    let prim = create p in
+    Hashtbl.add s.prims p prim; prim
 
-let set_stroke s p =
+let set_source s p =
   let p = get_primitive s p in
   if s.gstate.g_stroke != p then begin match p with
-  | Color c ->
-      Color.(Cairo.set_source_rgba s.ctx (r c) (g c) (b c) (a c));
-      s.gstate.g_stroke <- p
-  end
+  | Pattern g -> Cairo.set_source s.ctx g
+  end;
+  p
 
-let set_fill s p =
-  let p = get_primitive s p in
-  if s.gstate.g_fill != p then begin match p with
-  | Color c ->
-      Color.(Cairo.set_source_rgba s.ctx (r c) (g c) (b c) (a c));
-      s.gstate.g_fill <- p
-  end
+let set_stroke s p = s.gstate.g_stroke <- set_source s p
+
+let set_fill s p = s.gstate.g_fill <- set_source s p
+
 
 let set_path s p =
   let rec loop last = function
@@ -150,7 +157,7 @@ let set_path s p =
               let c = V2.ltr (M2.inv m) c in
               M2.(Cairo.transform s.ctx (cairo_matrix (e00 m) (e10 m) (e01 m) (e11 m) 0. 0.));
               let arc = if cw then Cairo.arc else Cairo.arc_negative in
-              P2.(arc s.ctx (x c) (y c) 1.0 a a');
+              P2.(arc s.ctx ~x:(x c) ~y:(y c) ~r:1.0 ~a1:a ~a2:a');
               Cairo.restore s.ctx;
               loop pt segs
           end
@@ -189,13 +196,11 @@ let rec r_image s k r =
   match s.todo with
   | [] -> k r
   | Set gs :: todo ->
-      Printf.printf "r_image: set\n%!" ;
       Cairo.restore s.ctx;
       set_gstate s gs;
       s.todo <- todo;
       r_image s k r
   | Draw i :: todo ->
-      Printf.printf "r_image: draw\n%!" ;
       s.cost <- s.cost + 1;
       match i with
       | Primitive _ as i ->            (* Uncut primitive, just cut to view. *)
@@ -241,7 +246,6 @@ let render s v k r = match v with
     s.todo <- [ Draw i ];
     s.gstate <- { init_gstate with g_tr = init_gstate.g_tr }; (* copy *)
     init_ctx s;
-    Printf.printf "starting to work\n%!" ;
     r_image s k r
 
 let target surface =
