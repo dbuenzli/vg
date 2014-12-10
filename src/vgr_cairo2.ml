@@ -22,9 +22,13 @@ type gstate =     (* subset of the graphics state saved by a Cairo.save ctx *)
 let init_gstate =
   { g_tr = M3.id; g_outline = P.o; g_stroke = dumb_prim; g_fill = dumb_prim }
 
+type cairo_backend = [ `Surface | `PNG | `PDF ]
+
 type cmd = Set of gstate | Draw of Vgr.Private.Data.image
 type state =
   { r : Vgr.Private.renderer;                    (* corresponding renderer. *)
+    backend : cairo_backend;                        (* final format target. *)
+    mutable size : Size2.t;                          (* surface dimensions. *)
     surface : Cairo.Surface.t;                      (* surface rendered to. *)
     ctx : Cairo.context;                           (* context of [surface]. *)
     mutable cost : int;                          (* cost counter for limit. *)
@@ -298,11 +302,20 @@ let rec r_image s k r =
           push_transform s tr;
           r_image s k r
 
+let vgr_output r str =
+  let k' _ = `Ok in
+  ignore (Vgr.Private.writes str 0 (String.length str) k' r)
+
 let render s v k r = match v with
-| `End -> k r
+| `End ->
+    begin match s.backend with
+    | `Surface | `PDF -> ()
+    | `PNG -> Cairo.PNG.write_to_stream s.surface (vgr_output r)
+    end;
+    Cairo.Surface.finish s.surface;
+    Vgr.Private.flush k r
 | `Image (size, view, i) ->
-    let cw = float (Cairo.Image.get_width s.surface) in
-    let ch = float (Cairo.Image.get_height s.surface) in
+    let cw, ch = Size2.w s.size, Size2.h s.size in
     (* Map view rect (bot-left coords) to surface (top-left coords) *)
     let sx = cw /. Box2.w view in
     let sy = ch /. Box2.h view in
@@ -320,11 +333,46 @@ let render s v k r = match v with
     init_ctx s;
     r_image s k r
 
-let target surface =
+let pre_render resolution backend =
+  let s = ref None in
+  fun v k r ->
+    match !s, v with
+    | Some s, _ -> render s v k r
+    | None, `End -> assert false
+    | None, `Image (size, view, i) ->
+        let size = V2.(resolution * size) in
+        let w, h = Size2.w size, Size2.h size in
+        let surface = match backend with
+          | `Surface | `PNG ->
+              Cairo.Image.(create ARGB32 (int_of_float w) (int_of_float h))
+          | `PDF ->
+              Cairo.PDF.create_for_stream (vgr_output r) w h
+        in
+        let ctx = Cairo.create surface in
+        Cairo.save ctx;
+        let state =
+          { r; surface; ctx; backend; size;
+            cost = 0;
+            view = Box2.empty;
+            view_tr = M3.id;
+            todo = [];
+            fonts = Hashtbl.create 20;
+            prims = Hashtbl.create 231;
+            gstate = init_gstate; } in
+        s := Some state;
+        render state v k r
+
+let target ?(resolution = 1.0) backend =
+  let target _ _ = false, pre_render resolution backend in
+  Vgr.Private.create_target target
+
+let target_surface surface =
   let target r _ =
+    let size = Size2.v (float (Cairo.Image.get_width surface))
+                       (float (Cairo.Image.get_width surface)) in
     let ctx = Cairo.create surface in
     Cairo.save ctx;
-    true, render { r; surface; ctx;
+    true, render { r; surface; ctx; backend = `Surface; size;
                    cost = 0;
                    view = Box2.empty;
                    view_tr = M3.id;
@@ -334,3 +382,4 @@ let target surface =
                    gstate = init_gstate; }
   in
   Vgr.Private.create_target target
+

@@ -14,7 +14,11 @@
 
 (** {1:target Cairo2 render targets} *)
 
-val target : Cairo.Surface.t -> [`Other] Vg.Vgr.target
+type cairo_backend = [ `Surface | `PNG | `PDF ]
+
+val target : ?resolution:float -> cairo_backend -> Vg.Vgr.dst_stored Vg.Vgr.target
+
+val target_surface : Cairo.Surface.t -> [`Other] Vg.Vgr.target
 (** [target s] is a render target for rendering to the Cairo2 surface [s].
 
     {b Multiple images.} Multiple images render on the target is supported.
