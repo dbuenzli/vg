@@ -1,8 +1,10 @@
 (*---------------------------------------------------------------------------
-   Copyright 2013 Daniel C. Bünzli. All rights reserved.
+   Copyright 2014 Arthur Wendling, Daniel C. Bünzli. All rights reserved.
    Distributed under the BSD3 license, see license at the end of the file.
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
+
+(* Based on the Vgr_htmlc implementation by Daniel C. Bünzli. *)
 
 open Gg
 open Vg
