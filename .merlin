@@ -1,3 +1,3 @@
 EXT js
-PKG gg js_of_ocaml
+PKG gg js_of_ocaml cairo2
 B _build/**
