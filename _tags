@@ -27,8 +27,8 @@
 
 <test/rsvg.{mli,ml,byte,native}> : package(gg), package(uutf), package(unix)
 
-<test/rcairo2_pdf.{mli,ml,byte,native}> : package(gg), package(uutf), \
-                                          package(unix), package(cairo2)
+<test/rcairo2.{mli,ml,byte,native}> : package(gg), package(uutf), \
+                                      package(unix), package(cairo2)
 
 <test/rhtmlc.{mli,ml,byte}> : package(gg), package(otfm), package(uutf), \
                               package(js_of_ocaml), \

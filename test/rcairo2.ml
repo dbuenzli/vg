@@ -9,9 +9,18 @@ open Vg
 
 include Db_contents
 
-let renderer dst _ = Vgr.create (Vgr_cairo2.target `PDF) dst
+let formats = [
+  "png", `PNG;
+  "pdf", `PDF;
+  ]
 
-let () = Rstored.main ~no_pack:true "Cairo2-PDF" "pdf" renderer
+let renderer fmt dst _ =
+  let cairo_fmt = List.assoc fmt formats in
+  Vgr.create (Vgr_cairo2.target cairo_fmt) dst
+
+let ftypes = List.map fst formats
+let () =
+  Rstored.main_formats ~no_pack:true "a selected format" ftypes renderer
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
