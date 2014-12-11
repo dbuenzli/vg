@@ -22,7 +22,7 @@ type gstate =     (* subset of the graphics state saved by a Cairo.save ctx *)
 let init_gstate =
   { g_tr = M3.id; g_outline = P.o; g_stroke = dumb_prim; g_fill = dumb_prim }
 
-type cairo_backend = [ `Surface | `PNG | `PDF ]
+type cairo_backend = [ `Surface | `PDF | `PNG | `PS | `SVG ]
 
 type cmd = Set of gstate | Draw of Vgr.Private.Data.image
 type state =
@@ -310,10 +310,8 @@ let vgr_output r str =
 
 let render s v k r = match v with
 | `End ->
-    begin match s.backend with
-    | `Surface | `PDF -> ()
-    | `PNG -> Cairo.PNG.write_to_stream s.surface (vgr_output r)
-    end;
+    if s.backend = `PNG then
+      Cairo.PNG.write_to_stream s.surface (vgr_output r);
     Cairo.Surface.finish s.surface;
     Vgr.Private.flush k r
 | `Image (size, view, i) ->
@@ -345,15 +343,17 @@ let pre_render resolution backend =
         let size = V2.(resolution * size) in
         let w, h = Size2.w size, Size2.h size in
         let surface = match backend with
-          | `Surface | `PNG ->
+          | `PNG ->
               Cairo.Image.(create ARGB32 (int_of_float w) (int_of_float h))
-          | `PDF ->
-              Cairo.PDF.create_for_stream (vgr_output r) w h
+          | `PDF -> Cairo.PDF.create_for_stream (vgr_output r) w h
+          | `PS -> Cairo.PS.create_for_stream (vgr_output r) w h
+          | `SVG -> Cairo.SVG.create_for_stream  (vgr_output r) w h
         in
         let ctx = Cairo.create surface in
         Cairo.save ctx;
         let state =
-          { r; surface; ctx; backend; size;
+          { r; surface; ctx; size;
+            backend = (backend :> cairo_backend);
             cost = 0;
             view = Box2.empty;
             view_tr = M3.id;

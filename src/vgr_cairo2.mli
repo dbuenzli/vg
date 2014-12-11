@@ -14,9 +14,8 @@
 
 (** {1:target Cairo2 render targets} *)
 
-type cairo_backend = [ `Surface | `PNG | `PDF ]
-
-val target : ?resolution:float -> cairo_backend -> Vg.Vgr.dst_stored Vg.Vgr.target
+val target : ?resolution:float -> [< `PDF | `PNG | `PS | `SVG ] ->
+  Vg.Vgr.dst_stored Vg.Vgr.target
 
 val target_surface : Cairo.Surface.t -> [`Other] Vg.Vgr.target
 (** [target s] is a render target for rendering to the Cairo2 surface [s].

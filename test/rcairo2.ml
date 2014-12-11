@@ -12,6 +12,8 @@ include Db_contents
 let formats = [
   "png", `PNG;
   "pdf", `PDF;
+  "ps",  `PS;
+  "svg", `SVG;
   ]
 
 let renderer fmt dst _ =
