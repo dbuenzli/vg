@@ -15,13 +15,13 @@ let () = Pkg.describe "vg" ~builder:`OCamlbuild [
     Pkg.lib ~cond:vgr_pdf ~exts:Exts.module_library "src/vgr_pdf";
     Pkg.bin ~cond:vgr_pdf ~auto:true "test/vecho";
     Pkg.lib ~cond:jsoo ~exts:Exts.module_library "src/vgr_htmlc";
-    Pkg.lib ~cond:cairo2 ~exts:Exts.module_library "src/vgr_cairo2";
+    Pkg.lib ~cond:cairo2 ~exts:Exts.module_library "src/vgr_cairo";
     Pkg.doc "README.md";
     Pkg.doc "CHANGES.md";
     Pkg.doc "test/min_htmlc.html";
     Pkg.doc "test/min_htmlc.ml";
     Pkg.doc "test/min_pdf.ml";
     Pkg.doc "test/min_svg.ml";
-    Pkg.doc "test/min_cairo2.ml";
+    Pkg.doc "test/min_cairo.ml";
     Pkg.doc "test/fglyphs.ml";
 ]

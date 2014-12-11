@@ -1,6 +1,6 @@
 (* This code is in the public domain.
 
-   Minimal Vgr_cairo2 example. Compile with:
+   Minimal Vgr_cairo example. Compile with:
 
    ocamlfind ocamlc \
     -package cairo2 \
@@ -22,6 +22,6 @@ let image = I.const (Color.v_srgb 0.314 0.784 0.471)
 
 let () =
   let warn w = Vgr.pp_warning Format.err_formatter w in
-  let r = Vgr.create ~warn (Vgr_cairo2.target `PNG) (`Channel stdout) in
+  let r = Vgr.create ~warn (Vgr_cairo.target `PNG) (`Channel stdout) in
   ignore (Vgr.render r (`Image (size, view, image)));
   ignore (Vgr.render r `End)

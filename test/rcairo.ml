@@ -1,64 +1,31 @@
 (*---------------------------------------------------------------------------
-   Copyright 2014 Arthur Wendling, Daniel C. Bünzli. All rights reserved.
+   Copyright 2014 Arthur Wendling. All rights reserved.
    Distributed under the BSD3 license, see license at the end of the file.
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
-(* Based on the Vgr_htmlc documentation by Daniel C. Bünzli. *)
+open Gg
+open Vg
 
-(** Vg Cairo2 renderer.
+include Db_contents
 
-    {b Dependency:}
-    {ul {- {e {{:http://forge.ocamlcore.org/projects/cairo/}Cairo2 library
-     for OCaml}}}}
+let formats = [
+  "png", `PNG;
+  "pdf", `PDF;
+  "ps",  `PS;
+  "svg", `SVG;
+  ]
 
-    {e Release %%VERSION%% — %%MAINTAINER%% } *)
+let renderer fmt dst _ =
+  let cairo_fmt = List.assoc fmt formats in
+  Vgr.create (Vgr_cairo.target cairo_fmt) dst
 
-(** {1:target Cairo2 render targets} *)
-
-val target : ?resolution:float -> [< `PDF | `PNG | `PS | `SVG ] ->
-  Vg.Vgr.dst_stored Vg.Vgr.target
-
-val target_surface : Cairo.Surface.t -> [`Other] Vg.Vgr.target
-(** [target s] is a render target for rendering to the Cairo2 surface [s].
-
-    {b Multiple images.} Multiple images render on the target is supported.
-    Each new render clears the surface. *)
-
-(** {1:text Text rendering}
-
-    {b Warning.} The following is subject to change in the future.
-
-    Currently text rendering uses Cairo2's font selection mechanism
-    and doesn't support the glyph API.
-
-    Given a glyph cut:
-
-{!Vg.I.cut_glyphs}[ ~text ~blocks ~advances font glyphs]
-
-    The [blocks], [advances] and [glyphs] parameters are ignored.
-    [text] must be provided and is used to define the text to render.
-    [font] is used to select the font family.
-    
-    The weight is limited to Normal ([< `W600]) and Bold ([>= `W600]). *)
-
-(** {1:limits Render warnings and limitations}
-
-    The following render warnings are reported.
-    {ul
-    {- [`Unsupported_cut (`O o, i)], outline area cuts can be performed
-       only on (possibly transformed) {!Vg.I.const}, {!Vg.I.axial} and
-       {!Vg.I.radial} images.}
-    {- [`Unsupported_glyph_cut (`O o, i)], outline glyph cuts can be
-       performed only on (untransformed) {!Vg.I.const}, {!Vg.I.axial}
-       and {!Vg.I.radial} images.}
-    {- [`Textless_glyph_cut i] if no [text] argument is specified in a
-       glyph cut.}}
-
-    *)
+let ftypes = List.map fst formats
+let () =
+  Rstored.main_formats ~no_pack:true "a selected format" ftypes renderer
 
 (*---------------------------------------------------------------------------
-   Copyright 2013 Daniel C. Bünzli.
+   Copyright 2014 Arthur Wendling.
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
