@@ -12,7 +12,8 @@ open Vgr.Private.Data
 
 let err_zero_size () = invalid_arg "Cairo surface has a size of zero"
 
-let default_resolution = Size2.v 1000.0 1000.0
+let default_resolution =
+  let m = 72000. /. 25.4 in Size2.v m m
 
 type cairo_font = Font : 'a Cairo.Font_face.t -> cairo_font
 type cairo_primitive = Pattern : 'a Cairo.Pattern.t -> cairo_primitive

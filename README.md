@@ -7,7 +7,7 @@ images are values that denote functions mapping points of the
 cartesian plane to colors. The module provides combinators to define
 and compose these values.
 
-Renderers for PDF, SVG and the HTML canvas are distributed with the
+Renderers for PDF, SVG, Cairo and the HTML canvas are distributed with the
 module. An API allows to implement new renderers.
      
 Vg depends only on [Gg][1]. The SVG renderer has no dependency, the

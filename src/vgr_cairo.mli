@@ -22,7 +22,9 @@ val target : ?resolution:Gg.V2.t -> [< `PDF | `PNG | `PS | `SVG ] ->
     destination given to {!Vg.Vgr.create} in the chosen format [fmt].
     {ul
     {- [resolution], specifies the rendering resolution in samples per
-       meters.}}
+       meters. The PDF, PS and SVG formats are measured in points by Cairo,
+       while the PNG format is in pixels. If unspecified, the default
+       conversion to points is used.}}
 
     {b Multiple images.} Multiple images render on the target are not
     supported. [Invalid_argument] is raised by {!Vg.Vgr.render} if multiple
