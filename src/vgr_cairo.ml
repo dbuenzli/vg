@@ -10,6 +10,8 @@ open Gg
 open Vg
 open Vgr.Private.Data
 
+let err_zero_size () = invalid_arg "Cairo surface has a size of zero"
+
 type cairo_font = Font : 'a Cairo.Font_face.t -> cairo_font
 type cairo_primitive = Pattern : 'a Cairo.Pattern.t -> cairo_primitive
 
@@ -314,10 +316,13 @@ let render s v k r = match v with
 | `End ->
     if s.backend = `PNG then
       Cairo.PNG.write_to_stream s.surface (vgr_output r);
-    Cairo.Surface.finish s.surface;
-    Vgr.Private.flush k r
+    if s.backend = `Surface
+    then k r
+    else (Cairo.Surface.finish s.surface; Vgr.Private.flush k r)
 | `Image (size, view, i) ->
     let cw, ch = Size2.w s.size, Size2.h s.size in
+    if cw = 0.0 || ch = 0.0
+    then err_zero_size () ;
     (* Map view rect (bot-left coords) to surface (top-left coords) *)
     let sx = cw /. Box2.w view in
     let sy = ch /. Box2.h view in
@@ -335,14 +340,13 @@ let render s v k r = match v with
     init_ctx s;
     r_image s k r
 
-let pre_render resolution backend =
+let format_render ?size backend =
   let s = ref None in
   fun v k r ->
     match !s, v with
     | Some s, _ -> render s v k r
-    | None, `End -> assert false
+    | None, `End -> k r
     | None, `Image (size, view, i) ->
-        let size = V2.(resolution * size) in
         let w, h = Size2.w size, Size2.h size in
         let surface = match backend with
           | `PNG ->
@@ -366,17 +370,27 @@ let pre_render resolution backend =
         s := Some state;
         render state v k r
 
-let target ?(resolution = 1.0) backend =
-  let target _ _ = false, pre_render resolution backend in
+let target backend =
+  let target _ _ = false, format_render backend in
   Vgr.Private.create_target target
 
-let target_surface surface =
+let target_surface ?size surface =
   let target r _ =
-    let size = Size2.v (float (Cairo.Image.get_width surface))
-                       (float (Cairo.Image.get_width surface)) in
+    let sw = Cairo.Image.get_width surface in
+    let sh = Cairo.Image.get_height surface in
+    let size =
+      if sw > 0 && sh > 0
+      then Size2.v (float sw) (float sh)
+      else match size with
+      | None -> err_zero_size ()
+      | Some s ->
+          if Size2.w s > 0.0 && Size2.h s > 0.0
+          then s
+          else err_zero_size () in
     let ctx = Cairo.create surface in
     Cairo.save ctx;
-    true, render { r; surface; ctx; backend = `Surface; size;
+    true, render { r; surface; ctx;
+                   backend = `Surface; size;
                    cost = 0;
                    view = Box2.empty;
                    view_tr = M3.id;

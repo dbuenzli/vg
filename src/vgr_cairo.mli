@@ -6,7 +6,7 @@
 
 (* Based on the Vgr_htmlc documentation by Daniel C. Bünzli. *)
 
-(** Vg Cairo2 renderer.
+(** Vg Cairo renderer.
 
     {b Dependency:}
     {ul {- {e {{:http://forge.ocamlcore.org/projects/cairo/}Cairo2 library
@@ -14,22 +14,38 @@
 
     {e Release %%VERSION%% — %%MAINTAINER%% } *)
 
-(** {1:target Cairo2 render targets} *)
+(** {1:target Cairo render targets} *)
 
-val target : ?resolution:float -> [< `PDF | `PNG | `PS | `SVG ] ->
-  Vg.Vgr.dst_stored Vg.Vgr.target
+val target : [< `PDF | `PNG | `PS | `SVG ] -> Vg.Vgr.dst_stored Vg.Vgr.target
+(** [target fmt] is a render target for rendering to the stored destination
+    given to {!Vg.Vgr.create} in the chosen format [fmt].
 
-val target_surface : Cairo.Surface.t -> [`Other] Vg.Vgr.target
-(** [target s] is a render target for rendering to the Cairo2 surface [s].
+    {b Multiple images.} Multiple images render on the target are not
+    supported. [Invalid_argument] is raised by {!Vg.Vgr.render} if multiple
+    images are rendered. *)
+
+val target_surface : ?size:Gg.size2 -> Cairo.Surface.t ->
+  [`Other] Vg.Vgr.target
+(** [target_surface s] is a render target for rendering to the Cairo
+    surface [s].
+    {ul
+    {- The physical size of {{!Vg.Vgr.renderable}renderables} is ignored and
+       the view rectangle is mapped on the surface size.}
+    {- Surfaces created with [Cairo.Surface] have a valid size, while file
+       based surfaces have a size of zero by default. If the size of the
+       surface can not be determined, the optional argument [size] is used
+       instead. [Invalid_argument] is raised if the size is invalid.}}
 
     {b Multiple images.} Multiple images render on the target is supported.
-    Each new render clears the surface. *)
+    Each new render clears the surface. However, the results are dependent on
+    Cairo internals: file based surfaces for PDF, PS and SVG do not clear the
+    view and blend the different images instead. *)
 
 (** {1:text Text rendering}
 
     {b Warning.} The following is subject to change in the future.
 
-    Currently text rendering uses Cairo2's font selection mechanism
+    Currently text rendering uses Cairo's font selection mechanism
     and doesn't support the glyph API.
 
     Given a glyph cut:
@@ -55,7 +71,10 @@ val target_surface : Cairo.Surface.t -> [`Other] Vg.Vgr.target
     {- [`Textless_glyph_cut i] if no [text] argument is specified in a
        glyph cut.}}
 
-    *)
+    The following limitations should be taken into account.
+    {ul
+    {- In Cairo, the gradient color interpolation is performed
+       in (non-linear) sRGB space. This doesn't respect Vg's semantics.}} *)
 
 (*---------------------------------------------------------------------------
    Copyright 2014 Arthur Wendling, Daniel C. Bünzli.

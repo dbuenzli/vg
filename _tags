@@ -12,7 +12,7 @@
 
 <src/vgr_pdf.{mli,ml}> : package(gg), package(uutf), package(otfm)
 
-<src/vgr_cairo2.{mli,ml}>: package(gg), package(cairo2)
+<src/vgr_cairo.{mli,ml}>: package(gg), package(cairo2)
 
 <db/*.{mli,ml}> : package(gg)
 <db/glyphs_pdf.{mli,ml}> : package(uutf)
@@ -27,8 +27,8 @@
 
 <test/rsvg.{mli,ml,byte,native}> : package(gg), package(uutf), package(unix)
 
-<test/rcairo2.{mli,ml,byte,native}> : package(gg), package(uutf), \
-                                      package(unix), package(cairo2)
+<test/rcairo.{mli,ml,byte,native}> : package(gg), package(uutf), \
+                                     package(unix), package(cairo2)
 
 <test/rhtmlc.{mli,ml,byte}> : package(gg), package(otfm), package(uutf), \
                               package(js_of_ocaml), \
