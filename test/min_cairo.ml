@@ -1,11 +1,11 @@
 (* This code is in the public domain.
 
-   Minimal Vgr_cairo example. Compile with:
+   Minimal Vgr_cairo examples. Compile with:
 
    ocamlfind ocamlc \
     -package cairo2 \
     -package gg,vg,vg.cairo2 \
-    -linkpkg -o min_cairo2.byte min_cairo2.ml
+    -linkpkg -o min_cairo.byte min_cairo.ml
 *)
 
 open Gg
@@ -22,6 +22,15 @@ let image = I.const (Color.v_srgb 0.314 0.784 0.471)
 
 let () =
   let warn w = Vgr.pp_warning Format.err_formatter w in
-  let r = Vgr.create ~warn (Vgr_cairo.target `PNG) (`Channel stdout) in
+  let r = Vgr.create ~warn (Vgr_cairo.target `PS) (`Channel stdout) in
+  ignore (Vgr.render r (`Image (size, view, image)));
+  ignore (Vgr.render r `End)
+
+(* 3. Render with a manually created surface *)
+
+let () =
+  let surface = Cairo.Image.(create ARGB32) 400 400 in
+  let warn w = Vgr.pp_warning Format.err_formatter w in
+  let r = Vgr.create ~warn (Vgr_cairo.target_surface surface) `Other in
   ignore (Vgr.render r (`Image (size, view, image)));
   ignore (Vgr.render r `End)
