@@ -16,9 +16,11 @@ let formats = [
   "svg", `SVG;
   ]
 
+let resolution = V2.v 5000.0 5000.0
+
 let renderer fmt dst _ =
   let cairo_fmt = List.assoc fmt formats in
-  Vgr.create (Vgr_cairo.target cairo_fmt) dst
+  Vgr.create (Vgr_cairo.target ~resolution cairo_fmt) dst
 
 let ftypes = List.map fst formats
 let () =

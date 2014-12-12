@@ -16,9 +16,13 @@
 
 (** {1:target Cairo render targets} *)
 
-val target : [< `PDF | `PNG | `PS | `SVG ] -> Vg.Vgr.dst_stored Vg.Vgr.target
-(** [target fmt] is a render target for rendering to the stored destination
-    given to {!Vg.Vgr.create} in the chosen format [fmt].
+val target : ?resolution:Gg.V2.t -> [< `PDF | `PNG | `PS | `SVG ] ->
+  Vg.Vgr.dst_stored Vg.Vgr.target
+(** [target resolution fmt] is a render target for rendering to the stored
+    destination given to {!Vg.Vgr.create} in the chosen format [fmt].
+    {ul
+    {- [resolution], specifies the rendering resolution in samples per
+       meters.}}
 
     {b Multiple images.} Multiple images render on the target are not
     supported. [Invalid_argument] is raised by {!Vg.Vgr.render} if multiple
@@ -31,8 +35,8 @@ val target_surface : ?size:Gg.size2 -> Cairo.Surface.t ->
     {ul
     {- The physical size of {{!Vg.Vgr.renderable}renderables} is ignored and
        the view rectangle is mapped on the surface size.}
-    {- Surfaces created with [Cairo.Surface] have a valid size, while file
-       based surfaces have a size of zero by default. If the size of the
+    {- [size], Surfaces created with [Cairo.Surface] have a valid size, while
+       file based surfaces have a size of zero by default: If the size of the
        surface can not be determined, the optional argument [size] is used
        instead. [Invalid_argument] is raised if the size is invalid.}}
 
