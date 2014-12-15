@@ -63,7 +63,7 @@ val target_surface : ?size:Gg.size2 -> Cairo.Surface.t ->
     [text] must be provided and is used to define the text to render.
     [font] is used to select the font family.
     
-    The weight is limited to Normal ([< `W600]) and Bold ([>= `W600]). *)
+    The weight is limited to Normal ([< `W700]) and Bold ([>= `W700]). *)
 
 (** {1:limits Render warnings and limitations}
 

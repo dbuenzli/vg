@@ -161,17 +161,15 @@ let get_font s font = try Hashtbl.find s.fonts font with
       | `Normal -> Cairo.Upright
       | `Oblique -> Cairo.Oblique in
       let weight = match font.Font.weight with
-      | `W600 | `W700 | `W800 | `W900 -> Cairo.Bold
+      | `W700 | `W800 | `W900 -> Cairo.Bold
       | _ -> Cairo.Normal in
       Font (Cairo.Font_face.create ~family:font.Font.name slant weight)
     in
     Hashtbl.add s.fonts font cairo_font; cairo_font
 
 let set_source s p =
-  let p = get_primitive s p in
-  if s.gstate.g_stroke != p then begin match p with
-  | Pattern g -> Cairo.set_source s.ctx g
-  end;
+  let (Pattern g) as p = get_primitive s p in
+  Cairo.set_source s.ctx g;
   p
 
 let set_stroke s p = s.gstate.g_stroke <- set_source s p
