@@ -22,7 +22,7 @@ let renderer fmt dst _ =
 
 let ftypes = List.map fst formats
 let () =
-  Rstored.main_formats ~no_pack:true "a selected format" ftypes renderer
+  Rstored.main_multiformats ~no_pack:true "PNG, PDF, PS or SVG" ftypes renderer
 
 (*---------------------------------------------------------------------------
    Copyright 2014 Arthur Wendling.

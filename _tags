@@ -38,6 +38,8 @@
 
 <test/min_svg.{ml,byte,native}> : package(gg)
 
+<test/min_cairo.{ml,byte,native}> : package(gg), package(cairo2)
+
 <test/min_htmlc.{ml,byte}> : package(gg), package(js_of_ocaml), \
                              package(js_of_ocaml.syntax), syntax(camlp4o)
                                         

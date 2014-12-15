@@ -4,7 +4,7 @@
 
    ocamlfind ocamlc \
     -package cairo2 \
-    -package gg,vg,vg.cairo2 \
+    -package gg,vg,vg.cairo \
     -linkpkg -o min_cairo.byte min_cairo.ml
 *)
 

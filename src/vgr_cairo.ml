@@ -178,12 +178,10 @@ let set_stroke s p = s.gstate.g_stroke <- set_source s p
 
 let set_fill s p = s.gstate.g_fill <- set_source s p
 
-let set_font s (font, size) =
+let set_font s font size =
   let Font f = get_font s font in
   Cairo.Font_face.set s.ctx f;
   Cairo.set_font_size s.ctx size
-  (*Cairo.set_font_size s.ctx 25.0*)
-
 
 let set_path s p =
   let rec loop last = function
@@ -252,7 +250,7 @@ let rec r_cut_glyphs s a run i = match run.text with
     Cairo.save s.ctx;
     s.todo <- (save_gstate s) :: s.todo;
     let font_size = run.font.Font.size in
-    set_font s (run.font, font_size);
+    set_font s run.font font_size;
     Cairo.Path.clear s.ctx;
     M3.(Cairo.transform s.ctx (cairo_matrix 1.0 0.0
                                             0.0 (-1.0)

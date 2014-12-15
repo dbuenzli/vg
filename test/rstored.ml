@@ -157,7 +157,7 @@ let pp_image_info ppf i =
 
 (* Command line *)
 
-let main_formats ?(no_pack = false) rname ftypes renderer =
+let main_multiformats ?(no_pack = false) rname ftypes renderer =
   let usage = Printf.sprintf
       "Usage: %s [OPTION]... [ID1] [ID2]...\n\
       \ Renders images of the Vg image database to %s files.\n\
@@ -178,7 +178,7 @@ let main_formats ?(no_pack = false) rname ftypes renderer =
   let usize = ref unix_buffer_size in
   let nat s r v = if v > 0 then r := v else log "%s must be > 0, ignored\n" s in
   let options =
-    (if ftypes = [] then [] else [
+    (match ftypes with [] | [_] -> [] | _ -> [
       "-format", Arg.Symbol (ftypes, ( := ) ftype),
       Printf.sprintf "Selects the image format (default: %s)" !ftype
     ]) @ [
@@ -232,7 +232,7 @@ let main_formats ?(no_pack = false) rname ftypes renderer =
       List.iter print_endline (List.sort compare tags)
 
 let main ?no_pack rname ftype renderer =
-  main_formats ?no_pack rname [ftype] (fun _ -> renderer)
+  main_multiformats ?no_pack rname [ftype] (fun _ -> renderer)
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

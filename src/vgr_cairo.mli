@@ -8,9 +8,10 @@
 
 (** Vg Cairo renderer.
 
-    {b Dependency:}
-    {ul {- {e {{:http://forge.ocamlcore.org/projects/cairo/}Cairo2 library
-     for OCaml}}}}
+    {b Dependencies:}
+    {ul {- {e {{:http://forge.ocamlcore.org/projects/cairo/}Cairo2 bindings
+     for OCaml}}}
+     {- {e {{:http://cairographics.org/}Cairo Graphics library}}}}
 
     {e Release %%VERSION%% — %%MAINTAINER%% } *)
 
@@ -32,7 +33,7 @@ val target : ?resolution:Gg.V2.t -> [< `PDF | `PNG | `PS | `SVG ] ->
 
 val target_surface : ?size:Gg.size2 -> Cairo.Surface.t ->
   [`Other] Vg.Vgr.target
-(** [target_surface s] is a render target for rendering to the Cairo
+(** [target_surface size s] is a render target for rendering to the Cairo
     surface [s].
     {ul
     {- The physical size of {{!Vg.Vgr.renderable}renderables} is ignored and
