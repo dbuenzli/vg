@@ -12,6 +12,8 @@
 
 <src/vgr_pdf.{mli,ml}> : package(gg), package(uutf), package(otfm)
 
+<src/vgr_cairo.{mli,ml}>: package(gg), package(cairo2)
+
 <db/*.{mli,ml}> : package(gg)
 <db/glyphs_pdf.{mli,ml}> : package(uutf)
 
@@ -25,6 +27,9 @@
 
 <test/rsvg.{mli,ml,byte,native}> : package(gg), package(uutf), package(unix)
 
+<test/rcairo.{mli,ml,byte,native}> : package(gg), package(uutf), \
+                                     package(unix), package(cairo2)
+
 <test/rhtmlc.{mli,ml,byte}> : package(gg), package(otfm), package(uutf), \
                               package(js_of_ocaml), \
                               package(js_of_ocaml.syntax), syntax(camlp4o)
@@ -32,6 +37,8 @@
 <test/min_pdf.{ml,byte,native}> : package(gg), package(uutf), package(otfm)
 
 <test/min_svg.{ml,byte,native}> : package(gg)
+
+<test/min_cairo.{ml,byte,native}> : package(gg), package(cairo2)
 
 <test/min_htmlc.{ml,byte}> : package(gg), package(js_of_ocaml), \
                              package(js_of_ocaml.syntax), syntax(camlp4o)
