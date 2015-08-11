@@ -12,9 +12,6 @@ open Vgr.Private.Data
 
 let err_zero_size () = invalid_arg "Cairo surface has a size of zero"
 
-let default_resolution =
-  let m = 72000. /. 25.4 in Size2.v m m
-
 type cairo_font = Font : 'a Cairo.Font_face.t -> cairo_font
 type cairo_primitive = Pattern : 'a Cairo.Pattern.t -> cairo_primitive
 
@@ -34,7 +31,7 @@ type cairo_backend = [ `Surface | `PDF | `PNG | `PS | `SVG ]
 type cmd = Set of gstate | Draw of Vgr.Private.Data.image
 type state =
   { r : Vgr.Private.renderer;                    (* corresponding renderer. *)
-    resolution : Gg.v2;                       (* resolution of the surface. *)
+    scale : Gg.v2;                         (* scale applied to the surface. *)
     backend : cairo_backend;                        (* final format target. *)
     mutable size : Size2.t;                          (* surface dimensions. *)
     surface : Cairo.Surface.t;                      (* surface rendered to. *)
@@ -321,8 +318,8 @@ let render s v k r = match v with
     then k r
     else (Cairo.Surface.finish s.surface; Vgr.Private.flush k r)
 | `Image (size, view, i) ->
-    let cw = (Size2.w size /. 1000.) *. (V2.x s.resolution) in
-    let ch = (Size2.h size /. 1000.) *. (V2.y s.resolution) in
+    let cw = (Size2.w size /. 1000.) *. (V2.x s.scale) in
+    let ch = (Size2.h size /. 1000.) *. (V2.y s.scale) in
     if cw = 0.0 || ch = 0.0 then err_zero_size ();
     (* Map view rect (bot-left coords) to surface (top-left coords) *)
     let sx = cw /. Box2.w view in
@@ -348,8 +345,12 @@ let format_render resolution backend =
     | Some s, _ -> render s v k r
     | None, `End -> k r
     | None, `Image (size, view, i) ->
-        let w = (Size2.w size /. 1000.) *. (V2.x resolution) in
-        let h = (Size2.h size /. 1000.) *. (V2.y resolution) in
+        let scale = match backend with
+        | `PNG -> resolution
+        | `PDF | `PS | `SVG -> let m2pt = 72000. /. 25.4 in Size2.v m2pt m2pt
+        in
+        let w = (Size2.w size /. 1000.) *. (V2.x scale) in
+        let h = (Size2.h size /. 1000.) *. (V2.y scale) in
         let surface = match backend with
         | `PNG ->
             Cairo.Image.(create ARGB32 (int_of_float w) (int_of_float h))
@@ -360,7 +361,7 @@ let format_render resolution backend =
         let ctx = Cairo.create surface in
         Cairo.save ctx;
         let state =
-          { r; surface; ctx; resolution; size;
+          { r; surface; ctx; scale; size;
             backend = (backend :> cairo_backend);
             cost = 0;
             view = Box2.empty;
@@ -373,7 +374,10 @@ let format_render resolution backend =
         s := Some state;
         render state v k r
 
-let target ?(resolution = default_resolution) backend =
+let default_png_resolution =
+  let s = 300. /. 0.0254 (* 300 dpi *) in Size2.v s s
+
+let target ?(resolution = default_png_resolution) backend =
   let target _ _ = false, format_render resolution backend in
   Vgr.Private.create_target target
 
@@ -394,7 +398,7 @@ let target_of_surface ?size surface =
     let ctx = Cairo.create surface in
     Cairo.save ctx;
     true, render { r; surface; ctx; size;
-                   resolution = Size2.v 1.0 1.0;
+                   scale = Size2.v 1.0 1.0;
                    backend = `Surface;
                    cost = 0;
                    view = Box2.empty;

@@ -14,17 +14,15 @@
 
 val target : ?resolution:Gg.V2.t -> [< `PDF | `PNG | `PS | `SVG ] ->
   Vg.Vgr.dst_stored Vg.Vgr.target
-(** [target resolution fmt] is a render target for rendering to the stored
-    destination given to {!Vg.Vgr.create} in the chosen format [fmt].
+(** [target resolution fmt] is a [fmt] render target for rendering to
+    the stored destination given to {!Vg.Vgr.create}.
     {ul
-    {- [resolution], specifies the rendering resolution in samples per
-       meters. The PDF, PS and SVG formats are measured in points by Cairo,
-       while the PNG format is in pixels. If unspecified, the default
-       conversion to points is used.}}
-
+    {- [resolution], if [fmt] is [`PNG], specifies the rendering
+       resolution in samples per meters (defaults to [11_811.] (300dpi)
+       in each dimension). Ignored otherwise.}}
     {b Multiple images.} Multiple images render on the target are not
-    supported. [Invalid_argument] is raised by {!Vg.Vgr.render} if multiple
-    images are rendered. *)
+    supported. [Invalid_argument] is raised by {!Vg.Vgr.render} if
+    multiple images are rendered. *)
 
 val target_of_surface : ?size:Gg.size2 -> Cairo.Surface.t ->
   [`Other] Vg.Vgr.target
