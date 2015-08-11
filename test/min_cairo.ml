@@ -31,6 +31,6 @@ let () =
 let () =
   let surface = Cairo.Image.(create ARGB32) 400 400 in
   let warn w = Vgr.pp_warning Format.err_formatter w in
-  let r = Vgr.create ~warn (Vgr_cairo.target_surface surface) `Other in
+  let r = Vgr.create ~warn (Vgr_cairo.target_of_surface surface) `Other in
   ignore (Vgr.render r (`Image (size, view, image)));
   ignore (Vgr.render r `End)

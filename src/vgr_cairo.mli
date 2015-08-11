@@ -6,12 +6,7 @@
 
 (* Based on the Vgr_htmlc documentation by Daniel C. Bünzli. *)
 
-(** Vg Cairo renderer.
-
-    {b Dependencies:}
-    {ul {- {e {{:http://forge.ocamlcore.org/projects/cairo/}Cairo2 bindings
-     for OCaml}}}
-     {- {e {{:http://cairographics.org/}Cairo Graphics library}}}}
+(** Vg {{:http://cairographics.org/}Cairo} renderer.
 
     {e Release %%VERSION%% — %%MAINTAINER%% } *)
 
@@ -31,9 +26,9 @@ val target : ?resolution:Gg.V2.t -> [< `PDF | `PNG | `PS | `SVG ] ->
     supported. [Invalid_argument] is raised by {!Vg.Vgr.render} if multiple
     images are rendered. *)
 
-val target_surface : ?size:Gg.size2 -> Cairo.Surface.t ->
+val target_of_surface : ?size:Gg.size2 -> Cairo.Surface.t ->
   [`Other] Vg.Vgr.target
-(** [target_surface size s] is a render target for rendering to the Cairo
+(** [target_of_surface size s] is a render target for rendering to the Cairo
     surface [s].
     {ul
     {- The physical size of {{!Vg.Vgr.renderable}renderables} is ignored and
@@ -62,10 +57,10 @@ val target_surface : ?size:Gg.size2 -> Cairo.Surface.t ->
     The [blocks], [advances] and [glyphs] parameters are ignored.
     [text] must be provided and is used to define the text to render.
     [font] is used to select the font family.
-    
-    The weight is limited to Normal ([< `W700]) and Bold ([>= `W700]). *)
 
-(** {1:limits Render warnings and limitations}
+    The weight is limited to Normal ([< `W700]) and Bold ([>= `W700]).
+
+    {1:limits Render warnings and limitations}
 
     The following render warnings are reported.
     {ul

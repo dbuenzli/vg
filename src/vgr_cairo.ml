@@ -67,25 +67,25 @@ let cairo_matrix_of_m3 m =
   M3.(cairo_matrix (e00 m) (e10 m) (e01 m) (e11 m) (e02 m) (e12 m))
 
 let cairo_cap = function
-  | `Butt -> Cairo.BUTT
-  | `Round -> Cairo.ROUND
-  | `Square -> Cairo.SQUARE
+| `Butt -> Cairo.BUTT
+| `Round -> Cairo.ROUND
+| `Square -> Cairo.SQUARE
 
 let cairo_join = function
-  | `Bevel -> Cairo.JOIN_BEVEL
-  | `Round -> Cairo.JOIN_ROUND
-  | `Miter -> Cairo.JOIN_MITER
+| `Bevel -> Cairo.JOIN_BEVEL
+| `Round -> Cairo.JOIN_ROUND
+| `Miter -> Cairo.JOIN_MITER
 
 let cairo_fill_rule = function
-  | `Anz -> Cairo.WINDING
-  | `Aeo -> Cairo.EVEN_ODD
-  | `O _ -> assert false
+| `Anz -> Cairo.WINDING
+| `Aeo -> Cairo.EVEN_ODD
+| `O _ -> assert false
 
 let set_dashes s = function
-  | None -> Cairo.set_dash s.ctx [||]
-  | Some (offset, dashes) ->
-      let dashes = Array.of_list dashes in
-      Cairo.set_dash s.ctx ~ofs:offset dashes
+| None -> Cairo.set_dash s.ctx [||]
+| Some (offset, dashes) ->
+    let dashes = Array.of_list dashes in
+    Cairo.set_dash s.ctx ~ofs:offset dashes
 
 let init_ctx s =
   let o = s.gstate.g_outline in
@@ -104,7 +104,6 @@ let init_ctx s =
   Cairo.rectangle s.ctx 0. 0. w h;
   Cairo.fill s.ctx;
   Cairo.set_operator s.ctx Cairo.OVER
-
 
 let push_transform s tr =
   let m = match tr with
@@ -127,7 +126,8 @@ let set_outline s o =
     (Cairo.set_line_join s.ctx (cairo_join o.P.join));
   if old.P.miter_angle <> o.P.miter_angle then
     (Cairo.set_miter_limit s.ctx (Vgr.Private.P.miter_limit o));
-  if old.P.dashes <> o.P.dashes then set_dashes s o.P.dashes;
+  if old.P.dashes <> o.P.dashes then
+    set_dashes s o.P.dashes;
   ()
 
 let get_primitive s p = try Hashtbl.find s.prims p with
@@ -159,10 +159,12 @@ let get_font s font = try Hashtbl.find s.fonts font with
       let slant = match font.Font.slant with
       | `Italic -> Cairo.Italic
       | `Normal -> Cairo.Upright
-      | `Oblique -> Cairo.Oblique in
+      | `Oblique -> Cairo.Oblique
+      in
       let weight = match font.Font.weight with
       | `W700 | `W800 | `W900 -> Cairo.Bold
-      | _ -> Cairo.Normal in
+      | _ -> Cairo.Normal
+      in
       Font (Cairo.Font_face.create ~family:font.Font.name slant weight)
     in
     Hashtbl.add s.fonts font cairo_font; cairo_font
@@ -273,7 +275,6 @@ let rec r_cut_glyphs s a run i = match run.text with
         s.todo <- Draw i :: s.todo
     end
 
-
 let rec r_image s k r =
   if s.cost > limit s then (s.cost <- 0; partial (r_image s k) r) else
   match s.todo with
@@ -322,7 +323,7 @@ let render s v k r = match v with
 | `Image (size, view, i) ->
     let cw = (Size2.w size /. 1000.) *. (V2.x s.resolution) in
     let ch = (Size2.h size /. 1000.) *. (V2.y s.resolution) in
-    if cw = 0.0 || ch = 0.0 then err_zero_size () ;
+    if cw = 0.0 || ch = 0.0 then err_zero_size ();
     (* Map view rect (bot-left coords) to surface (top-left coords) *)
     let sx = cw /. Box2.w view in
     let sy = ch /. Box2.h view in
@@ -350,11 +351,11 @@ let format_render resolution backend =
         let w = (Size2.w size /. 1000.) *. (V2.x resolution) in
         let h = (Size2.h size /. 1000.) *. (V2.y resolution) in
         let surface = match backend with
-          | `PNG ->
-              Cairo.Image.(create ARGB32 (int_of_float w) (int_of_float h))
-          | `PDF -> Cairo.PDF.create_for_stream (vgr_output r) w h
-          | `PS -> Cairo.PS.create_for_stream (vgr_output r) w h
-          | `SVG -> Cairo.SVG.create_for_stream  (vgr_output r) w h
+        | `PNG ->
+            Cairo.Image.(create ARGB32 (int_of_float w) (int_of_float h))
+        | `PDF -> Cairo.PDF.create_for_stream (vgr_output r) w h
+        | `PS -> Cairo.PS.create_for_stream (vgr_output r) w h
+        | `SVG -> Cairo.SVG.create_for_stream  (vgr_output r) w h
         in
         let ctx = Cairo.create surface in
         Cairo.save ctx;
@@ -367,7 +368,8 @@ let format_render resolution backend =
             todo = [];
             fonts = Hashtbl.create 20;
             prims = Hashtbl.create 231;
-            gstate = init_gstate; } in
+            gstate = init_gstate; }
+        in
         s := Some state;
         render state v k r
 
@@ -375,7 +377,7 @@ let target ?(resolution = default_resolution) backend =
   let target _ _ = false, format_render resolution backend in
   Vgr.Private.create_target target
 
-let target_surface ?size surface =
+let target_of_surface ?size surface =
   let target r _ =
     let sw = Cairo.Image.get_width surface in
     let sh = Cairo.Image.get_height surface in
@@ -387,7 +389,8 @@ let target_surface ?size surface =
       | Some s ->
           if Size2.w s > 0.0 && Size2.h s > 0.0
           then s
-          else err_zero_size () in
+          else err_zero_size ()
+    in
     let ctx = Cairo.create surface in
     Cairo.save ctx;
     true, render { r; surface; ctx; size;
