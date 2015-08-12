@@ -208,6 +208,32 @@ Db.image "path-miter-angle" ~author:Db.dbuenzli
     !acc
   end;
 
+Db.image "path-circle-ellipse" ~author:Db.dbuenzli
+  ~note:"Shows dilation on line width due to scaling \
+         (from Christophe Troestler ocaml-cairo example tips_ellipse.ml).
+         The form on the left is a scaled circle. The form on the right is
+         an ellipse."
+  ~title:"Line width dilation"
+  ~tags:["path"]
+  ~size:(Size2.v 120. 120.)
+  ~view:(Box2.v P2.o (Size2.v 1. 1.))
+  begin fun _ ->
+    let circle =
+      let circle = P.(empty >> circle (P2.v 0.5 0.5) 0.4) in
+      let area = `O { P.o with P.width = 0.1 } in
+      I.cut ~area circle (I.const Color.black) >>
+      I.scale (Size2.v 0.5 1.)
+    in
+    let ellipse =
+      let ellipse = P.(empty >> ellipse (P2.v 0.5 0.5) (Size2.v 0.2 0.4)) in
+      let area = `O { P.o with P.width = 0.1 } in
+      I.cut ~area ellipse (I.const Color.black) >>
+      I.move (V2.v 0.25 0.)
+    in
+    I.blend circle ellipse
+  end
+
+
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
    All rights reserved.
