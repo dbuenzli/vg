@@ -22,7 +22,7 @@ let image = I.const (Color.v_srgb 0.314 0.784 0.471)
 
 let () =
   let warn w = Vgr.pp_warning Format.err_formatter w in
-  let r = Vgr.create ~warn (Vgr_cairo.target `PS) (`Channel stdout) in
+  let r = Vgr.create ~warn (Vgr_cairo.stored_target `PS) (`Channel stdout) in
   ignore (Vgr.render r (`Image (size, view, image)));
   ignore (Vgr.render r `End)
 

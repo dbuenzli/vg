@@ -18,7 +18,7 @@ let formats = [
 
 let renderer fmt dst _ =
   let cairo_fmt = List.assoc fmt formats in
-  Vgr.create (Vgr_cairo.target cairo_fmt) dst
+  Vgr.create (Vgr_cairo.stored_target cairo_fmt) dst
 
 let ftypes = List.map fst formats
 let () =

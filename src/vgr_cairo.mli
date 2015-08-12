@@ -12,9 +12,9 @@
 
 (** {1:target Cairo render targets} *)
 
-val target : ?resolution:Gg.V2.t -> [< `PDF | `PNG | `PS | `SVG ] ->
+val stored_target : ?resolution:Gg.V2.t -> [< `PDF | `PNG | `PS | `SVG ] ->
   Vg.Vgr.dst_stored Vg.Vgr.target
-(** [target resolution fmt] is a [fmt] render target for rendering to
+(** [stored_target fmt] is a [fmt] render target for rendering to
     the stored destination given to {!Vg.Vgr.create}.
     {ul
     {- [resolution], if [fmt] is [`PNG], specifies the rendering

@@ -378,7 +378,7 @@ let format_render resolution backend =
 let default_png_resolution =
   let s = 300. /. 0.0254 (* 300 dpi *) in Size2.v s s
 
-let target ?(resolution = default_png_resolution) backend =
+let stored_target ?(resolution = default_png_resolution) backend =
   let target _ _ = false, format_render resolution backend in
   Vgr.Private.create_target target
 
@@ -410,6 +410,7 @@ let target_of_surface ?size surface =
                    gstate = init_gstate; }
   in
   Vgr.Private.create_target target
+
 
 (*---------------------------------------------------------------------------
    Copyright 2014 Arthur Wendling, Daniel C. Bünzli.
