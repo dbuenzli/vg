@@ -190,8 +190,9 @@ let set_path s p =
       | `Qcurve (q, pt) ->
           let x,y = Cairo.Path.get_current_point s.ctx in
           let p0 = V2.v x y in
-          let c  = V2.((q + 2. * p0) / 3.) in
-          let c' = V2.((pt + 2. * q) / 3.) in
+          let twoq = V2.(2. * q) in
+          let c  = V2.((p0 + twoq) / 3.) in
+          let c' = V2.((pt + twoq) / 3.) in
           P2.(Cairo.curve_to s.ctx (x c) (y c) (x c') (y c') (x pt) (y pt));
           loop pt segs
       | `Ccurve (c, c', pt) ->
