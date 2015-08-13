@@ -93,6 +93,7 @@ let init_ctx s size view_tr =
   set_dashes s o.P.dashes;
   Cairo.set_operator s.ctx Cairo.CLEAR;
   Cairo.rectangle s.ctx 0. 0. (Size2.w size) (Size2.h size);
+  Cairo.clip_preserve s.ctx;
   Cairo.fill s.ctx;
   Cairo.set_operator s.ctx Cairo.OVER
 
