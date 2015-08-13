@@ -9,12 +9,13 @@ open Vg
 
 include Db_contents
 
-let formats = [
-  "png", `PNG;
-  "pdf", `PDF;
-  "ps",  `PS;
-  "svg", `SVG;
-  ]
+let dpi300 = let s = 300. /. 0.0254 in Size2.v s s
+
+let formats =
+  [ "png", `Png dpi300;
+    "pdf", `Pdf;
+    "ps",  `Ps;
+    "svg", `Svg; ]
 
 let renderer fmt dst _ =
   let cairo_fmt = List.assoc fmt formats in

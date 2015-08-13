@@ -4,42 +4,38 @@
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
-(* Based on the Vgr_htmlc documentation by Daniel C. Bünzli. *)
-
 (** Vg {{:http://cairographics.org/}Cairo} renderer.
 
     {e Release %%VERSION%% — %%MAINTAINER%% } *)
 
 (** {1:target Cairo render targets} *)
 
-val stored_target : ?resolution:Gg.V2.t -> [< `PDF | `PNG | `PS | `SVG ] ->
+val target : Cairo.context -> [`Other] Vg.Vgr.target
+(** [target ctx] is a render target for rendering to the Cairo
+    context [ctx]. Rendering a {{!Vg.Vgr.renderable}renderable}
+    [(size, view, i)] is done as follows.
+    {ol
+    {- The context's current state is saved using {!Cairo.save}.}
+    {- The context's is clipped to [Box2.v P2.o size] and the portion
+       [view] of [i] is drawn in this box.}
+    {- The context's initial state is restored using {!Cairo.restore}}}
+
+    {b Multiple images.} Multiple images render on the target is
+    supported.  Each new render clears the clipped context. However,
+    the results are dependent on the underlying Cairo surface type,
+    file based surfaces for PDF, PS and SVG do not clear the view and
+    blend the different images instead. *)
+
+val stored_target : [< `Pdf | `Png of Gg.V2.t | `Ps | `Svg ] ->
   Vg.Vgr.dst_stored Vg.Vgr.target
 (** [stored_target fmt] is a [fmt] render target for rendering to
-    the stored destination given to {!Vg.Vgr.create}.
-    {ul
-    {- [resolution], if [fmt] is [`PNG], specifies the rendering
-       resolution in samples per meters (defaults to [11_811.] (300dpi)
-       in each dimension). Ignored otherwise.}}
+    the stored destination given to {!Vg.Vgr.create}. For [`Png]
+    the argument specifies the rendering resolution in samples
+    per meters.
+
     {b Multiple images.} Multiple images render on the target are not
     supported. [Invalid_argument] is raised by {!Vg.Vgr.render} if
     multiple images are rendered. *)
-
-val target_of_surface : ?size:Gg.size2 -> Cairo.Surface.t ->
-  [`Other] Vg.Vgr.target
-(** [target_of_surface size s] is a render target for rendering to the Cairo
-    surface [s].
-    {ul
-    {- The physical size of {{!Vg.Vgr.renderable}renderables} is ignored and
-       the view rectangle is mapped on the surface size.}
-    {- [size], Surfaces created with [Cairo.Surface] have a valid size, while
-       file based surfaces have a size of zero by default: If the size of the
-       surface can not be determined, the optional argument [size] is used
-       instead. [Invalid_argument] is raised if the size is invalid.}}
-
-    {b Multiple images.} Multiple images render on the target is supported.
-    Each new render clears the surface. However, the results are dependent on
-    Cairo internals: file based surfaces for PDF, PS and SVG do not clear the
-    view and blend the different images instead. *)
 
 (** {1:text Text rendering}
 

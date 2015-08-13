@@ -4,13 +4,9 @@
    %%NAME%% release %%VERSION%%
   ---------------------------------------------------------------------------*)
 
-(* Based on the Vgr_htmlc implementation by Daniel C. Bünzli. *)
-
 open Gg
 open Vg
 open Vgr.Private.Data
-
-let err_zero_size () = invalid_arg "Cairo surface has a size of zero"
 
 type cairo_font = Font : 'a Cairo.Font_face.t -> cairo_font
 type cairo_primitive = Pattern : 'a Cairo.Pattern.t -> cairo_primitive
@@ -26,24 +22,27 @@ type gstate =     (* subset of the graphics state saved by a Cairo.save ctx *)
 let init_gstate =
   { g_tr = M3.id; g_outline = P.o; g_stroke = dumb_prim; g_fill = dumb_prim }
 
-type cairo_backend = [ `Surface | `PDF | `PNG | `PS | `SVG ]
-
 type cmd = Set of gstate | Draw of Vgr.Private.Data.image
 type state =
   { r : Vgr.Private.renderer;                    (* corresponding renderer. *)
+    ctx : Cairo.context;                                  (* cairo context. *)
     scale : Gg.v2;                         (* scale applied to the surface. *)
-    backend : cairo_backend;                        (* final format target. *)
-    mutable size : Size2.t;                          (* surface dimensions. *)
-    surface : Cairo.Surface.t;                      (* surface rendered to. *)
-    ctx : Cairo.context;                           (* context of [surface]. *)
     mutable cost : int;                          (* cost counter for limit. *)
     mutable view : Gg.box2;           (* current renderable view rectangle. *)
-    mutable view_tr : M3.t;                    (* view to canvas transform. *)
     mutable todo : cmd list;                        (* commands to perform. *)
     fonts : (Vg.font, cairo_font) Hashtbl.t;               (* cached fonts. *)
     prims :                                           (* cached primitives. *)
       (Vgr.Private.Data.primitive, cairo_primitive) Hashtbl.t;
     mutable gstate : gstate; }                    (* current graphic state. *)
+
+let create_state r ctx scale =
+  { r; ctx; scale;
+    cost = 0;
+    view = Box2.empty;
+    todo = [];
+    fonts = Hashtbl.create 20;
+    prims = Hashtbl.create 231;
+    gstate = init_gstate; }
 
 let save_gstate s = Set { s.gstate with g_tr = s.gstate.g_tr }
 let set_gstate s g = s.gstate <- g
@@ -84,21 +83,18 @@ let set_dashes s = function
     let dashes = Array.of_list dashes in
     Cairo.set_dash s.ctx ~ofs:offset dashes
 
-let init_ctx s =
+let init_ctx s size view_tr =
   let o = s.gstate.g_outline in
-  let m = s.view_tr in
   Cairo.restore s.ctx;
   Cairo.save s.ctx;
-  Cairo.transform s.ctx (cairo_matrix_of_m3 m);
+  Cairo.transform s.ctx (cairo_matrix_of_m3 view_tr);
   Cairo.set_line_width s.ctx o.P.width;
   Cairo.set_line_cap s.ctx (cairo_cap o.P.cap);
   Cairo.set_line_join s.ctx (cairo_join o.P.join);
   Cairo.set_miter_limit s.ctx (Vgr.Private.P.miter_limit o);
   set_dashes s o.P.dashes;
   Cairo.set_operator s.ctx Cairo.CLEAR;
-  let w = float (Cairo.Image.get_width s.surface) in
-  let h = float (Cairo.Image.get_height s.surface) in
-  Cairo.rectangle s.ctx 0. 0. w h;
+  Cairo.rectangle s.ctx 0. 0. (Size2.w size) (Size2.h size);
   Cairo.fill s.ctx;
   Cairo.set_operator s.ctx Cairo.OVER
 
@@ -132,18 +128,21 @@ let get_primitive s p = try Hashtbl.find s.prims p with
     let add_stop g (t, c) =
       let c = Color.to_srgb c in
       Cairo.Pattern.add_color_stop_rgba g ~ofs:t
-        (V4.x c) (V4.y c) (V4.z c) (V4.w c) in
+        (V4.x c) (V4.y c) (V4.z c) (V4.w c)
+    in
     let create = function
     | Const c ->
         let c = Color.to_srgb c in
         Pattern V4.(Cairo.Pattern.create_rgba (x c) (y c) (z c) (w c))
     | Axial (stops, pt, pt') ->
-        let g = V2.(Cairo.Pattern.create_linear (x pt)  (y pt)
-                                                (x pt') (y pt')) in
+        let g =
+          V2.(Cairo.Pattern.create_linear (x pt) (y pt) (x pt') (y pt'))
+        in
         List.iter (add_stop g) stops; Pattern g
     | Radial (stops, f, c, r) ->
-        let g = V2.(Cairo.Pattern.create_radial
-                      (x f) (y f) 0.0 (x c) (y c) r) in
+        let g =
+          V2.(Cairo.Pattern.create_radial (x f) (y f) 0.0 (x c) (y c) r)
+        in
         List.iter (add_stop g) stops; Pattern g
     | Raster _ -> assert false
     in
@@ -172,7 +171,6 @@ let set_source s p =
   p
 
 let set_stroke s p = s.gstate.g_stroke <- set_source s p
-
 let set_fill s p = s.gstate.g_fill <- set_source s p
 
 let set_font s font size =
@@ -250,9 +248,9 @@ let rec r_cut_glyphs s a run i = match run.text with
     let font_size = run.font.Font.size in
     set_font s run.font font_size;
     Cairo.Path.clear s.ctx;
-    M3.(Cairo.transform s.ctx (cairo_matrix 1.0 0.0
-                                            0.0 (-1.0)
-                                            0.0 0.0));
+    Cairo.transform s.ctx (cairo_matrix 1.0 0.0
+                                        0.0 (-1.0)
+                                        0.0 0.0);
     Cairo.move_to s.ctx 0. 0.;
     Cairo.Path.text s.ctx text;
     begin match a with
@@ -267,9 +265,9 @@ let rec r_cut_glyphs s a run i = match run.text with
         end
     | `Aeo | `Anz ->
         Cairo.clip s.ctx;
-        M3.(Cairo.transform s.ctx (cairo_matrix 1.0 0.0
-                                                0.0 (-1.0)
-                                                0.0 0.0));
+        Cairo.transform s.ctx (cairo_matrix 1.0 0.0
+                                            0.0 (-1.0)
+                                            0.0 0.0);
         s.todo <- Draw i :: s.todo
     end
 
@@ -307,21 +305,11 @@ let rec r_image s k r =
           push_transform s tr;
           r_image s k r
 
-let vgr_output r str =
-  let k' _ = `Ok in
-  ignore (Vgr.Private.writes str 0 (String.length str) k' r)
-
 let render s v k r = match v with
-| `End ->
-    if s.backend = `PNG then
-      Cairo.PNG.write_to_stream s.surface (vgr_output r);
-    if s.backend = `Surface
-    then k r
-    else (Cairo.Surface.finish s.surface; Vgr.Private.flush k r)
+| `End -> k r
 | `Image (size, view, i) ->
     let cw = (Size2.w size /. 1000.) *. (V2.x s.scale) in
     let ch = (Size2.h size /. 1000.) *. (V2.y s.scale) in
-    if cw = 0.0 || ch = 0.0 then err_zero_size ();
     (* Map view rect (bot-left coords) to surface (top-left coords) *)
     let sx = cw /. Box2.w view in
     let sy = ch /. Box2.h view in
@@ -333,84 +321,56 @@ let render s v k r = match v with
     in
     s.cost <- 0;
     s.view <- view;
-    s.view_tr <- view_tr;
     s.todo <- [ Draw i ];
     s.gstate <- { init_gstate with g_tr = init_gstate.g_tr }; (* copy *)
-    init_ctx s;
+    init_ctx s size view_tr;
     r_image s k r
 
-let format_render resolution backend =
-  let s = ref None in
-  fun v k r ->
-    match !s, v with
-    | Some s, _ -> render s v k r
-    | None, `End -> k r
-    | None, `Image (size, view, i) ->
-        let scale = match backend with
-        | `PNG -> resolution
-        | `PDF | `PS | `SVG -> let m2pt = 72000. /. 25.4 in Size2.v m2pt m2pt
-        in
-        let w = (Size2.w size /. 1000.) *. (V2.x scale) in
-        let h = (Size2.h size /. 1000.) *. (V2.y scale) in
-        let surface = match backend with
-        | `PNG ->
-            Cairo.Image.(create ARGB32 (int_of_float w) (int_of_float h))
-        | `PDF -> Cairo.PDF.create_for_stream (vgr_output r) w h
-        | `PS -> Cairo.PS.create_for_stream (vgr_output r) w h
-        | `SVG -> Cairo.SVG.create_for_stream  (vgr_output r) w h
-        in
-        let ctx = Cairo.create surface in
-        Cairo.save ctx;
-        let state =
-          { r; surface; ctx; scale; size;
-            backend = (backend :> cairo_backend);
-            cost = 0;
-            view = Box2.empty;
-            view_tr = M3.id;
-            todo = [];
-            fonts = Hashtbl.create 20;
-            prims = Hashtbl.create 231;
-            gstate = init_gstate; }
-        in
-        s := Some state;
-        render state v k r
-
-let default_png_resolution =
-  let s = 300. /. 0.0254 (* 300 dpi *) in Size2.v s s
-
-let stored_target ?(resolution = default_png_resolution) backend =
-  let target _ _ = false, format_render resolution backend in
+let target ctx =
+  let target r _ = true, render (create_state r ctx (Size2.v 1. 1.)) in
   Vgr.Private.create_target target
 
-let target_of_surface ?size surface =
-  let target r _ =
-    let sw = Cairo.Image.get_width surface in
-    let sh = Cairo.Image.get_height surface in
-    let size =
-      if sw > 0 && sh > 0
-      then Size2.v (float sw) (float sh)
-      else match size with
-      | None -> err_zero_size ()
-      | Some s ->
-          if Size2.w s > 0.0 && Size2.h s > 0.0
-          then s
-          else err_zero_size ()
+(* Stored targets. *)
+
+let vgr_output r str =
+  let k' _ = `Ok in
+  ignore (Vgr.Private.writes str 0 (String.length str) k' r)
+
+let write_png surface k r =
+  Cairo.PNG.write_to_stream surface (vgr_output r);
+  k r
+
+let stored_flush surface k r =
+  Cairo.Surface.finish surface;
+  Vgr.Private.flush k r
+
+let meters2pt =
+  let m2pt = 72000. /. 25.4 in Size2.v m2pt m2pt
+
+let init_stored backend v k r = match v with
+| `End -> k r
+| `Image (size, view, i) ->
+    let scale = match backend with
+    | `Png res -> res
+    | `Pdf | `Ps | `Svg -> meters2pt
+    in
+    let w = (Size2.w size /. 1000.) *. (V2.x scale) in
+    let h = (Size2.h size /. 1000.) *. (V2.y scale) in
+    let surface, flush = match backend with
+    | `Png _ ->
+        Cairo.Image.(create ARGB32 (int_of_float w) (int_of_float h)),
+        fun surf k -> write_png surf (stored_flush surf k)
+    | `Pdf -> Cairo.PDF.create_for_stream (vgr_output r) w h, stored_flush
+    | `Ps -> Cairo.PS.create_for_stream (vgr_output r) w h, stored_flush
+    | `Svg -> Cairo.SVG.create_for_stream  (vgr_output r) w h, stored_flush
     in
     let ctx = Cairo.create surface in
     Cairo.save ctx;
-    true, render { r; surface; ctx; size;
-                   scale = Size2.v 1.0 1.0;
-                   backend = `Surface;
-                   cost = 0;
-                   view = Box2.empty;
-                   view_tr = M3.id;
-                   todo = [];
-                   fonts = Hashtbl.create 20;
-                   prims = Hashtbl.create 231;
-                   gstate = init_gstate; }
-  in
-  Vgr.Private.create_target target
+    render (create_state r ctx scale) v (flush surface k) r
 
+let stored_target backend =
+  let target _ _ = false, init_stored backend in
+  Vgr.Private.create_target target
 
 (*---------------------------------------------------------------------------
    Copyright 2014 Arthur Wendling, Daniel C. Bünzli.
