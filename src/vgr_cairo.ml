@@ -85,8 +85,6 @@ let set_dashes s = function
 
 let init_ctx s size view_tr =
   let o = s.gstate.g_outline in
-  Cairo.restore s.ctx;
-  Cairo.save s.ctx;
   Cairo.transform s.ctx (cairo_matrix_of_m3 view_tr);
   Cairo.set_line_width s.ctx o.P.width;
   Cairo.set_line_cap s.ctx (cairo_cap o.P.cap);
@@ -323,8 +321,9 @@ let render s v k r = match v with
     s.view <- view;
     s.todo <- [ Draw i ];
     s.gstate <- { init_gstate with g_tr = init_gstate.g_tr }; (* copy *)
+    Cairo.save s.ctx;
     init_ctx s size view_tr;
-    r_image s k r
+    r_image s (fun r -> Cairo.restore s.ctx; k r) r
 
 let target ctx =
   let target r _ = true, render (create_state r ctx (Size2.v 1. 1.)) in
@@ -365,7 +364,6 @@ let init_stored backend v k r = match v with
     | `Svg -> Cairo.SVG.create_for_stream  (vgr_output r) w h, stored_flush
     in
     let ctx = Cairo.create surface in
-    Cairo.save ctx;
     render (create_state r ctx scale) v (flush surface k) r
 
 let stored_target backend =
