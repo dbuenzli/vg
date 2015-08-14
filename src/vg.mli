@@ -1334,7 +1334,7 @@ This can be compiled with:
                      -linkpkg -o min_pdf.native min_pdf.ml
 ]}
 
-{2:minsvg Minimal code for SVG output}
+{2:minsvg Minimal SVG output}
 
 The file [min_svg.ml] contains the following mostly self-explanatory
 code. We first define an image and then render it. For the latter
@@ -1369,7 +1369,7 @@ This can be compiled with:
                      -linkpkg -o min_svg.native min_svg.ml
 ]}
 
-{2:minhtmlc Minimal code for HTML canvas output}
+{2:minhtmlc Minimal HTML canvas output}
 
 The file [min_htmlc.ml] contains the following code. Step by step we have:
 {ol
@@ -1442,6 +1442,79 @@ javascript [min_htmlc.js]. The following one will do:
 </body>
 </html>
 v}
+
+{2:mincairopng Minimal Cairo PNG output}
+
+The file [min_cairo_png.ml] contains the following code. We first
+define an image and then render it on stdout as a PNG file.
+
+{[open Gg
+open Vg
+
+(* 1. Define your image *)
+
+let aspect = 1.618
+let size = Size2.v (aspect *. 100.) 100. (* mm *)
+let view = Box2.v P2.o (Size2.v aspect 1.)
+let image = I.const (Color.v_srgb 0.314 0.784 0.471)
+
+(* 2. Render *)
+
+let () =
+  let res = 300. /. 0.0254 (* 300dpi in dots per meters *) in
+  let fmt = `Png (Size2.v res res) in
+  let warn w = Vgr.pp_warning Format.err_formatter w in
+  let r = Vgr.create ~warn (Vgr_cairo.stored_target fmt) (`Channel stdout) in
+  ignore (Vgr.render r (`Image (size, view, image)));
+  ignore (Vgr.render r `End)
+]}
+This can be compiled with:
+{v
+>  ocamlfind ocamlopt -package gg,vg,vg.cairo \
+                      -linkpkg -o min_cairo_png.native min_cairo_png.ml
+v}
+
+{2:mincairomem Minimal Cairo memory buffer rendering}
+
+The file [min_cairo_mem.ml] contains the following code. We first
+define an image and then render to a bigarray buffer.
+
+{[open Gg
+open Vg
+
+(* 1. Define your image *)
+
+let aspect = 1.618
+let size = Size2.v (aspect *. 100.) 100. (* mm *)
+let view = Box2.v P2.o (Size2.v aspect 1.)
+let image = I.const (Color.v_srgb 0.314 0.784 0.471)
+
+(* 2. Render *)
+
+let raster, stride =
+  let res = 300. /. 25.4 (* 300dpi in dots per mm *) in
+  let w = int_of_float (res *. Size2.w size) in
+  let h = int_of_float (res *. Size2.h size) in
+  let stride = Cairo.Image.(stride_for_width ARGB32 w) in
+  let data = Bigarray.(Array1.create int8_unsigned c_layout (stride * h)) in
+  let surface = Cairo.Image.(create_for_data8 data ARGB32 ~stride w h) in
+  let ctx = Cairo.create surface in
+  Cairo.scale ctx ~x:res ~y:res;
+  let target = Vgr_cairo.target ctx in
+  let warn w = Vgr.pp_warning Format.err_formatter w in
+  let r = Vgr.create ~warn target `Other in
+  ignore (Vgr.render r (`Image (size, view, image)));
+  ignore (Vgr.render r `End);
+  Cairo.Surface.flush surface;
+  Cairo.Surface.finish surface;
+  data, stride
+]}
+
+{v
+> ocamlfind ocamlopt -package cairo2,gg,vg,vg.cairo \
+                     -linkpkg -o min_cairo_mem.native min_cairo_mem.ml
+v}
+
 *)
 
 (*---------------------------------------------------------------------------

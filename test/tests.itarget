@@ -1,7 +1,8 @@
 min_svg.native
 min_pdf.native
-min_cairo.native
 min_htmlc.byte
+min_cairo_png.native
+min_cairo_mem.native
 rsvg.native
 rpdf.native
 rcairo.native
