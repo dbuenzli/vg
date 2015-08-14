@@ -26,7 +26,6 @@ type cmd = Set of gstate | Draw of Vgr.Private.Data.image
 type state =
   { r : Vgr.Private.renderer;                    (* corresponding renderer. *)
     ctx : Cairo.context;                                  (* cairo context. *)
-    scale : Gg.v2;                         (* scale applied to the surface. *)
     mutable cost : int;                          (* cost counter for limit. *)
     mutable view : Gg.box2;           (* current renderable view rectangle. *)
     mutable todo : cmd list;                        (* commands to perform. *)
@@ -35,8 +34,8 @@ type state =
       (Vgr.Private.Data.primitive, cairo_primitive) Hashtbl.t;
     mutable gstate : gstate; }                    (* current graphic state. *)
 
-let create_state r ctx scale =
-  { r; ctx; scale;
+let create_state r ctx =
+  { r; ctx;
     cost = 0;
     view = Box2.empty;
     todo = [];
@@ -305,13 +304,11 @@ let rec r_image s k r =
           r_image s k r
 
 let render_image s size view i k r =
-  let cw = (Size2.w size /. 1000.) *. (V2.x s.scale) in
-  let ch = (Size2.h size /. 1000.) *. (V2.y s.scale) in
   (* Map view rect (bot-left coords) to surface (top-left coords) *)
-  let sx = cw /. Box2.w view in
-  let sy = ch /. Box2.h view in
+  let sx = Size2.w size /. Box2.w view in
+  let sy = Size2.h size /. Box2.h view in
   let dx = -. Box2.ox view *. sx in
-  let dy = ch +. Box2.oy view *. sy in
+  let dy = Size2.h size +. Box2.oy view *. sy in
   let view_tr = M3.v sx       0. dx
       0. (-. sy)  dy
       0.       0. 1.
@@ -329,24 +326,23 @@ let target ctx =
   | `End -> k r
   | `Image (size, view, i) -> render_image s size view i k r
   in
-  let target r _ = true, render (create_state r ctx (Size2.v 1. 1.)) in
+  let target r _ = true, render (create_state r ctx) in
   Vgr.Private.create_target target
 
 (* Stored targets. *)
 
+let mm2pt = 72. /. 25.4
+
 let vgr_output r str =
   ignore (Vgr.Private.writes str 0 (String.length str) (fun _ -> `Ok) r)
 
-let meters2pt =
-  let m2pt = 72000. /. 25.4 in Size2.v m2pt m2pt
-
 let stored_state r backend size =
   let scale = match backend with
-  | `Png res -> res
-  | `Pdf | `Ps | `Svg -> meters2pt
+  | `Png res -> V2.(res / 1000.)
+  | `Pdf | `Ps | `Svg -> V2.v mm2pt mm2pt
   in
-  let w = (Size2.w size /. 1000.) *. (V2.x scale) in
-  let h = (Size2.h size /. 1000.) *. (V2.y scale) in
+  let w = Size2.w size *. (V2.x scale) in
+  let h = Size2.h size *. (V2.y scale) in
   let surface = match backend with
   | `Png _ -> Cairo.Image.(create ARGB32 (int_of_float w) (int_of_float h))
   | `Pdf -> Cairo.PDF.create_for_stream (vgr_output r) w h
@@ -354,7 +350,8 @@ let stored_state r backend size =
   | `Svg -> Cairo.SVG.create_for_stream  (vgr_output r) w h
   in
   let ctx = Cairo.create surface in
-  create_state r ctx scale
+  Cairo.scale ctx (V2.x scale) (V2.y scale);
+  create_state r ctx
 
 let stored_render backend =
   let state = ref None in
@@ -376,20 +373,20 @@ let stored_render backend =
       | None -> let s = stored_state r backend size in (state := Some s; s)
       | Some s -> s
       in
-      let cw = (Size2.w size /. 1000.) *. (V2.x s.scale) in
-      let ch = (Size2.h size /. 1000.) *. (V2.y s.scale) in
+      let set_page_size set =
+        let surf = Cairo.get_target s.ctx in
+        set surf ~width:(Size2.w size *. mm2pt) ~height:(Size2.h size *. mm2pt)
+      in
       begin match backend with
       | `Png _ -> ()
       | `Svg -> ()
-      | `Pdf -> Cairo.PDF.set_size (Cairo.get_target s.ctx) cw ch
-      | `Ps -> Cairo.PS.set_size (Cairo.get_target s.ctx) cw ch
+      | `Pdf -> set_page_size Cairo.PDF.set_size
+      | `Ps -> set_page_size Cairo.PS.set_size
       end;
       render_image s size view i (fun r -> Cairo.show_page s.ctx; k r) r
 
 let stored_target backend =
-  let multi = match backend with
-  | `Pdf | `Ps -> true | `Svg | `Png _ -> false
-  in
+  let multi = match backend with `Pdf | `Ps -> true | `Svg | `Png _ -> false in
   let target _ _ = multi, stored_render backend in
   Vgr.Private.create_target target
 
