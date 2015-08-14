@@ -118,10 +118,13 @@ let render sout use_unix usize dir ftype pack renderer imgs =
   | Unix.Unix_error (e, _, v) ->
       log "[FAIL]@."; log_msg "%s: %s@." (Unix.error_message e) v; exit 1
   in
-  let fname id = Filename.concat dir (str "%s.%s" id ftype) in
+  let fname id = Filename.concat dir (str "%s.%s" id (fst ftype)) in
   match pack with
   | None -> List.iter (fun i -> render_to_file (fname i.Db.id) [i]) imgs
-  | Some pack -> render_to_file (fname pack) imgs
+  | Some pack when not (snd ftype) ->
+      log "Sorry cannot -pack the %s format." (fst ftype); exit 1
+  | Some pack ->
+      render_to_file (fname pack) imgs
 
 (* Dump textual representation. *)
 
@@ -157,7 +160,7 @@ let pp_image_info ppf i =
 
 (* Command line *)
 
-let main_multiformats ?(no_pack = false) rname ftypes renderer =
+let main_multiformats rname ftypes renderer =
   let usage = Printf.sprintf
       "Usage: %s [OPTION]... [ID1] [ID2]...\n\
       \ Renders images of the Vg image database to %s files.\n\
@@ -165,6 +168,7 @@ let main_multiformats ?(no_pack = false) rname ftypes renderer =
       Options:" exec rname
   in
   let ftype = ref (List.hd ftypes) in
+  let set_ftype fmt = ftype := List.find (fun (f, _) -> f = fmt) ftypes in
   let cmd = ref `Image_render in
   let set_cmd v () = cmd := v in
   let list () = let l = ref [] in (l, fun v -> l := v :: !l) in
@@ -178,10 +182,12 @@ let main_multiformats ?(no_pack = false) rname ftypes renderer =
   let usize = ref unix_buffer_size in
   let nat s r v = if v > 0 then r := v else log "%s must be > 0, ignored\n" s in
   let options =
-    (match ftypes with [] | [_] -> [] | _ -> [
-      "-format", Arg.Symbol (ftypes, ( := ) ftype),
-      Printf.sprintf "Selects the image format (default: %s)" !ftype
-    ]) @ [
+    begin match ftypes with
+    | [] | [_] -> []
+    | _ ->
+        [ "-format", Arg.Symbol (List.map fst ftypes, set_ftype),
+          Printf.sprintf "Selects the image format (default: %s)" (fst !ftype) ]
+    end @ [
     "-dump", Arg.Unit (set_cmd `Image_dump),
     (str " Output a textual internal representation");
     "-p", Arg.String add_prefix,
@@ -193,11 +199,9 @@ let main_multiformats ?(no_pack = false) rname ftypes renderer =
     "-tags", Arg.Unit (set_cmd `List_tags),
     " Output the tags of the selected images on stdout";
     "-i", Arg.Unit (set_cmd `Image_info),
-    " Output info about selected images on stdout"; ] @
-  (if no_pack then [] else [
+    " Output info about selected images on stdout";
     "-pack", Arg.String (fun fn -> pack := Some fn),
-    (str "<file> Pack the selected images in the single <file>")
-  ]) @ [
+    (str "<file> Pack the selected images in the single <file> (if supported)");
     "-d", Arg.Set_string dir,
     (str "<dir> directory in which files are output (defaults to `%s')" !dir);
     "-sout", Arg.Set sout,
@@ -219,7 +223,7 @@ let main_multiformats ?(no_pack = false) rname ftypes renderer =
       let dur = duration render imgs in
       log "Wrote %d images in %a.@." (List.length imgs) pp_dur dur
   | `Image_dump ->
-      let dur = duration (List.iter (dump !dir !ftype)) imgs in
+      let dur = duration (List.iter (dump !dir (fst !ftype))) imgs in
       log "Wrote %d images in %a.@." (List.length imgs) pp_dur dur
   | `Image_info ->
       pp Format.std_formatter "@[<v>%a@]@." (pp_list pp_image_info) imgs
@@ -231,8 +235,8 @@ let main_multiformats ?(no_pack = false) rname ftypes renderer =
       let tags = List.fold_left add_tags [] imgs in
       List.iter print_endline (List.sort compare tags)
 
-let main ?no_pack rname ftype renderer =
-  main_multiformats ?no_pack rname [ftype] (fun _ -> renderer)
+let main rname ftype ~pack renderer =
+  main_multiformats rname [ftype, pack] (fun _ -> renderer)
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

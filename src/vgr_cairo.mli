@@ -16,15 +16,16 @@ val target : Cairo.context -> [`Other] Vg.Vgr.target
     [(size, view, i)] is done as follows.
     {ol
     {- The context's current state is saved using {!Cairo.save}.}
-    {- The context's is clipped to [Box2.v P2.o size] and the portion
-       [view] of [i] is drawn in this box.}
+    {- The context's is clipped to [Box2.v P2.o size]. This
+       box is cleared with {!Color.void} and the portion
+       [view] of [i] is rendered in this box.}
     {- The context's initial state is restored using {!Cairo.restore}}}
+    Nothing else is done to [ctx].
 
-    {b Multiple images.} Multiple images render on the target is
-    supported.  Each new render clears the clipped context. However,
-    the results are dependent on the underlying Cairo surface type,
-    file based surfaces for PDF, PS and SVG do not clear the view and
-    blend the different images instead. *)
+    {b Multiple images.} Multiple images rendering is supported.  For
+    each renderable the above procedure is performed on [ctx]. If you
+    want to have each renderable on a single page on backends that support
+    it you should handle this between two renderable using Cairo's API. *)
 
 val stored_target : [< `Pdf | `Png of Gg.V2.t | `Ps | `Svg ] ->
   Vg.Vgr.dst_stored Vg.Vgr.target
@@ -33,9 +34,11 @@ val stored_target : [< `Pdf | `Png of Gg.V2.t | `Ps | `Svg ] ->
     the argument specifies the rendering resolution in samples
     per meters.
 
-    {b Multiple images.} Multiple images render on the target are not
-    supported. [Invalid_argument] is raised by {!Vg.Vgr.render} if
-    multiple images are rendered. *)
+    {b Multiple images.} Multiple image rendering is supported on
+    [`Pdf] and [`Ps] target, each renderable creates a new page of the
+    renderable size. Multiple image rendering is not supported on
+    [`Png] and [`Svg] and [Invalid_argument] is raised by
+    {!Vg.Vgr.render} if multiple images are rendered. *)
 
 (** {1:text Text rendering}
 

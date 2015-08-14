@@ -12,10 +12,10 @@ include Db_contents
 let dpi300 = let s = 300. /. 0.0254 in Size2.v s s
 
 let formats =
-  [ "png", `Png dpi300;
-    "pdf", `Pdf;
-    "ps",  `Ps;
-    "svg", `Svg; ]
+  [ ("png", false), `Png dpi300;
+    ("pdf", true), `Pdf;
+    ("ps", true), `Ps;
+    ("svg", false), `Svg; ]
 
 let renderer fmt dst _ =
   let cairo_fmt = List.assoc fmt formats in
@@ -23,7 +23,7 @@ let renderer fmt dst _ =
 
 let ftypes = List.map fst formats
 let () =
-  Rstored.main_multiformats ~no_pack:true "PNG, PDF, PS or SVG" ftypes renderer
+  Rstored.main_multiformats "PNG, PDF, PS or SVG" ftypes renderer
 
 (*---------------------------------------------------------------------------
    Copyright 2014 Arthur Wendling.

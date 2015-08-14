@@ -20,7 +20,7 @@ let renderer dst is =
   in
   Vgr.create (Vgr_pdf.target ~font ~xmp:(Rstored.xmp is) ()) dst
 
-let () = Rstored.main "PDF" "pdf" renderer
+let () = Rstored.main "PDF" "pdf" ~pack:true renderer
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.

@@ -11,7 +11,7 @@ include Db_contents
 
 let renderer dst is = Vgr.create (Vgr_svg.target ~xmp:(Rstored.xmp is) ()) dst
 
-let () = Rstored.main ~no_pack:true "SVG" "svg" renderer
+let () = Rstored.main "SVG" "svg" ~pack:false renderer
 
 (*---------------------------------------------------------------------------
    Copyright 2013 Daniel C. Bünzli.
