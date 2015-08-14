@@ -61,14 +61,14 @@ let rec unix_write fd s j l =
 
 let string_to_channel use_unix oc s =
   if use_unix
-  then unix_write (Unix.descr_of_out_channel oc) s 0 (String.length s)
-  else output_string oc s
+  then unix_write (Unix.descr_of_out_channel oc) s 0 (Bytes.length s)
+  else output_bytes oc s
 
 let rec render_unix fd s r v = match Vgr.render r v with
 | `Ok -> ()
 | `Partial ->
-    unix_write fd s 0 (String.length s - Vgr.Manual.dst_rem r);
-    Vgr.Manual.dst r s 0 (String.length s);
+    unix_write fd s 0 (Bytes.length s - Vgr.Manual.dst_rem r);
+    Vgr.Manual.dst r s 0 (Bytes.length s);
     render_unix fd s r `Await
 
 let rec render_imgs render r = function
@@ -90,7 +90,7 @@ let render_with_buffer buf use_unix fn renderer imgs =
   let r = renderer (`Buffer buf) imgs in
   try
     render_imgs Vgr.render r imgs;
-    string_to_channel use_unix oc (Buffer.contents buf);
+    string_to_channel use_unix oc (Buffer.to_bytes buf);
     close_out oc;
   with e -> close_out oc; raise e
 
@@ -98,7 +98,7 @@ let render_with_unix s fn renderer imgs =
   let fd = Unix.(openfile fn [O_WRONLY] 0) in
   let r = renderer `Manual imgs in
   try
-    Vgr.Manual.dst r s 0 (String.length s);
+    Vgr.Manual.dst r s 0 (Bytes.length s);
     render_imgs (render_unix fd s) r imgs;
     Unix.close fd;
   with e -> Unix.close fd; raise e
@@ -106,7 +106,7 @@ let render_with_unix s fn renderer imgs =
 let render sout use_unix usize dir ftype pack renderer imgs =
   let render =
     if sout then render_with_buffer (Buffer.create usize) use_unix else
-    if use_unix then render_with_unix (String.create usize) else
+    if use_unix then render_with_unix (Bytes.create usize) else
     render_with_channel
   in
   let render_to_file fn img = try

@@ -18,8 +18,8 @@ let err_once = "a single `Image can be rendered"
    invariants, replacing with safe versions makes everything safe in the
    module. He won't be upset. *)
 
-let unsafe_blit = String.unsafe_blit
-let unsafe_set_byte s j byte = String.unsafe_set s j (Char.unsafe_chr byte)
+let unsafe_blit = Bytes.unsafe_blit
+let unsafe_set_byte s j byte = Bytes.unsafe_set s j (Char.unsafe_chr byte)
 
 (* A few useful definitions *)
 
@@ -961,7 +961,7 @@ module Vgr = struct
 
   type t =
     { dst : dst;                                     (* output destination. *)
-      mutable o : string;            (* current output chunk (stored dsts). *)
+      mutable o : bytes;             (* current output chunk (stored dsts). *)
       mutable o_pos : int;                (* next output position to write. *)
       mutable o_max : int;             (* maximal output position to write. *)
       limit : int;                                         (* render limit. *)
@@ -1001,9 +1001,9 @@ module Vgr = struct
 
   let create ?(limit = max_int) ?(warn = fun _ -> ()) target dst =
     let o, o_pos, o_max = match dst with
-    | `Manual | `Other -> "", 1, 0          (* implies [o_rem e = 0]. *)
+    | `Manual | `Other -> Bytes.empty, 1, 0        (* implies [o_rem e = 0]. *)
     | `Buffer _
-    | `Channel _ -> String.create io_buffer_size, 0, io_buffer_size - 1
+    | `Channel _ -> Bytes.create io_buffer_size, 0, io_buffer_size - 1
     in
     let k _ _ = assert false in
     let r = { dst = (dst :> dst); o; o_pos; o_max; limit; warn; k} in
@@ -1019,7 +1019,7 @@ module Vgr = struct
 
   module Manual = struct
     let dst r s j l =                                (* set [r.o] with [s]. *)
-      if (j < 0 || l < 0 || j + l > String.length s)
+      if (j < 0 || l < 0 || j + l > Bytes.length s)
       then invalid_arg (err_bounds j l);
       r.o <- s; r.o_pos <- j; r.o_max <- j + l - 1
 
@@ -1130,7 +1130,7 @@ module Vgr = struct
     let flush k r =               (* get free space in [r.o] and [k]ontinue. *)
       match r.dst with
       | `Manual -> partial k r
-      | `Buffer b -> Buffer.add_substring b r.o 0 r.o_pos; r.o_pos <- 0; k r
+      | `Buffer b -> Buffer.add_subbytes b r.o 0 r.o_pos; r.o_pos <- 0; k r
       | `Channel oc -> output oc r.o 0 r.o_pos; r.o_pos <- 0; k r
       | `Other -> assert false
 
@@ -1139,11 +1139,12 @@ module Vgr = struct
       (unsafe_set_byte r.o r.o_pos b; r.o_pos <- r.o_pos + 1; k r)
 
     let rec writes s j l k r =  (* write [l] bytes from [s] starting at [j]. *)
+      let b = Bytes.unsafe_of_string s in
       let rem = o_rem r in
       if rem >= l
-      then (unsafe_blit s j r.o r.o_pos l; r.o_pos <- r.o_pos + l; k r)
+      then (unsafe_blit b j r.o r.o_pos l; r.o_pos <- r.o_pos + l; k r)
       else begin
-        unsafe_blit s j r.o r.o_pos rem; r.o_pos <- r.o_pos + rem;
+        unsafe_blit b j r.o r.o_pos rem; r.o_pos <- r.o_pos + rem;
         flush (writes s (j + rem) (l - rem) k) r
       end
 

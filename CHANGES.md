@@ -1,3 +1,9 @@
+
+- `-safe-string` support. In the public API this only affects users of
+  stored `Manual` rendering destination: `Vg.Vgr.Manual.dst` now takes
+  a `bytes` value instead of a `string`.
+  
+
 v0.8.1 2014-08-23 Cambridge (UK)
 --------------------------------
 

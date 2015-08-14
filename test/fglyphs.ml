@@ -20,12 +20,12 @@ let string_of_file inf =
     let close ic = if inf <> "-" then close_in ic else () in
     let buf_size = 65536 in
     let b = Buffer.create buf_size in
-    let s = String.create buf_size in
+    let s = Bytes.create buf_size in
     try
       while true do
         let c = input ic s 0 buf_size in
         if c = 0 then raise Exit else
-        Buffer.add_substring b s 0 c
+        Buffer.add_subbytes b s 0 c
       done;
       assert false
     with

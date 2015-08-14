@@ -1,4 +1,4 @@
-<**/*.{mli,ml}> : bin_annot, annot
+true : bin_annot, package(bytes), safe_string
 <src> : include
 <test> : include
 <db> : include
@@ -42,7 +42,7 @@
 
 <test/min_htmlc.{ml,byte}> : package(gg), package(js_of_ocaml), \
                              package(js_of_ocaml.syntax), syntax(camlp4o)
-                                        
+
 <test/sqc.{ml,byte}> : package(gg), package(js_of_ocaml), \
                        package(js_of_ocaml.syntax), syntax(camlp4o)
 

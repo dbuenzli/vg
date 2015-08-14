@@ -637,7 +637,7 @@ module Vgr : sig
 
       {b Warning.} Only use with renderers with [`Manual] destinations. *)
   module Manual : sig
-    val dst : renderer -> string -> int -> int -> unit
+    val dst : renderer -> bytes -> int -> int -> unit
     (** [dst r s j l] provides [r] with [l] bytes to write, starting
         at [j] in [s]. This byte range is written by calls to {!render}
         until [`Partial] is returned. Use {!dst_rem} to know the remaining
