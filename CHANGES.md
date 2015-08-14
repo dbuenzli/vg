@@ -1,8 +1,11 @@
+v0.8.2 2015-08-14 Cambridge (UK)
+--------------------------------
 
+- Add `Vgr_cairo` module. A Cairo backend contributed by Arthur Wendling.
 - `-safe-string` support. In the public API this only affects users of
   stored `Manual` rendering destination: `Vg.Vgr.Manual.dst` now takes
   a `bytes` value instead of a `string`.
-  
+
 
 v0.8.1 2014-08-23 Cambridge (UK)
 --------------------------------
