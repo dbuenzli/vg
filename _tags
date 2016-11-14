@@ -1,48 +1,27 @@
-true : bin_annot, safe_string, package(bytes), package(uchar)
+true : bin_annot, safe_string, package(bytes), package(uchar), package(gg)
 
 <src> : include
-<test> : include
 <db> : include
+<test> : include
 
-<src/vg.{mli,ml}> : package(gg)
-<src/vgr_svg.{mli,ml}> : package(gg)
-<src/vgr_pdf.{mli,ml}> : package(gg), package(uutf), package(otfm)
-<src/vgr_htmlc.{mli,ml}> : package(gg), package(js_of_ocaml.ppx)
-<src/vgr_cairo.{mli,ml}>: package(gg), package(cairo2)
+<src/vgr_pdf.*> : package(uutf otfm)
+<src/vgr_htmlc.*> : package(js_of_ocaml.ppx)
+<src/vgr_cairo.*> : package(cairo2)
 
-<db/*.{mli,ml}> : package(gg)
-<db/glyphs_pdf.{mli,ml}> : package(uutf)
+<db/glyphs_pdf.*> : package(uutf)
 
-<test/mui.{mli,ml}> : package(js_of_ocaml), package(js_of_ocaml.syntax), \
-                      syntax(camlp4o)
+<test/rpdf.*> : package(uutf otfm unix)
+<test/rsvg.*> : package(uutf unix)
+<test/rcairo.*> : package(uutf unix cairo2)
 
-<test/rstored.{mli,ml}> : package(gg)
+<test/mui.*> : package(js_of_ocaml js_of_ocaml.syntax), syntax(camlp4o)
+<test/rhtmlc.*> : package(otfm), package(uutf), package(js_of_ocaml), package(js_of_ocaml.syntax), syntax(camlp4o)
 
-<test/rpdf.{mli,ml,byte,native}> : package(gg), package(uutf), package(otfm), \
-                                   package(unix)
+<test/min_pdf.*> : package(uutf), package(otfm)
+<test/min_cairo*> : package(cairo2)
 
-<test/rsvg.{mli,ml,byte,native}> : package(gg), package(uutf), package(unix)
+<test/min_htmlc.*> : package(js_of_ocaml), package(js_of_ocaml.syntax), syntax(camlp4o)
 
-<test/rcairo.{mli,ml,byte,native}> : package(gg), package(uutf), \
-                                     package(unix), package(cairo2)
-
-<test/rhtmlc.{mli,ml,byte}> : package(gg), package(otfm), package(uutf), \
-                              package(js_of_ocaml), \
-                              package(js_of_ocaml.syntax), syntax(camlp4o)
-
-<test/min_pdf.{ml,byte,native}> : package(gg), package(uutf), package(otfm)
-
-<test/min_svg.{ml,byte,native}> : package(gg)
-
-<test/min_cairo*.{ml,byte,native}> : package(gg), package(cairo2)
-
-<test/min_htmlc.{ml,byte}> : package(gg), package(js_of_ocaml), \
-                             package(js_of_ocaml.syntax), syntax(camlp4o)
-
-<test/sqc.{ml,byte}> : package(gg), package(js_of_ocaml), \
-                       package(js_of_ocaml.syntax), syntax(camlp4o)
-
-<test/examples.{ml,byte,native}> : package(gg)
-
-<test/vecho.{ml,byte,native}> : package(gg), package(uutf), package(otfm)
-<test/fglyphs.{ml,byte,native}> : package(gg), package(uutf), package(otfm)
+<test/sqc.*> : package(js_of_ocaml,js_of_ocaml.syntax), syntax(camlp4o)
+<test/vecho.*> : package(uutf otfm)
+<test/fglyphs.*> : package(uutf otfm)
