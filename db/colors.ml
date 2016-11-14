@@ -10,7 +10,7 @@ open Vg
 
 (** Test images for colors. *)
 
-Db.image "color-ramps" ~author:Db.dbuenzli
+Db.image "color-ramps" __POS__ ~author:Db.dbuenzli
   ~title:"Primary and grayscale ramps"
   ~tags:["color"]
   ~note:"From 0 to 1 by 0.1 increments in sRGB space. From right to left \

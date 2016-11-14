@@ -13,6 +13,7 @@ let err_id id = str "An image with id `%s' already exists" id
 type author = string * string
 type image =
   { id : string;
+    loc : string * int;
     title : string;
     author : author;
     tags : string list;
@@ -22,12 +23,13 @@ type image =
     image : Gg.box2 -> Vg.image; }
 
 let images = Hashtbl.create 537
-let image id ~title ~author ?(tags = []) ?note ~size ~view image =
+let image id loc ~title ~author ?(tags = []) ?note ~size ~view image =
+  let file, line, _, _ = loc in
   let id = String.lowercase id in
   try ignore (Hashtbl.find images id); invalid_arg (err_id id) with
   | Not_found ->
       Hashtbl.add images id
-        { id; author; title; note; tags; size; view; image; }
+        { id; loc = file, line; author; title; note; tags; size; view; image; }
 
 let mem id = Hashtbl.mem images id
 let find id = try Some (Hashtbl.find images id) with Not_found -> None
@@ -66,15 +68,6 @@ let xmp ~create_date ~creator_tool i =
     ?description:i.note ~creator_tool ~create_date ()
 
 let renderable i = i.size, i.view, i.image i.view
-let find_loc id locs =
-  let rec loop found = function
-  | [] -> found
-  | (id', loc) :: locs ->
-      if id = id' then Some loc else
-      if prefixed id id' then loop (Some loc) locs else
-      loop found locs
-  in
-  loop None locs
 
 (* Authors *)
 

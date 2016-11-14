@@ -36,7 +36,7 @@ let animate ~size ~view next acc =
 
 type ring = { radius : float; speed : float; }
 let rings =
-  let r = 65.in
+  let r = 65. in
   [ { radius = 1. *. r; speed =  30. };
     { radius = 2. *. r; speed =  20. };
     { radius = 3. *. r; speed =  10. };

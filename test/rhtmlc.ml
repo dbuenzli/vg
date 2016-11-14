@@ -28,7 +28,7 @@ let to_str_of_pp pp v =
   Format.flush_str_formatter ()
 
 let src_link =
-  format_of_string "https://github.com/dbuenzli/vg/blob/master/db/%s#L%d"
+  format_of_string "https://github.com/dbuenzli/vg/blob/master/%s#L%d"
 
 let open_sans_xbold = match Vgr_pdf.otf_font Open_sans.extra_bold with
 | `Error e -> Log.msg "%a" Otfm.pp_error e; `Sans
@@ -162,9 +162,7 @@ let ui_image_info () : 'a Ui.t * (S.t -> unit) =
   let note, set_note = Ui.text ~id:"r-note" "" in
   let set_image_info s =
     let i = S.image s in
-    let src_url = match Db.find_loc i.Db.id Db_locs.values with
-    | None -> "" | Some (fn, loc) -> str src_link fn loc
-    in
+    let src_url = str src_link (fst i.Db.loc) (snd i.Db.loc) in
     title_conf (`Text i.Db.title);
     title_conf (`Href src_url);
     author_conf (`Text (fst i.Db.author));

@@ -20,7 +20,7 @@ An image is added by calling the function `Db.image` (see [`db.mli`](db.mli))
 at the toplevel of the file:
 
 ```ocaml
-Db.image "a-unique-string-id"                                
+Db.image "a-unique-string-id" __POS__
   ~author:("Author name", "uri to author")
   ~title:"Title for the image"
   ~tags:["a"; "list"; "of"; "relevant"; "tags";]

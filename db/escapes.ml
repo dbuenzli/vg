@@ -10,7 +10,7 @@ open Vg
 
 (** Test images for data escapes *)
 
-Db.image "escape-xmp" ~author:Db.dbuenzli
+Db.image "escape-xmp" __POS__ ~author:Db.dbuenzli
   ~title:"XMP metadata escape </g> & \"bla\""
   ~tags:["escape"; ]
   ~note:"These </g> markup \"delimiters\" should be & escaped in \

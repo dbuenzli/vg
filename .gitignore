@@ -1,8 +1,8 @@
 _build
 tmp
-dist
 *~
 \.\#*
 \#*#
-CLOCK.org
-db/db_locs.ml
+*.native
+*.byte
+*.install

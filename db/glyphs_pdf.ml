@@ -64,21 +64,21 @@ let fsize = 0.42
 
 let helvetica = "Helvetica";;
 
-Db.image "glyph-pdf-sans" ~author:Db.dbuenzli
+Db.image "glyph-pdf-sans" __POS__ ~author:Db.dbuenzli
   ~title:"Glyph chart for PDF `Sans font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font helvetica fsize) end;;
 
-Db.image "glyph-pdf-sans-bf" ~author:Db.dbuenzli
+Db.image "glyph-pdf-sans-bf" __POS__ ~author:Db.dbuenzli
   ~title:"Glyphs of PDF `Sans bold font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font ~bold:true helvetica fsize) end;;
 
 let slant = `Oblique;;
 
-Db.image "glyph-pdf-sans-obl" ~author:Db.dbuenzli
+Db.image "glyph-pdf-sans-obl" __POS__ ~author:Db.dbuenzli
   ~title:"Glyph chart for PDF `Sans oblique font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font ~slant helvetica fsize) end;;
 
-Db.image "glyph-pdf-sans-obl-bf" ~author:Db.dbuenzli
+Db.image "glyph-pdf-sans-obl-bf" __POS__ ~author:Db.dbuenzli
   ~title:"Glyphs of PDF `Sans oblique bold font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font ~slant ~bold:true helvetica fsize) end;;
 
@@ -86,21 +86,21 @@ Db.image "glyph-pdf-sans-obl-bf" ~author:Db.dbuenzli
 
 let times = "Times";;
 
-Db.image "glyph-pdf-serif" ~author:Db.dbuenzli
+Db.image "glyph-pdf-serif" __POS__ ~author:Db.dbuenzli
   ~title:"Glyph chart for PDF `Serif font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font times fsize) end;;
 
-Db.image "glyph-pdf-serif-bf" ~author:Db.dbuenzli
+Db.image "glyph-pdf-serif-bf" __POS__ ~author:Db.dbuenzli
   ~title:"Glyphs of PDF `Serif bold font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font ~bold:true times fsize) end;;
 
 let slant = `Italic;;
 
-Db.image "glyph-pdf-serif-obl" ~author:Db.dbuenzli
+Db.image "glyph-pdf-serif-obl" __POS__ ~author:Db.dbuenzli
   ~title:"Glyph chart for PDF `Serif italic font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font ~slant times fsize) end;;
 
-Db.image "glyph-pdf-serif-obl-bf" ~author:Db.dbuenzli
+Db.image "glyph-pdf-serif-obl-bf" __POS__ ~author:Db.dbuenzli
   ~title:"Glyphs of PDF `Serif italic bold font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font ~slant ~bold:true times fsize) end;;
 
@@ -108,21 +108,21 @@ Db.image "glyph-pdf-serif-obl-bf" ~author:Db.dbuenzli
 
 let courier = "Courier";;
 
-Db.image "glyph-pdf-fixed" ~author:Db.dbuenzli
+Db.image "glyph-pdf-fixed" __POS__ ~author:Db.dbuenzli
   ~title:"Glyph chart for PDF `Fixed font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font courier fsize) end;;
 
-Db.image "glyph-pdf-fixed-bf" ~author:Db.dbuenzli
+Db.image "glyph-pdf-fixed-bf" __POS__ ~author:Db.dbuenzli
   ~title:"Glyphs of PDF `Fixed bold font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font ~bold:true courier fsize) end;;
 
 let slant = `Italic;;
 
-Db.image "glyph-pdf-fixed-obl" ~author:Db.dbuenzli
+Db.image "glyph-pdf-fixed-obl" __POS__ ~author:Db.dbuenzli
   ~title:"Glyph chart for PDF `Fixed italic font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font ~slant courier fsize) end;;
 
-Db.image "glyph-pdf-fixed-obl-bf" ~author:Db.dbuenzli
+Db.image "glyph-pdf-fixed-obl-bf" __POS__ ~author:Db.dbuenzli
   ~title:"Glyphs of PDF `Fixed italic bold font resolution" ~tags ~size ~view
   begin fun view -> glyph_chart (font ~slant ~bold:true courier fsize) end;;
 

@@ -10,7 +10,7 @@ open Vg
 
 (** Test images for path areas. *)
 
-Db.image "path-sq-outline" ~author:Db.dbuenzli
+Db.image "path-sq-outline" __POS__ ~author:Db.dbuenzli
   ~title:"Square outline in gray"
   ~tags:["path"]
   ~note:"Line width is 0.1 as we are on the surface edge."
@@ -22,7 +22,7 @@ Db.image "path-sq-outline" ~author:Db.dbuenzli
     I.const (Color.gray 0.3) >> I.cut ~area square
   end;
 
-Db.image "path-sq-outline-dashed" ~author:Db.dbuenzli
+Db.image "path-sq-outline-dashed" __POS__ ~author:Db.dbuenzli
   ~title:"Dashed square outline in gray"
   ~tags:["path"; "dashes";]
   ~note:"Line width is 0.1 as we are on the surface edge."
@@ -34,7 +34,7 @@ Db.image "path-sq-outline-dashed" ~author:Db.dbuenzli
     I.const (Color.gray 0.3) >> I.cut ~area square
   end;
 
-Db.image "path-cubics" ~author:Db.dbuenzli
+Db.image "path-cubics" __POS__ ~author:Db.dbuenzli
   ~title:"Cubic paths cases"
   ~tags:["path"]
   ~note:"Geometric cases for cubic curves. Except in the bottom row, only \
@@ -85,7 +85,7 @@ Db.image "path-cubics" ~author:Db.dbuenzli
     b20 >> I.blend b21
   end;
 
-Db.image "path-dashes" ~author:Db.dbuenzli
+Db.image "path-dashes" __POS__ ~author:Db.dbuenzli
   ~title:"Dash patterns"
   ~tags:["path"; "dashes";]
   ~note:"Miscellaneous dash patterns and offsets. "
@@ -112,7 +112,7 @@ Db.image "path-dashes" ~author:Db.dbuenzli
     I.blend (line 1. (0., [5.; 1.]))
   end;
 
-Db.image "path-cantor-dashes" ~author:Db.dbuenzli
+Db.image "path-cantor-dashes" __POS__ ~author:Db.dbuenzli
   ~title:"Cantor set with dashes"
   ~tags:["path"; "fractal"; "dashes";]
   ~note:"The Cantor set is drawn with dashes to represent its elements. \
@@ -154,7 +154,7 @@ Db.image "path-cantor-dashes" ~author:Db.dbuenzli
     cantor 6 >> I.move (P2.v 0.1 0.15)
   end;
 
-Db.image "path-derived" ~author:Db.dbuenzli
+Db.image "path-derived" __POS__ ~author:Db.dbuenzli
   ~title:"Derived subpath of Vg.P"
   ~tags:["path";]
   ~note:"From inward to outward, ellipse, circle, rectangle, rectangle \
@@ -174,7 +174,7 @@ Db.image "path-derived" ~author:Db.dbuenzli
     I.const (Color.gray 0.3) >> I.cut ~area p
   end;
 
-Db.image "path-miter-angle" ~author:Db.dbuenzli
+Db.image "path-miter-angle" __POS__ ~author:Db.dbuenzli
   ~title:"Miter angle limit"
   ~tags:["path";]
   ~note:"In the left column the miter angle is set below the angle made by \
@@ -208,7 +208,7 @@ Db.image "path-miter-angle" ~author:Db.dbuenzli
     !acc
   end;
 
-Db.image "path-circle-ellipse" ~author:Db.dbuenzli
+Db.image "path-circle-ellipse" __POS__ ~author:Db.dbuenzli
   ~note:"Shows dilation on line width due to scaling \
          (from Christophe Troestler ocaml-cairo example tips_ellipse.ml).
          The form on the left is a scaled circle. The form on the right is

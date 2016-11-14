@@ -13,6 +13,7 @@ type author = string * string
 
 type image =
   { id : string;                              (** unique image identifier. *)
+    loc : string * int;                                 (** File and line. *)
     title : string;                                       (** image title. *)
     author : author;                                     (** image author. *)
     tags : string list;                          (** descriptive tag list. *)
@@ -23,8 +24,10 @@ type image =
 (** The type for database images. *)
 
 
-val image : string -> title:string -> author:author -> ?tags:string list ->
-  ?note:string -> size:Gg.size2 -> view:Gg.box2 -> (Gg.box2 -> Vg.image) -> unit
+val image :
+  string -> string * int * int * int -> title:string ->
+  author:author -> ?tags:string list -> ?note:string ->
+  size:Gg.size2 -> view:Gg.box2 -> (Gg.box2 -> Vg.image) -> unit
 (** [image id authors title subject note tags meta size view fimg]
     adds an image to the database. *)
 
@@ -56,9 +59,6 @@ val xmp : create_date:float -> creator_tool:string -> image -> string
 
 val renderable : image -> Vg.Vgr.renderable
 (** [renderable i] is a renderable for [i]. *)
-
-val find_loc : string -> (string * (string * int)) list -> (string * int) option
-(** [find_loc id locs] looks up in locs the filename and line of of [id]. *)
 
 (** {1 Authors}
 

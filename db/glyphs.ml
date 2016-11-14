@@ -20,7 +20,7 @@ let advances = [1386.; 1266.; 1251.; 1305.; 662.; 942.; 594.;]
 let u_to_em = 2048.
 ;;
 
-Db.image "glyph-revolt" ~author:Db.dbuenzli
+Db.image "glyph-revolt" __POS__ ~author:Db.dbuenzli
   ~title:"Revolt in black"
   ~tags:["glyph"]
   ~note:"Black characters “Revolt!”, approximatively centered \
@@ -34,7 +34,7 @@ Db.image "glyph-revolt" ~author:Db.dbuenzli
     I.move (V2.v 0.23 0.25)
   end;
 
-Db.image "glyph-revolt-outline" ~author:Db.dbuenzli
+Db.image "glyph-revolt-outline" __POS__ ~author:Db.dbuenzli
   ~title:"Revolt outline in black"
   ~tags:["glyph"]
   ~note:"Black outlined characters “Revolt!”, approximatively centered \
@@ -49,7 +49,7 @@ Db.image "glyph-revolt-outline" ~author:Db.dbuenzli
     I.move (V2.v 0.23 0.25)
   end;
 
-Db.image "glyph-revolt-fade" ~author:Db.dbuenzli
+Db.image "glyph-revolt-fade" __POS__ ~author:Db.dbuenzli
   ~title:"Revolt from black to white"
   ~tags:["glyph"; "gradient" ]
   ~note:"Characters “Revolt!”, approximatively centered \
@@ -65,7 +65,7 @@ Db.image "glyph-revolt-fade" ~author:Db.dbuenzli
   end;
 
 
-Db.image "glyph-aspect" ~author:Db.dbuenzli
+Db.image "glyph-aspect" __POS__ ~author:Db.dbuenzli
   ~title:"Glyph aspect"
   ~tags:["glyph"]
   ~note:"The character should read “R”, without distortion."
@@ -80,7 +80,7 @@ Db.image "glyph-aspect" ~author:Db.dbuenzli
     I.scale (V2.v 4.0 1.0)
   end;
 
-Db.image "glyph-multi" ~author:Db.dbuenzli
+Db.image "glyph-multi" __POS__ ~author:Db.dbuenzli
   ~title:"Multiple revolts"
   ~tags:["glyph"]
   ~note:"Rectangle filled with revolts rotated by 30°."
@@ -114,7 +114,7 @@ Db.image "glyph-multi" ~author:Db.dbuenzli
     I.blend margin
   end;
 
-Db.image "glyph-advances" ~author:Db.dbuenzli
+Db.image "glyph-advances" __POS__ ~author:Db.dbuenzli
   ~title:"Advancing revolt"
   ~tags:["glyph"]
   ~note:"First line, no advances specified. Second line advances with glyph
@@ -145,7 +145,7 @@ Db.image "glyph-advances" ~author:Db.dbuenzli
   end
 ;;
 
-Db.image "glyph-affiche-blocks" ~author:Db.dbuenzli
+Db.image "glyph-affiche-blocks" __POS__ ~author:Db.dbuenzli
   ~title:"Affiché with ligature and text to glyph correspondence"
   ~tags:["glyph"]
   ~note:"The ffi is a single glyph and the é glyph is encoded as the sequence

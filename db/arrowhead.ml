@@ -11,7 +11,7 @@ open Vg
 (** Sierpiński Arrowhead curve
     http://mathworld.wolfram.com/SierpinskiArrowheadCurve.html *)
 
-Db.image "arrowhead" ~author:Db.dbuenzli
+Db.image "arrowhead" __POS__ ~author:Db.dbuenzli
   ~title:"Sierpiński Arrowhead curve levels 0-9"
   ~tags:["fractal"; "image"]
   ~note:(Printf.sprintf "Last curve made of %g segments" (3. ** (float 9)))

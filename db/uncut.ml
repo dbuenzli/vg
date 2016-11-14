@@ -12,7 +12,7 @@ open Vg
 let emerald = Color.v_srgb 0.314 0.784 0.471
 ;;
 
-Db.image "uncut-const" ~author:Db.dbuenzli
+Db.image "uncut-const" __POS__ ~author:Db.dbuenzli
   ~title:"Uncut constant emerald image"
   ~tags:["uncut"]
   ~note:"Constant emerald color over the rectangle."
@@ -22,7 +22,7 @@ Db.image "uncut-const" ~author:Db.dbuenzli
     I.const emerald
   end;
 
-Db.image "uncut-const-tr" ~author:Db.dbuenzli
+Db.image "uncut-const-tr" __POS__ ~author:Db.dbuenzli
   ~title:"Uncut transformed constant image"
   ~tags:["uncut"]
   ~note:"Constant emerald color over the rectangle."
@@ -34,7 +34,7 @@ Db.image "uncut-const-tr" ~author:Db.dbuenzli
     I.move (V2.v 0.25 0.0)
   end;
 
-Db.image "uncut-axial" ~author:Db.dbuenzli
+Db.image "uncut-axial" __POS__ ~author:Db.dbuenzli
   ~title:"Uncut axial gradient image"
   ~tags:["uncut"; "gradient"]
   ~note:"From left to right: black to emerald axial gradient."
@@ -45,7 +45,7 @@ Db.image "uncut-axial" ~author:Db.dbuenzli
     I.axial stops P2.o (P2.v 2. 0.)
   end;
 
-Db.image "uncut-axial-tr" ~author:Db.dbuenzli
+Db.image "uncut-axial-tr" __POS__ ~author:Db.dbuenzli
   ~title:"Uncut transformed axial gradient image"
   ~tags:["uncut"; "gradient"]
   ~note:"From left to right: black to emerald axial gradient."
@@ -58,7 +58,7 @@ Db.image "uncut-axial-tr" ~author:Db.dbuenzli
     I.move (V2.v 0.25 0.0)
   end;
 
-Db.image "uncut-radial" ~author:Db.dbuenzli
+Db.image "uncut-radial" __POS__ ~author:Db.dbuenzli
   ~title:"Uncut radial gradient image"
   ~tags:["uncut"; "gradient"]
   ~note:"Centered, from inwards to outwards: black to emerald radial gradient."
@@ -69,7 +69,7 @@ Db.image "uncut-radial" ~author:Db.dbuenzli
     I.radial stops (P2.v 1.0 0.5) 1.0
   end;
 
-Db.image "uncut-radial-tr" ~author:Db.dbuenzli
+Db.image "uncut-radial-tr" __POS__ ~author:Db.dbuenzli
   ~title:"Uncut transformed radial gradient image"
   ~tags:["uncut"; "gradient"]
   ~note:"Centered, from inwards to outwards: black to emerald radial gradient."

@@ -11,7 +11,7 @@ open Vg
 (** Café wall illusion.
     http://mathworld.wolfram.com/CafeWallIllusion.html *)
 
-Db.image "cafe-wall" ~author:Db.dbuenzli
+Db.image "cafe-wall" __POS__ ~author:Db.dbuenzli
   ~title:"Café Wall Illusion"
   ~tags:["image"; "dashes"; "illusion"]
   ~note:"Also known as Münsterberg illusion. The gray lines are parallel."
@@ -45,7 +45,7 @@ Db.image "cafe-wall" ~author:Db.dbuenzli
 (** Pie chart illusion.
     Data taken from here http://en.wikipedia.org/wiki/File:Piecharts.svg *)
 
-Db.image "pie-ambiguity" ~author:Db.dbuenzli
+Db.image "pie-ambiguity" __POS__ ~author:Db.dbuenzli
   ~title:"Pie chart ambiguity"
   ~tags:["image"; "illusion"]
   ~note:"Proportions showing that angles are hard to compare \

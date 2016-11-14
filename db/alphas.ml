@@ -10,7 +10,7 @@ open Vg
 
 (** Test images for alpha blending. *)
 
-Db.image "alpha-spots" ~author:Db.dbuenzli
+Db.image "alpha-spots" __POS__ ~author:Db.dbuenzli
   ~title:"Alpha spots"
   ~tags:["alpha"]
   ~note:"Spots with 0.75 alpha composed in various order. Left to right,

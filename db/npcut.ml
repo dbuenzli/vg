@@ -36,7 +36,7 @@ let dotted_region area =
   I.blend (I.cut ~area:outline annulus (I.const (Color.gray 0.75)))
 ;;
 
-Db.image "npcut-aeo" ~author:Db.dbuenzli
+Db.image "npcut-aeo" __POS__ ~author:Db.dbuenzli
   ~title:"Even-odd area, non primitive cut"
   ~tags:["cut"]
   ~note:"Ring with dots."
@@ -44,7 +44,7 @@ Db.image "npcut-aeo" ~author:Db.dbuenzli
   ~view:Box2.unit
   begin fun _ -> dotted_region `Aeo end;
 
-Db.image "npcut-anz" ~author:Db.dbuenzli
+Db.image "npcut-anz" __POS__ ~author:Db.dbuenzli
   ~title:"Non-zero winding area, non primitive cut"
   ~tags:["cut"]
   ~note:"Circle with dots."

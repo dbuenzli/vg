@@ -2,19 +2,18 @@ version = "%%VERSION%%"
 description = "Declarative 2D vector graphics for OCaml"
 requires = "bytes gg"
 archive(byte) = "vg.cma"
-archive(byte, plugin) = "vg.cma"
 archive(native) = "vg.cmxa"
-archive(native, plugin) = "vg.cmxs"
-exists_if = "vg.cma"
+plugin(byte) = "vg.cma"
+plugin(native) = "vg.cmxs"
 
 package "svg" (
   version = "%%VERSION%%"
   description = "Vg's SVG renderer"
   requires = "vg"
   archive(byte) = "vgr_svg.cma"
-  archive(byte, plugin) = "vgr_svg.cma"
   archive(native) = "vgr_svg.cmxa"
-  archive(native, plugin) = "vgr_svg.cmxs"
+  plugin(byte) = "vgr_svg.cma"
+  plugin(native) = "vgr_svg.cmxs"
   exists_if = "vgr_svg.cma"
 )
 
@@ -23,9 +22,9 @@ package "pdf" (
   description = "Vg's PDF renderer"
   requires = "vg uutf otfm"
   archive(byte) = "vgr_pdf.cma"
-  archive(byte, plugin) = "vgr_pdf.cma"
   archive(native) = "vgr_pdf.cmxa"
-  archive(native, plugin) = "vgr_pdf.cmxs"
+  plugin(byte) = "vgr_pdf.cma"
+  plugin(native) = "vgr_pdf.cmxs"
   exists_if = "vgr_pdf.cma"
 )
 
@@ -34,9 +33,9 @@ package "htmlc" (
   description = "Vg's HTML canvas renderer"
   requires = "vg js_of_ocaml js_of_ocaml.syntax"
   archive(byte) = "vgr_htmlc.cma"
-  archive(byte, plugin) = "vgr_htmlc.cma"
   archive(native) = "vgr_htmlc.cmxa"
-  archive(native, plugin) = "vgr_htmlc.cmxs"
+  plugin(byte) = "vgr_htmlc.cma"
+  plugin(native) = "vgr_htmlc.cmxs"
   exists_if = "vgr_htmlc.cma"
 )
 
@@ -45,8 +44,8 @@ package "cairo" (
   description = "Vg's Cairo renderer"
   requires = "vg cairo2"
   archive(byte) = "vgr_cairo.cma"
-  archive(byte, plugin) = "vgr_cairo.cma"
   archive(native) = "vgr_cairo.cmxa"
-  archive(native, plugin) = "vgr_cairo.cmxs"
+  plugin(byte) = "vgr_cairo.cma"
+  plugin(native) = "vgr_cairo.cmxs"
   exists_if = "vgr_cairo.cma"
 )

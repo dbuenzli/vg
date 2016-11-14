@@ -10,7 +10,7 @@ open Vg
 
 (** Images for the documentation. *)
 
-Db.image "doc-gray-square" ~author:Db.dbuenzli
+Db.image "doc-gray-square" __POS__ ~author:Db.dbuenzli
   ~title:"Unit square area in gray"
   ~tags:["doc";]
   ~size:(Size2.v 30. 30.)
@@ -20,7 +20,7 @@ Db.image "doc-gray-square" ~author:Db.dbuenzli
     I.const (Color.gray 0.5)
   end;
 
-Db.image "doc-gray-circle" ~author:Db.dbuenzli
+Db.image "doc-gray-circle" __POS__ ~author:Db.dbuenzli
   ~title:"Gray circle centered in the unit square"
   ~tags:["doc";]
   ~size:(Size2.v 30. 30.)
@@ -33,7 +33,7 @@ Db.image "doc-gray-circle" ~author:Db.dbuenzli
     gray_circle
   end;
 
-Db.image "doc-circle-outline" ~author:Db.dbuenzli
+Db.image "doc-circle-outline" __POS__ ~author:Db.dbuenzli
   ~title:"Black circle outline centered in the unit square"
   ~tags:["doc";]
   ~size:(Size2.v 30. 30.)
@@ -48,7 +48,7 @@ Db.image "doc-circle-outline" ~author:Db.dbuenzli
     circle_outline
   end;
 
-Db.image "doc-dot" ~author:Db.dbuenzli
+Db.image "doc-dot" __POS__ ~author:Db.dbuenzli
   ~title:"Outlined gray circle centered in the unit square"
   ~tags:["doc";]
   ~size:(Size2.v 30. 30.)
@@ -64,7 +64,7 @@ Db.image "doc-dot" ~author:Db.dbuenzli
     dot
   end;
 
-Db.image "doc-scatter-plot" ~author:Db.dbuenzli
+Db.image "doc-scatter-plot" __POS__ ~author:Db.dbuenzli
   ~title:"Scatter plot"
   ~tags:["doc"]
   ~note:"800 points with coordinates on independent normal distributions."
@@ -99,7 +99,7 @@ Db.image "doc-scatter-plot" ~author:Db.dbuenzli
     scatter_plot (normal_pts 800) 0.01
   end;
 
-Db.image "doc-subpaths" ~author:Db.dbuenzli
+Db.image "doc-subpaths" __POS__ ~author:Db.dbuenzli
   ~title:"Subpaths"
   ~tags:["doc"]
   ~note:"Illustrates subpaths construction."
@@ -188,7 +188,7 @@ let area_rule_examples area =
   I.blend (annulus_r >> I.move (V2.v 2.5 y))
 ;;
 
-Db.image "doc-anz" ~author:Db.dbuenzli
+Db.image "doc-anz" __POS__ ~author:Db.dbuenzli
   ~title:"Non-zero winding area rule"
   ~tags:["doc"]
   ~note:"Illustrates the non-zero winding area rule."
@@ -196,7 +196,7 @@ Db.image "doc-anz" ~author:Db.dbuenzli
   ~view:(Box2.v P2.o (Size2.v 3.0 1.0))
   begin fun _ -> area_rule_examples `Anz end;
 
-Db.image "doc-aeo" ~author:Db.dbuenzli
+Db.image "doc-aeo" __POS__ ~author:Db.dbuenzli
   ~title:"Even-odd winding area rule"
   ~tags:["doc"]
   ~note:"Illustrates the even-odd winding area rule."
@@ -206,7 +206,7 @@ Db.image "doc-aeo" ~author:Db.dbuenzli
     area_rule_examples `Aeo
   end;
 
-Db.image "doc-caps" ~author:Db.dbuenzli
+Db.image "doc-caps" __POS__ ~author:Db.dbuenzli
   ~title:"Path caps"
   ~tags:["doc"]
   ~note:"Illustrates path cap styles. From left to right: \
@@ -225,7 +225,7 @@ Db.image "doc-caps" ~author:Db.dbuenzli
     (line 0. `Butt) >> I.blend (line 1.0 `Round) >> I.blend (line 2. `Square)
   end;
 
-Db.image "doc-joins" ~author:Db.dbuenzli
+Db.image "doc-joins" __POS__ ~author:Db.dbuenzli
   ~title:"Path joins"
   ~tags:["doc"]
   ~note:"Illustrates path join styles. From left to right: \
@@ -248,7 +248,7 @@ Db.image "doc-joins" ~author:Db.dbuenzli
     (path 0. `Miter) >> I.blend (path 1. `Round) >> I.blend (path 2. `Bevel)
   end;
 
-Db.image "doc-earcs" ~author:Db.dbuenzli
+Db.image "doc-earcs" __POS__ ~author:Db.dbuenzli
   ~title:"Elliptical arcs"
   ~tags:["doc"; "path"]
   ~note:"Illustrates elliptical arc parameters. In red, elliptical arc \

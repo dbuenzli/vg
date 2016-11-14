@@ -10,7 +10,7 @@ open Vg
 
 (** Test images for gradients. *)
 
-Db.image "gradient-axial" ~author:Db.dbuenzli
+Db.image "gradient-axial" __POS__ ~author:Db.dbuenzli
   ~title:"Black to red, red to white, axial gradient"
   ~tags:["gradient"]
   ~size:(Size2.v 60. 20.)
@@ -21,7 +21,7 @@ Db.image "gradient-axial" ~author:Db.dbuenzli
     I.cut r (I.axial stops P2.o (P2.v 2. 0.))
   end;
 
-Db.image "gradient-radial" ~author:Db.dbuenzli
+Db.image "gradient-radial" __POS__ ~author:Db.dbuenzli
   ~title:"White to red, red to black, radial gradients"
   ~tags:["gradient"]
   ~note:"Focus is clockwise from top left: at the center, at 45° half way to \
@@ -48,7 +48,7 @@ Db.image "gradient-radial" ~author:Db.dbuenzli
     I.blend (radial 0. 0. f3)
   end;
 
-Db.image "gradient-axial-move" ~author:Db.dbuenzli
+Db.image "gradient-axial-move" __POS__ ~author:Db.dbuenzli
   ~title:"Move axial gradient and outline cut"
   ~tags:["gradient"]
   ~note:"Left, the circle is inscribed in the unit square and the gradient \
@@ -73,7 +73,7 @@ Db.image "gradient-axial-move" ~author:Db.dbuenzli
     I.blend left right
   end;
 
-Db.image "gradient-radial-move" ~author:Db.dbuenzli
+Db.image "gradient-radial-move" __POS__ ~author:Db.dbuenzli
   ~title:"Move radial gradient and outline cut"
   ~tags:["gradient"]
   ~note:"On the left the circle cut and the radial gradient are inscribed in \
@@ -98,7 +98,7 @@ Db.image "gradient-radial-move" ~author:Db.dbuenzli
     I.blend left right
   end;
 
-Db.image "gradient-scaling" ~author:Db.dbuenzli
+Db.image "gradient-scaling" __POS__ ~author:Db.dbuenzli
   ~title:"Gradients and scaled ones side-by-side"
   ~tags:["gradient"]
   ~note:"In the right column the gradient on the left is scaled by
@@ -122,7 +122,7 @@ Db.image "gradient-scaling" ~author:Db.dbuenzli
   end;
 
 
-Db.image "gradient-rgb-squares" ~author:Db.dbuenzli
+Db.image "gradient-rgb-squares" __POS__ ~author:Db.dbuenzli
   ~title:"Shaded red, green and blue squares"
   ~tags:["gradient"]
   ~size:(Size2.v 50. 50.)

@@ -6,7 +6,6 @@
 
 open Gg
 open Vg
-;;
 
 (* Images with random marks. *)
 
@@ -32,21 +31,21 @@ let random_marks m =
   List.fold_left I.blend I.void nodes
 ;;
 
-Db.image "rmark-dots" ~author:Db.dbuenzli
+Db.image "rmark-dots" __POS__ ~author:Db.dbuenzli
   ~title:"Random dot mark"
   ~tags ~note ~size ~view
   begin fun _ ->
     random_marks (P.empty >> P.circle P2.o 2.1)
   end;
 
-Db.image "rmark-ticks" ~author:Db.dbuenzli
+Db.image "rmark-ticks" __POS__ ~author:Db.dbuenzli
   ~title:"Random line mark"
   ~tags ~note ~size ~view
   begin fun _ ->
     random_marks (P.empty >> P.line (P2.v 0.5 1.1))
   end;
 
-Db.image "rmark-qcurve" ~author:Db.dbuenzli
+Db.image "rmark-qcurve" __POS__ ~author:Db.dbuenzli
   ~title:"Random quadratic mark"
   ~tags ~note ~size ~view
   begin fun _ ->
@@ -54,7 +53,7 @@ Db.image "rmark-qcurve" ~author:Db.dbuenzli
       (P.empty >> P.qcurve (P2.v 1.0 1.5) (P2.v 1.0 0.0))
   end;
 
-Db.image "rmark-ccurve" ~author:Db.dbuenzli
+Db.image "rmark-ccurve" __POS__ ~author:Db.dbuenzli
   ~title:"Random cubic mark"
   ~tags ~note ~size ~view
   begin fun _ ->
