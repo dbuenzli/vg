@@ -31,8 +31,8 @@ let src_link =
   format_of_string "https://github.com/dbuenzli/vg/blob/master/%s#L%d"
 
 let open_sans_xbold = match Vgr_pdf.otf_font Open_sans.extra_bold with
-| `Error e -> Log.msg "%a" Otfm.pp_error e; `Sans
-| `Otf _ as otf -> otf
+| Error e -> Log.msg "%a" Otfm.pp_error e; `Sans
+| Ok otf -> otf
 
 let font f = match f.Font.name, f.Font.weight with     (* PDF font resolver. *)
 | "Open Sans", `W800 -> open_sans_xbold

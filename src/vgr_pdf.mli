@@ -25,7 +25,7 @@
 type otf_font
 (** The type for OpenType fonts. *)
 
-val otf_font : string -> [ `Otf of otf_font | `Error of Otfm.error ]
+val otf_font : string -> ([> `Otf of otf_font], Otfm.error) Result.result
 (** [otf_font bytes] is an OpenType font from the OpenType byte
     serialization [bytes]. *)
 
@@ -48,8 +48,9 @@ val font : Vg.font -> font
 
 (** {1:target PDF render targets} *)
 
-val target : ?font:(Vg.font -> font) -> ?xmp:string ->
-  unit -> Vg.Vgr.dst_stored Vg.Vgr.target
+val target :
+  ?font:(Vg.font -> font) -> ?xmp:string -> unit ->
+  Vg.Vgr.dst_stored Vg.Vgr.target
 (** [target font xmp ()] is a PDF render target for rendering to the stored
     destination given to {!Vg.Vgr.create}.
     {ul

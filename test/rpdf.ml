@@ -11,8 +11,8 @@ include Db_contents
 
 let renderer dst is =
   let open_sans_xbold = match Vgr_pdf.otf_font Open_sans.extra_bold with
-  | `Error e -> Format.eprintf "%a" Otfm.pp_error e; `Sans
-  | `Otf _ as otf -> otf
+  | Error e -> Format.eprintf "%a" Otfm.pp_error e; `Sans
+  | Ok otf -> otf
   in
   let font f = match f.Font.name, f.Font.weight with
   | "Open Sans", `W800 -> open_sans_xbold

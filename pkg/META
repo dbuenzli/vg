@@ -1,6 +1,6 @@
 version = "%%VERSION%%"
 description = "Declarative 2D vector graphics for OCaml"
-requires = "bytes gg"
+requires = "bytes uchar result gg"
 archive(byte) = "vg.cma"
 archive(native) = "vg.cmxa"
 plugin(byte) = "vg.cma"

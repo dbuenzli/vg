@@ -59,7 +59,8 @@ let pdf_font_program (normal, slant) font =
   `Pdf_font (if font.Font.weight < `W700 then regular else bold)
 
 let otf_font s =
-  let ( >>= ) x f = match x with `Error _ as e -> e | `Ok v -> f v in
+  let open Result in
+  let ( >>= ) x f = match x with Error e -> Error e | Ok v -> f v in
   let add_adv acc _ adv _ = adv :: acc in
   let d = Otfm.decoder (`String s) in
   Otfm.flavour         d >>= fun otf_flavour ->
@@ -75,9 +76,9 @@ let otf_font s =
   let otf_ascent = hhea.Otfm.hhea_ascender in
   let otf_descent = hhea.Otfm.hhea_descender in
   let otf_widths = List.rev widths in
-  `Otf { otf_program = s; otf_flavour; otf_postscript_name; otf_units_per_em;
-         otf_xmin; otf_ymin; otf_xmax; otf_ymax; otf_ascent; otf_descent;
-         otf_widths; }
+  Ok (`Otf { otf_program = s; otf_flavour; otf_postscript_name;
+             otf_units_per_em; otf_xmin; otf_ymin; otf_xmax; otf_ymax;
+             otf_ascent; otf_descent; otf_widths; })
 
 let font font = match font.Font.name with
 | "Helvetica" -> `Sans

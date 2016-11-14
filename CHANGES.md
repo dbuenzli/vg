@@ -1,4 +1,6 @@
 
+- Use standard library result type. This changes the dubious interface
+  of `Vgr_pdf.otf_font`.
 - Build depend on topkg.
 - Relicense from BSD3 to ISC.
 

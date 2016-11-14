@@ -8,6 +8,7 @@
 
 open Gg
 open Vg
+open Result
 
 let str = Printf.sprintf
 let otfm_err_str err =
@@ -29,11 +30,11 @@ let string_of_file inf =
       done;
       assert false
     with
-    | Exit -> close ic; `Ok (Buffer.contents b)
-    | Failure _ -> close ic; `Error (str "%s: input file too large" inf)
-    | Sys_error e -> close ic; `Error (str "%s: %s" inf e)
+    | Exit -> close ic; Ok (Buffer.contents b)
+    | Failure _ -> close ic; Error (str "%s: input file too large" inf)
+    | Sys_error e -> close ic; Error (str "%s: %s" inf e)
   with
-  | Sys_error e -> `Error (str "%s: %s" inf e)
+  | Sys_error e -> Error (str "%s: %s" inf e)
 
 (* Font information *)
 
@@ -68,14 +69,14 @@ let add_kpair acc g0 g1 kv =
   Gmap.add g0 (Gmap.add g1 kv m) acc
 
 let font_info font = match font with
-| None -> `Ok ("Courier", None)
+| None -> Ok ("Courier", None)
 | Some inf ->
     match string_of_file inf with
-    | `Error _ as e -> e
-    | `Ok i_otf ->
+    | Error _ as e -> e
+    | Ok i_otf ->
         let ( >>= ) x f = match x with
-        | `Error e -> `Error (str "%s: %s" inf (otfm_err_str e))
-        | `Ok v -> f v
+        | Error e -> Error (str "%s: %s" inf (otfm_err_str e))
+        | Ok v -> f v
         in
         let d = Otfm.decoder (`String i_otf) in
         Otfm.postscript_name d                      >>= fun name ->
@@ -85,7 +86,7 @@ let font_info font = match font with
         Otfm.kern d add_ktable add_kpair Gmap.empty >>= fun i_kern ->
         let name = match name with None -> "Unknown" | Some n -> n in
         let i_units_per_em = head.Otfm.head_units_per_em in
-        `Ok (name, Some { i_otf; i_cmap; i_advs; i_kern; i_units_per_em })
+        Ok (name, Some { i_otf; i_cmap; i_advs; i_kern; i_units_per_em })
 
 let get_glyph fi g = try Gmap.find g fi.i_cmap with Not_found -> 0
 let get_adv fi g = try Gmap.find g fi.i_advs with Not_found -> 0
@@ -157,23 +158,23 @@ let renderable (fname, info) size kern text =
   `Image (size, view, i)
 
 let font_resolver = function
-| name, None -> `Ok (fun _ -> `Fixed)
+| name, None -> Ok (fun _ -> `Fixed)
 | name, Some info ->
     match Vgr_pdf.otf_font info.i_otf with
-    | `Error _ as e -> e
-    | `Otf _ as otf -> `Ok (fun _ -> otf)
+    | Error _ as e -> e
+    | Ok (`Otf _ as otf) -> Ok (fun _ -> otf)
 
 let echo font size kern msg = match font_info font with
-| `Error _ as e -> e
-| `Ok font_info ->
+| Error _ as e -> e
+| Ok font_info ->
     match font_resolver font_info with
-    | `Error e -> `Error (otfm_err_str e)
-    | `Ok font ->
+    | Error e -> Error (otfm_err_str e)
+    | Ok font ->
         let renderable = renderable font_info size kern msg in
         let r = Vgr.create (Vgr_pdf.target ~font ()) (`Channel stdout) in
         ignore (Vgr.render r renderable);
         ignore (Vgr.render r `End);
-        `Ok
+        Ok ()
 
 (* Command line *)
 
@@ -202,8 +203,8 @@ let main () =
   in
   let font = match !font with "" -> None | f -> Some f in
   match echo font !size !kern msg with
-  | `Error e -> Format.eprintf "%s: %s@." exec e; exit 1
-  | `Ok  -> exit 0
+  | Error e -> Format.eprintf "%s: %s@." exec e; exit 1
+  | Ok  () -> exit 0
 
 let () = main ()
 

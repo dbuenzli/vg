@@ -8,6 +8,7 @@
 
 open Gg
 open Vg
+open Result
 
 let str = Printf.sprintf
 let otfm_err_str err =
@@ -29,11 +30,11 @@ let string_of_file inf =
       done;
       assert false
     with
-    | Exit -> close ic; `Ok (Buffer.contents b)
-    | Failure _ -> close ic; `Error (str "%s: input file too large" inf)
-    | Sys_error e -> close ic; `Error (str "%s: %s" inf e)
+    | Exit -> close ic; Ok (Buffer.contents b)
+    | Failure _ -> close ic; Error (str "%s: input file too large" inf)
+    | Sys_error e -> close ic; Error (str "%s: %s" inf e)
   with
-  | Sys_error e -> `Error (str "%s: %s" inf e)
+  | Sys_error e -> Error (str "%s: %s" inf e)
 
 (* Font information *)
 
@@ -49,9 +50,9 @@ type otf_info =
     i_outlines : Otfm.glyph_descr Gmap.t; }  (* maps glyph ids to outlines. *)
 
 let decode_outlines gcount d =
-  let ( >>= ) x f = match x with `Error _ as e -> e | `Ok v -> f v in
+  let ( >>= ) x f = match x with Error _ as e -> e | Ok v -> f v in
   let rec loop i acc =
-    if i < 0 then `Ok acc else
+    if i < 0 then Ok acc else
     Otfm.loca d i
     >>= function
     | None -> loop (i - 1) acc
@@ -60,11 +61,11 @@ let decode_outlines gcount d =
   loop (gcount - 1) Gmap.empty
 
 let font_info inf = match string_of_file inf with
-| `Error _ as e -> e
-| `Ok i_otf ->
+| Error _ as e -> e
+| Ok i_otf ->
     let ( >>= ) x f = match x with
-    | `Error e -> `Error (str "%s: %s" inf (otfm_err_str e))
-    | `Ok v -> f v
+    | Error e -> Error (str "%s: %s" inf (otfm_err_str e))
+    | Ok v -> f v
     in
     let d = Otfm.decoder (`String i_otf) in
     Otfm.postscript_name d
@@ -77,7 +78,7 @@ let font_info inf = match string_of_file inf with
     let i_bbox = Otfm.(headt.head_xmin, headt.head_ymin,
                        headt.head_xmax, headt.head_ymax)
     in
-    `Ok ({ i_otf; i_name; i_units_per_em; i_glyph_count; i_bbox; i_outlines })
+    Ok ({ i_otf; i_name; i_units_per_em; i_glyph_count; i_bbox; i_outlines })
 
 let font_bbox fi fsize =
   let u_to_em = float fi.i_units_per_em in
@@ -215,13 +216,13 @@ let renderable fi fsize cols nobb =
   `Image (size, view, i)
 
 let sample font size cols nobb = match font_info font with
-| `Error _ as e -> e
-| `Ok font_info ->
+| Error _ as e -> e
+| Ok font_info ->
     let renderable = renderable font_info size cols nobb in
     let r = Vgr.create (Vgr_pdf.target ()) (`Channel stdout) in
     ignore (Vgr.render r renderable);
     ignore (Vgr.render r `End);
-    `Ok ()
+    Ok ()
 
 (* Command line *)
 
@@ -250,8 +251,8 @@ let main () =
   | None -> Format.eprintf "%s: need to specify a font file" exec; exit 1
   | Some font ->
       match sample font !size !cols !nobb with
-      | `Error e -> Format.eprintf "%s: %s@." exec e; exit 1
-      | `Ok () -> exit 0
+      | Error e -> Format.eprintf "%s: %s@." exec e; exit 1
+      | Ok () -> exit 0
 
 let () = main ()
 
