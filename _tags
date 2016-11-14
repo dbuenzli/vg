@@ -5,24 +5,23 @@ true : package(gg)
 <db> : include
 <test> : include
 
-<src/vgr_pdf.*> : package(uutf otfm)
+<src/vgr_pdf.*> : package(uutf), package(otfm)
 <src/vgr_htmlc.*> : package(js_of_ocaml.ppx)
 <src/vgr_cairo.*> : package(cairo2)
 
 <db/glyphs_pdf.*> : package(uutf)
 
-<test/rpdf.*> : package(uutf otfm unix)
-<test/rsvg.*> : package(uutf unix)
-<test/rcairo.*> : package(uutf unix cairo2)
+<test/rpdf.*> : package(uutf), package(otfm), package(unix)
+<test/rsvg.*> : package(uutf), package(unix)
+<test/rcairo.*> : package(uutf), package(unix), package(cairo2)
 
-<test/mui.*> : package(js_of_ocaml js_of_ocaml.syntax), syntax(camlp4o)
-<test/rhtmlc.*> : package(otfm), package(uutf), package(js_of_ocaml), package(js_of_ocaml.syntax), syntax(camlp4o)
+<test/mui.*> : package(js_of_ocaml), package(js_of_ocaml.ppx)
+<test/rhtmlc.*> : package(otfm), package(uutf), package(js_of_ocaml)
 
 <test/min_pdf.*> : package(uutf), package(otfm)
 <test/min_cairo*> : package(cairo2)
+<test/min_htmlc.*> : package(js_of_ocaml), package(js_of_ocaml.ppx)
 
-<test/min_htmlc.*> : package(js_of_ocaml), package(js_of_ocaml.syntax), syntax(camlp4o)
-
-<test/sqc.*> : package(js_of_ocaml,js_of_ocaml.syntax), syntax(camlp4o)
-<test/vecho.*> : package(uutf otfm)
-<test/fglyphs.*> : package(uutf otfm)
+<test/sqc.*> : package(js_of_ocaml), package(js_of_ocaml.ppx)
+<test/vecho.*> : package(uutf), package(otfm)
+<test/fglyphs.*> : package(uutf), package(otfm)

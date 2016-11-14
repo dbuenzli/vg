@@ -1,4 +1,6 @@
 
+- Automated migration from camlp4 to ppx. Many thanks to the authors
+  of camlp4-to-ppx.
 - Use standard library result type. This changes the dubious interface
   of `Vgr_pdf.otf_font`.
 - Build depend on topkg.

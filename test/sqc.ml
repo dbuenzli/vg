@@ -13,9 +13,9 @@ open Vg
 (* [animate] is reusable, it hides browser bureaucracy and jsoo *)
 
 let animate ~size ~view next acc =
-  let now () = Js.to_float (jsnew Js.date_now () ## getTime ()) /. 1000. in
+  let now () = Js.to_float ((new%js Js.date_now) ## getTime) /. 1000. in
   let start = now () in
-  let d = Dom_html.window ## document in
+  let d = Dom_html.window ##. document in
   let c = Dom_html.createCanvas d in
   let r = Vgr.create (Vgr_htmlc.target c) `Other in
   let acc = ref acc in
@@ -26,11 +26,11 @@ let animate ~size ~view next acc =
     Dom_html._requestAnimationFrame (Js.wrap_callback loop)
   in
   let start _ =
-    Dom.appendChild d ## body c;
+    Dom.appendChild d ##. body c;
     Dom_html._requestAnimationFrame (Js.wrap_callback loop);
     Js._false
   in
-  Dom_html.window ## onload <- Dom_html.handler start
+  Dom_html.window ##. onload := Dom_html.handler start
 
 (* Illusion *)
 
