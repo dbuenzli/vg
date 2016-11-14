@@ -76,3 +76,7 @@ The resulting binaries are in `_build/test` :
 - `fglyphs.native`, renders a font's glyphs to a PDF file (without using
   Vg's glyph API).
 
+## Authors
+
+* [Daniel C. Bünzli](http://erratique.ch), main developer.
+* Arthur Wendling, Vgr_cairo backend.

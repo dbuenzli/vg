@@ -1,7 +1,10 @@
 opam-version: "1.2"
 maintainer: "Daniel Bünzli <daniel.buenzl i@erratique.ch>"
 homepage: "http://erratique.ch/software/vg"
-authors: ["Daniel Bünzli <daniel.buenzl i@erratique.ch>"]
+authors: [
+  "Daniel Bünzli <daniel.buenzl i@erratique.ch>"
+  "Arthur Wendling" ]
+
 doc: "http://erratique.ch/software/vg/doc/Vg"
 dev-repo: "http://erratique.ch/repos/vg.git"
 bug-reports: "https://github.com/dbuenzli/vg/issues"
