@@ -20,7 +20,7 @@ class type ctx_ext = object
   method clip : Js.js_string Js.t -> unit Js.meth
 end
 
-let dash_support ctx = Js.Optdef.test ((Js.Unsafe.coerce ctx) ## setLineDash)
+let dash_support ctx = Js.Optdef.test ((Js.Unsafe.coerce ctx) ##. setLineDash)
 
 (* Renderer *)
 
@@ -97,14 +97,14 @@ let area_str =
 
 let get_primitive s p = try Hashtbl.find s.prims p with
 | Not_found ->
-    let add_stop g (t, c) = g ## addColorStop (t, css_color c) in
+    let add_stop g (t, c) = g ## (addColorStop t (css_color c)) in
     let create = function
     | Const c -> Color (css_color c)
     | Axial (stops, pt, pt') ->
-        let g = P2.(s.ctx ## createLinearGradient(x pt, y pt, x pt', y pt')) in
+        let g = P2.(s.ctx ## (createLinearGradient (x pt) (y pt) (x pt') (y pt'))) in
         List.iter (add_stop g) stops; Gradient g
     | Radial (stops, f, c, r) ->
-        let g = P2.(s.ctx ## createRadialGradient(x f, y f, 0., x c, y c, r)) in
+        let g = P2.(s.ctx ## (createRadialGradient (x f) (y f) (0.) (x c) (y c) r)) in
         List.iter (add_stop g) stops; Gradient g
     | Raster _ -> assert false
     in
@@ -123,34 +123,34 @@ let set_dashes ?(warning = true) s dashes =
   if not s.dash_support then (if warning then warn s (`Other warn_dash)) else
   let ctx : ctx_ext Js.t = Js.Unsafe.coerce s.ctx in
   match dashes with
-  | None -> ctx ## setLineDash(jsnew Js.array_empty ())
+  | None -> ctx ## (setLineDash (new%js Js.array_empty))
   | Some (offset, dashes) ->
-      let da = jsnew Js.array_empty () in
+      let da = new%js Js.array_empty in
       List.iteri (fun i v -> Js.array_set da i v) dashes;
-      ctx ## lineDashOffset <- offset;
-      ctx ## setLineDash(da)
+      ctx ##. lineDashOffset := offset;
+      ctx ## (setLineDash da)
 
 let init_ctx s w h =
   let o = s.gstate.g_outline in
   let m = s.view_tr in
   (* clear canvas *)
-  s.ctx ## setTransform (1., 0., 0., 1., 0., 0.);
-  s.ctx ## clearRect (0., 0., w, h);
+  s.ctx ## (setTransform (1.) (0.) (0.) (1.) (0.) (0.));
+  s.ctx ## (clearRect (0.) (0.) w h);
   (* setup base state *)
-  M3.(s.ctx ## transform (e00 m, e10 m, e01 m, e11 m, e02 m, e12 m));
-  s.ctx ## lineWidth <- o.P.width;
-  s.ctx ## lineCap <- cap_str o.P.cap;
-  s.ctx ## lineJoin <- join_str o.P.join;
-  s.ctx ## miterLimit <- (Vgr.Private.P.miter_limit o);
+  M3.(s.ctx ## (transform (e00 m) (e10 m) (e01 m) (e11 m) (e02 m) (e12 m)));
+  s.ctx ##. lineWidth := o.P.width;
+  s.ctx ##. lineCap := cap_str o.P.cap;
+  s.ctx ##. lineJoin := join_str o.P.join;
+  s.ctx ##. miterLimit := (Vgr.Private.P.miter_limit o);
   set_dashes ~warning:false s o.P.dashes
 
 let push_transform s tr =
   let m = match tr with
-  | Move v -> s.ctx ## translate (V2.x v, V2.y v); M3.move2 v
-  | Rot a -> s.ctx ## rotate (a); M3.rot2 a
-  | Scale sv -> s.ctx ## scale (V2.x sv, V2.y sv); M3.scale2 sv
+  | Move v -> s.ctx ## (translate (V2.x v) (V2.y v)); M3.move2 v
+  | Rot a -> s.ctx ## (rotate a); M3.rot2 a
+  | Scale sv -> s.ctx ## (scale (V2.x sv) (V2.y sv)); M3.scale2 sv
   | Matrix m ->
-      M3.(s.ctx ## transform (e00 m, e10 m, e01 m, e11 m, e02 m, e12 m)); m
+      M3.(s.ctx ## (transform (e00 m) (e10 m) (e01 m) (e11 m) (e02 m) (e12 m))); m
   in
   s.gstate.g_tr <- M3.mul s.gstate.g_tr m
 
@@ -158,31 +158,31 @@ let set_outline s o =
   if s.gstate.g_outline == o then () else
   let old = s.gstate.g_outline in
   s.gstate.g_outline <- o;
-  if old.P.width <> o.P.width then (s.ctx ## lineWidth <- o.P.width);
-  if old.P.cap <> o.P.cap then (s.ctx ## lineCap <- cap_str o.P.cap);
-  if old.P.join <> o.P.join then (s.ctx ## lineJoin <- join_str o.P.join);
+  if old.P.width <> o.P.width then (s.ctx ##. lineWidth := o.P.width);
+  if old.P.cap <> o.P.cap then (s.ctx ##. lineCap := cap_str o.P.cap);
+  if old.P.join <> o.P.join then (s.ctx ##. lineJoin := join_str o.P.join);
   if old.P.miter_angle <> o.P.miter_angle then
-    (s.ctx ## miterLimit <- Vgr.Private.P.miter_limit o);
+    (s.ctx ##. miterLimit := Vgr.Private.P.miter_limit o);
   if old.P.dashes <> o.P.dashes then set_dashes s o.P.dashes;
   ()
 
 let set_stroke s p =
   let p = get_primitive s p in
   if s.gstate.g_stroke != p then begin match p with
-  | Color c -> s.ctx ## strokeStyle <- c; s.gstate.g_stroke <- p
-  | Gradient g -> s.ctx ## strokeStyle_gradient <- g; s.gstate.g_stroke <- p
+  | Color c -> s.ctx ##. strokeStyle := c; s.gstate.g_stroke <- p
+  | Gradient g -> s.ctx ##. strokeStyle_gradient := g; s.gstate.g_stroke <- p
   end
 
 let set_fill s p =
   let p = get_primitive s p in
   if s.gstate.g_fill != p then begin match p with
-  | Color c -> s.ctx ## fillStyle <- c; s.gstate.g_fill <- p
-  | Gradient g -> s.ctx ## fillStyle_gradient <- g; s.gstate.g_fill <- p
+  | Color c -> s.ctx ##. fillStyle := c; s.gstate.g_fill <- p
+  | Gradient g -> s.ctx ##. fillStyle_gradient := g; s.gstate.g_fill <- p
   end
 
 let set_font s f =
   let f = get_font s f in
-  s.ctx ## font <- f
+  s.ctx ##. font := f
 
 (* N.B. In the future, if browsers begin supporting them we could in r_path,
    1) construct and cache path objects 2) use ctx ## ellipse. *)
@@ -192,28 +192,28 @@ let set_path s p =
   | [] -> ()
   | seg :: segs ->
       match seg with
-      | `Sub pt -> P2.(s.ctx ## moveTo (x pt, y pt)); loop pt segs
-      | `Line pt -> P2.(s.ctx ## lineTo (x pt, y pt)); loop pt segs
+      | `Sub pt -> P2.(s.ctx ## (moveTo (x pt) (y pt))); loop pt segs
+      | `Line pt -> P2.(s.ctx ## (lineTo (x pt) (y pt))); loop pt segs
       | `Qcurve (c, pt) ->
-          P2.(s.ctx ## quadraticCurveTo (x c, y c, x pt, y pt));
+          P2.(s.ctx ## (quadraticCurveTo (x c) (y c) (x pt) (y pt)));
           loop pt segs
       | `Ccurve (c, c', pt) ->
-          P2.(s.ctx ## bezierCurveTo (x c, y c, x c', y c', x pt, y pt));
+          P2.(s.ctx ## (bezierCurveTo (x c) (y c) (x c') (y c') (x pt) (y pt)));
           loop pt segs
       | `Earc (large, cw, r, a, pt) ->
           begin match Vgr.Private.P.earc_params last large cw r a pt with
-          | None -> P2.(s.ctx ## lineTo (x pt, y pt)); loop pt segs
+          | None -> P2.(s.ctx ## (lineTo (x pt) (y pt))); loop pt segs
           | Some (c, m, a, a') ->
-              s.ctx ## save ();
+              (s.ctx) ## save;
               let c = V2.ltr (M2.inv m) c in
-              M2.(s.ctx ## transform (e00 m, e10 m, e01 m, e11 m, 0., 0.));
-              P2.(s.ctx ## arc (x c, y c, 1.0, a, a', (Js.bool cw)));
-              s.ctx ## restore ();
+              M2.(s.ctx ## (transform (e00 m) (e10 m) (e01 m) (e11 m) (0.) (0.)));
+              P2.(s.ctx ## (arc (x c) (y c) (1.0) a a' ((Js.bool cw))));
+              (s.ctx) ## restore;
               loop pt segs
           end
-      | `Close -> s.ctx ## closePath (); loop last (* we don't care *) segs
+      | `Close -> (s.ctx) ## closePath; loop last (* we don't care *) segs
   in
-  s.ctx ## beginPath ();
+  (s.ctx) ## beginPath;
   loop P2.o (List.rev p)
 
 (* The way glyph_cuts is implemented is a little bit odd because
@@ -237,7 +237,7 @@ let rec r_cut_glyphs s a run = function
     | None -> warn s (`Textless_glyph_cut (image (Cut_glyphs (a, run, i))))
     | Some text ->
         let text = Js.string text in
-        s.ctx ## save ();
+        (s.ctx) ## save;
         s.todo <- (save_gstate s) :: s.todo;
         let m = M3.mul s.view_tr s.gstate.g_tr in
         let o = P2.tr m run.o in
@@ -246,15 +246,15 @@ let rec r_cut_glyphs s a run = function
         let x_scale =
           (* we don't apply the view transform but still need to scale
              for aspect ratio distortions. *)
-          let sa = (float s.c ## width) /. (float s.c ## height) in
+          let sa = (float s.c ##. width) /. (float s.c ##. height) in
           let va = Box2.w s.view /. Box2.h s.view in
           sa /. va
         in
         set_font s (run.font, font_size);
-        M3.(s.ctx ## setTransform
-              (   e00 s.gstate.g_tr *. x_scale, -. e10 s.gstate.g_tr *. x_scale,
-               -. e01 s.gstate.g_tr *. y_scale,    e11 s.gstate.g_tr *. y_scale,
-                                 V2.x o,                   V2.y o));
+        M3.(s.ctx ## (setTransform
+                 (e00 s.gstate.g_tr *. x_scale) (-. e10 s.gstate.g_tr *. x_scale)
+               (-. e01 s.gstate.g_tr *. y_scale)    (e11 s.gstate.g_tr *. y_scale)
+                                 (V2.x o)                   (V2.y o)));
         begin match a with
         | `O o ->
             warn s (`Unsupported_glyph_cut (a, image i))
@@ -263,7 +263,7 @@ let rec r_cut_glyphs s a run = function
             (* set_outline s o; set_stroke s p;
                s.ctx ## strokeText (text, 0., 0.) *)
         | `Aeo | `Anz ->
-            set_fill s p; s.ctx ## fillText (text, 0., 0.)
+            set_fill s p; s.ctx ## (fillText text (0.) (0.))
         end;
     end
 
@@ -271,13 +271,13 @@ let rec r_cut s a = function
 | Primitive (Raster _) -> assert false
 | Primitive p ->
     begin match a with
-    | `O o -> set_outline s o; set_stroke s p; s.ctx ## stroke ()
+    | `O o -> set_outline s o; set_stroke s p; (s.ctx) ## stroke
     | `Aeo | `Anz ->
         set_fill s p;
-        (Js.Unsafe.coerce s.ctx : ctx_ext Js.t) ## fill (area_str a)
+        (Js.Unsafe.coerce s.ctx : ctx_ext Js.t) ## (fill (area_str a))
     end
 | Tr (tr, i) ->
-    s.ctx ## save ();
+    (s.ctx) ## save;
     s.todo <- (save_gstate s) :: s.todo;
     push_transform s tr;
     r_cut s a i
@@ -286,8 +286,8 @@ let rec r_cut s a = function
     | `O _ -> warn s (`Unsupported_cut (a, image i)); `Anz
     | a -> a
     in
-    s.ctx ## save ();
-    (Js.Unsafe.coerce s.ctx : ctx_ext Js.t) ## clip (area_str a);
+    (s.ctx) ## save;
+    (Js.Unsafe.coerce s.ctx : ctx_ext Js.t) ## (clip (area_str a));
     s.todo <- (Draw i) :: (save_gstate s) :: s.todo
 
 let rec r_image s k r =
@@ -295,7 +295,7 @@ let rec r_image s k r =
   match s.todo with
   | [] -> Hashtbl.reset s.prims; Hashtbl.reset s.fonts; k r
   | Set gs :: todo ->
-      s.ctx ## restore ();
+      (s.ctx) ## restore;
       set_gstate s gs;
       s.todo <- todo;
       r_image s k r
@@ -319,7 +319,7 @@ let rec r_image s k r =
           s.todo <- (Draw i') :: (Draw i) :: todo;
           r_image s k r
       | Tr (tr, i) ->
-          s.ctx ## save ();
+          (s.ctx) ## save;
           s.todo <- (Draw i) :: (save_gstate s) :: todo;
           push_transform s tr;
           r_image s k r
@@ -332,15 +332,15 @@ let render s v k r = match v with
         let to_css_mm = str "%gmm" in
         let new_w = Js.string (to_css_mm (Size2.w size)) in
         let new_h = Js.string (to_css_mm (Size2.h size)) in
-        let cw_css = s.c ## style ## width in
-        let ch_css = s.c ## style ## height in
-        if cw_css <> new_w then s.c ## style ## width <- new_w;
-        if ch_css <> new_h then s.c ## style ## height <- new_h;
+        let cw_css = s.c ##. style ##. width in
+        let ch_css = s.c ##. style ##. height in
+        if cw_css <> new_w then s.c ##. style ##. width := new_w;
+        if ch_css <> new_h then s.c ##. style ##. height := new_h;
         size
       end else begin
-        let r = (s.c :> Dom_html.element Js.t) ## getBoundingClientRect () in
-        let w = r ## right -. r ## left in (* in CSS pixels *)
-        let h = r ## bottom -. r ## top in (* in CSS pixels *)
+        let r = ((s.c :> Dom_html.element Js.t)) ## getBoundingClientRect in
+        let w = r ##. right -. r ##. left in (* in CSS pixels *)
+        let h = r ##. bottom -. r ##. top in (* in CSS pixels *)
         let to_mm = (2.54 /. 96.) *. 10. in
         Size2.v (w *. to_mm) (h *. to_mm)
       end
@@ -349,8 +349,8 @@ let render s v k r = match v with
     let ch = Float.round ((Size2.h size /. 1000.) *. (V2.y s.resolution)) in
     let cwi = int_of_float cw in
     let chi = int_of_float ch in
-    if s.c ## width <> cwi then s.c ## width <- cwi;
-    if s.c ## height <> chi then s.c ## height <- chi;
+    if s.c ##. width <> cwi then s.c ##. width := cwi;
+    if s.c ##. height <> chi then s.c ##. height := chi;
     (* Map view rect (bot-left coords) to canvas (top-left coords) *)
     let sx = cw /. Box2.w view in
     let sy = ch /. Box2.h view in
@@ -370,8 +370,8 @@ let render s v k r = match v with
 
 let screen_resolution = (* in pixel per meters *)
   let device_pixel_ratio =
-    if Js.Optdef.test ((Js.Unsafe.coerce Dom_html.window) ## devicePixelRatio)
-    then (Js.Unsafe.coerce Dom_html.window) ## devicePixelRatio
+    if Js.Optdef.test ((Js.Unsafe.coerce Dom_html.window) ##. devicePixelRatio)
+    then (Js.Unsafe.coerce Dom_html.window) ##. devicePixelRatio
     else 1.0
   in
   let screen = (96. /. 2.54) *. 100. *. device_pixel_ratio in
@@ -379,7 +379,7 @@ let screen_resolution = (* in pixel per meters *)
 
 let target ?(resize = true) ?(resolution = screen_resolution) c =
   let target r _ =
-    let ctx = c ## getContext (Dom_html._2d_) in
+    let ctx = c ## (getContext (Dom_html._2d_)) in
     true, render { r; c; ctx;
                    resize;
                    resolution;
