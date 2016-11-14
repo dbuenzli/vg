@@ -107,7 +107,7 @@ let otf_layout fi size text =
   let rec add_glyph (gs, advs, len as acc) i = function
   | `Malformed _ -> add_glyph acc i (`Uchar Uutf.u_rep)
   | `Uchar u ->
-      let g = get_glyph fi u in
+      let g = get_glyph fi (Uchar.to_int u) in
       let adv = get_adv fi g in
       let sadv = V2.v ((size *. (float adv)) /. u_to_em) 0. in
       (g :: gs, sadv :: advs, len + adv)
@@ -120,7 +120,7 @@ let otf_kern_layout fi size text =
   let rec add (prev, gs, advs, kerns as acc) i = function
   | `Malformed _ -> add acc i (`Uchar Uutf.u_rep)
   | `Uchar u ->
-      let g = get_glyph fi u in
+      let g = get_glyph fi (Uchar.to_int u) in
       let advs = get_adv fi g :: advs in
       let kerns = if prev = -1 then kerns else (get_kern fi prev g) :: kerns in
       (g, g :: gs, advs, kerns)

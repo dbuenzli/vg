@@ -189,6 +189,7 @@ let b_m3 b m =
 
 let b_utf16_be b u =
   (* Can't use Uutf.Buffer.add_utf16_be because of the PDF escape rules. *)
+  let u = Uchar.to_int u in
   let w byte = Buffer.add_char b (unsafe_chr byte) in
   if u < 0x10000 then begin
     if u = u_lpar || u = u_rpar || u = u_bslash           (* PDF escape. *)
@@ -469,8 +470,11 @@ let make_blocks run =
 let pdf_text_glyphs run = match run.Vgr.Private.Data.text with
 | None -> []
 | Some text ->
-    let add_glyph acc _ = function
-    | `Uchar u -> u :: acc | `Malformed _ -> Uutf.u_rep :: acc
+    let add_glyph acc _ dec =
+      let u = match dec with
+      | `Uchar u -> Uchar.to_int u | `Malformed _ -> Uchar.to_int Uutf.u_rep
+      in
+      u :: acc
     in
     List.rev (Uutf.String.fold_utf_8 add_glyph [] text)
 
