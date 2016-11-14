@@ -51,8 +51,9 @@ let () =
     Pkg.doc "test/min_cairo_png.ml";
     Pkg.doc "test/min_cairo_mem.ml";
     Pkg.doc "test/fglyphs.ml";
-
+    Pkg.doc "test/vecho.ml";
     doc_images;
+
     Pkg.test ~run:false "test/min_svg";
     Pkg.test ~run:false "test/min_pdf";
     Pkg.test ~run:false "test/min_cairo_png";

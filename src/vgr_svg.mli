@@ -10,7 +10,7 @@
     {ul {- Erik Dahlström et al. {{:http://www.w3.org/TR/SVG11/}{e
     Scalable Vector Graphics (SVG) 1.1}}, 2011.}}
 
-    {e Release %%VERSION%% — %%MAINTAINER%% } *)
+    {e %%VERSION%% - {{:%%PKG_HOMEPAGE%% }homepage}} *)
 
 (** {1:target SVG render targets} *)
 

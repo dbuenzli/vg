@@ -14,7 +14,7 @@
     this renderer will be considered if it cannot be reproduced in the
     latest Adobe Acrobat Reader.
 
-    {e Release %%VERSION%% — %%MAINTAINER%% } *)
+    {e %%VERSION%% - {{:%%PKG_HOMEPAGE%% }homepage}} *)
 
 (** {1:fonts Font resolution}
 

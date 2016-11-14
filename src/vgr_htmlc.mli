@@ -10,7 +10,7 @@
     {ul {- Rik Cabanier et al. {e {{:http://www.w3.org/TR/2dcontext/}HTML
      Canvas 2D Context}}, 2012-12-17.}}
 
-    {e Release %%VERSION%% — %%MAINTAINER%% } *)
+    {e %%VERSION%% - {{:%%PKG_HOMEPAGE%% }homepage}} *)
 
 (** {1:target HTML canvas render targets} *)
 

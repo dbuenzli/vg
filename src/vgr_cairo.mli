@@ -6,7 +6,7 @@
 
 (** Vg {{:http://cairographics.org/}Cairo} renderer.
 
-    {e Release %%VERSION%% — %%MAINTAINER%% } *)
+    {e %%VERSION%% - {{:%%PKG_HOMEPAGE%% }homepage}} *)
 
 (** {1:target Cairo render targets} *)
 

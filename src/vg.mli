@@ -20,7 +20,7 @@
     Open the module to use it, this defines only modules and types in
     your scope and a single {{!(>>)}composition operator}.
 
-    {e Release %%VERSION%% — %%MAINTAINER%% } *)
+    {e %%VERSION%% - {{:%%PKG_HOMEPAGE%% }homepage}} *)
 
 open Gg
 
@@ -308,7 +308,6 @@ end
     For this reason image combinators always take the
     image to use as the last argument. *)
 module I : sig
-
 
   (** {1 Images} *)
 
