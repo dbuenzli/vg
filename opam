@@ -6,7 +6,7 @@ doc: "http://erratique.ch/software/vg/doc/Vg"
 dev-repo: "http://erratique.ch/repos/vg.git"
 bug-reports: "https://github.com/dbuenzli/vg/issues"
 tags: [ "pdf" "svg" "html-canvas" "declarative" "graphics" "org:erratique" ]
-license: "BSD-3-Clause"
+license: "ISC"
 available: [ ocaml-version >= "4.02.0"]
 depends: [
   "ocamlfind"

@@ -13,7 +13,7 @@ module. An API allows to implement new renderers.
 Vg depends only on [Gg][1]. The SVG renderer has no dependency, the
 PDF renderer depends on [Uutf][2] and [Otfm][3], the HTML canvas
 renderer depends on [js_of_ocaml][4], the Cairo renderer depends on
-[cairo2][5]. Vg and its renderers are distributed under the BSD3
+[cairo2][5]. Vg and its renderers are distributed under the ISC
 license.
      
 [1]: http://erratique.ch/software/gg

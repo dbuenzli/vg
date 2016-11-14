@@ -6,7 +6,7 @@ Most images should be rendered identically by all renderers. However
 due to differences in renderer expressiveness and purposes this may
 not be possible or desirable.
 
-Well written and appealing BSD3 licensed contributions showing Vg's
+Well written and appealing ISC licensed contributions showing Vg's
 expressiveness are gladly accepted. They will however have to suit
 Vg's author taste... Follow the instructions below.
 

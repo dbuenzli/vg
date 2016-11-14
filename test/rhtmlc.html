@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
    Copyright 2013 Daniel C. Bünzli. All rights reserved.
-   Distributed under the BSD3 license, see license at the end of the file.
+   Distributed under the ISC license, see license at the end of the file.
    %%NAME%% release %%VERSION%%
 -->
 
@@ -26,27 +26,27 @@
     thead,tr,th,td,article,aside,canvas,details,figcaption,figure,footer,header,
     hgroup,menu,nav,section,summary,time,mark,audio,video,input,select
     { margin: 0; padding: 0; border: 0; outline: 0;
-      font-size: 100%; 
-      font-family: inherit; 
+      font-size: 100%;
+      font-family: inherit;
       background: transparent; color: inherit;
       vertical-align: baseline; }
 
     ol, ul { list-style: none }
-    
+
     /* Mui generic */
 
-    .mu-invisible-relayout { display: none } 
-    .mu-invisible { visibility: hidden } 
+    .mu-invisible-relayout { display: none }
+    .mu-invisible { visibility: hidden }
 
     /* Labels & text */
-    
+
     .mu-label.mu-label-text { text-transform: uppercase }
     .mu-label-text + input { margin-left: 1ex }
     input + .mu-label-text { margin-left: 1ex }
     .mu-label-text + select { margin-left:1ex }
 
     /* Menu */
-    .mu-menu { font-weight: 300; 
+    .mu-menu { font-weight: 300;
                font-family: "Open Sans";
                background:#444;
                -moz-border-radius: 0px;
@@ -78,42 +78,42 @@
 
     /* rhtmlc specific */
 
-    body { color: gray; 
+    body { color: gray;
            background-color: black;
 /*           background-image: url(http://basehold.it/i/18/ffffff); */
            -webkit-text-size-adjust: none;
            -moz-text-size-adjust: none;
            text-size-adjust: none;
-           font-size: 0.875em; 
+           font-size: 0.875em;
            line-height: 1.5em;
            font-family: 'Open Sans', sans-serif;
-           font-weight: 300; 
+           font-weight: 300;
            min-width: 54em;
            margin: 3em; }
 
     #r-app h1 { font-weight: 400; }
-    
+
     /* Page header */
-    
+
     #r-header { display: block; }
     #r-header h1 { display: inline }
-    #r-version { display: inline; font-size:0.75em; margin-left: 1ex; 
+    #r-version { display: inline; font-size:0.75em; margin-left: 1ex;
                  line-height:0; }
 
     /* UI */
-    
+
     #r-ui { width: 12em; display:inline-block; vertical-align: top }
     #r-ui div { margin-top: 1.5em }
     #r-ui div h1 { display: inline }
 
     /* Image ids */
-    #r-ids div > span { display: inline; font-size:0.75em; margin-left: 1ex; 
+    #r-ids div > span { display: inline; font-size:0.75em; margin-left: 1ex;
                         line-height: 0;}
     #r-ids ul { overflow-y: scroll; height:15em; }
     #r-ids ul li { display: block; }
-    
+
     /* Tags */
-    #r-tags div > span { display: inline; font-size:0.75em; margin-left: 1ex; 
+    #r-tags div > span { display: inline; font-size:0.75em; margin-left: 1ex;
                          line-height:0; }
     #r-tags ul { overflow-y:scroll; max-height: 9em }
     #r-tags ul li { display: inline-block; width:50%; }
@@ -128,41 +128,41 @@
     #r-set label:hover { background: gray; color: black }
 
     /* Image */
- 
+
     #r-image { margin-left: 3em; margin-top: 1.5em;
                display: inline-block; vertical-align: top;}
-             
+
     #r-targets a:hover { text-decoration: none; vertical-align: top; }
-    #r-targets a:after { content:""; padding: 0em; }    
-    #r-targets a { vertical-align: top; display: inline-block; 
+    #r-targets a:after { content:""; padding: 0em; }
+    #r-targets a { vertical-align: top; display: inline-block;
                    background: transparent;
-                   border-color: rgb(50,50,50); 
+                   border-color: rgb(50,50,50);
                    border-style: solid;
                    border-width: 1px; }
 
-    #r-targets.white a { background: white; } 
+    #r-targets.white a { background: white; }
     #r-targets .mu-invisible-relayout { display: none }
-    #r-targets canvas, 
+    #r-targets canvas,
     #r-targets svg { display:block; border:none; }
     #r-targets #r-txt { font-family: "Inconsolata", monospace;
                         white-space: pre; max-width:80ex; }
 
-    #r-targets #r-pdf a { background: transparent; 
+    #r-targets #r-pdf a { background: transparent;
                           border-style: none; }
     #r-targets #r-pdf a:hover { text-decoration: underline }
-   
+
     #r-info { margin-top:1.5em }
     #r-author { padding-left: 1.5ex; font-size: 0.75em; font-weight: 300;
                 line-height: 0; max-width:80ex; }
-    #r-note { max-width: 70ex; font-size: 0.75em; font-weight: 300; 
+    #r-note { max-width: 70ex; font-size: 0.75em; font-weight: 300;
               line-height:2em; display:block; }
     #r-note.mu-invisible-relayout { display: none }
-    #r-stats { margin-top: 2em; font-size: 0.75em; font-weight: 300; 
+    #r-stats { margin-top: 2em; font-size: 0.75em; font-weight: 300;
                line-height:2em; display:block; }
     #r-time { border-bottom: 1px solid #900 }
     #r-log { line-height:2em; font-size: 0.75em; font-weight: 300;
              margin-left:0; }
-    #r-log * { background: transparent; color: gray; margin:0em; 
+    #r-log * { background: transparent; color: gray; margin:0em;
                padding:0em; }
   </style>
   <title>Vg image database</title>
@@ -173,34 +173,17 @@
 </html>
 
 <!--
-   Copyright 2013 Daniel C. Bünzli.
-   All rights reserved.
+   Copyright (c) 2013 Daniel C. Bünzli
 
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-     
-   1. Redistributions of source code must retain the above copyright
-      notice, this list of conditions and the following disclaimer.
+   Permission to use, copy, modify, and/or distribute this software for any
+   purpose with or without fee is hereby granted, provided that the above
+   copyright notice and this permission notice appear in all copies.
 
-   2. Redistributions in binary form must reproduce the above
-      copyright notice, this list of conditions and the following
-      disclaimer in the documentation and/or other materials provided
-      with the distribution.
-
-   3. Neither the name of Daniel C. Bünzli nor the names of
-      contributors may be used to endorse or promote products derived
-      from this software without specific prior written permission.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-   OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+   THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+   WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+   MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+   ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+   WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
   -->
