@@ -23,7 +23,7 @@ let jsoo_test ~cond test =
 let doc_images () =
   let is_dir p = OS.Dir.exists p |> Log.on_error_msg ~use:(fun _ -> false) in
   let skip p = not (Fpath.has_ext ".png" p) && not (is_dir p) in
-  let mv acc p = (Pkg.doc ~built:false p ~dst:"odig-doc") :: acc in
+  let mv acc p = (Pkg.doc ~built:false p ~dst:"odig-doc/") :: acc in
   OS.File.fold ~skip (fun p acc -> p :: acc) [] ["doc"]
   >>= fun files -> Ok (Pkg.flatten (List.fold_left mv [] files))
 
