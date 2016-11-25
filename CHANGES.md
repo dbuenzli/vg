@@ -1,8 +1,11 @@
+v0.9.0 2015-11-25 Zagreb
+------------------------
 
 - Automated migration from camlp4 to ppx. Many thanks to the authors
   of camlp4-to-ppx.
-- Use standard library result type. This changes the dubious interface
+- Use standard library `result` type. This changes the dubious interface
   of `Vgr_pdf.otf_font`.
+- Support uutf v1.0.0 and otfm v0.3.0.
 - Build depend on topkg.
 - Relicense from BSD3 to ISC.
 
