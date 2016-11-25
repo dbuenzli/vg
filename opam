@@ -29,6 +29,10 @@ depopts: [
   "otfm"
   "cairo2"
 ]
+conflicts: [
+  "otfm" {< "0.3.0"}
+  "uutf" {< "1.0.0"}
+]
 build: [[
   "ocaml" "pkg/pkg.ml" "build"
           "--pinned" "%{pinned}%"
