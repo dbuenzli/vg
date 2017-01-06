@@ -24,7 +24,7 @@
 
 open Gg
 
-(** {1 Fonts} *)
+(** {1:fonts Fonts} *)
 
 (** Fonts.
 
@@ -34,7 +34,7 @@ open Gg
     specification to be resolved by the concrete renderer. *)
 module Font : sig
 
-  (** {1 Fonts} *)
+  (** {1:fonts Fonts} *)
 
   type weight =
     [ `W100 | `W200 | `W300 | `W400 | `W500 | `W600 | `W700 | `W800 | `W900 ]
@@ -85,7 +85,7 @@ type glyph = int
 (** The type for glyphs. The integer represents a glyph identifier in a
     backend dependent font format. *)
 
-(** {1 Paths and images} *)
+(** {1:base Paths and images} *)
 
 type path
 (** The type for paths. *)
@@ -143,7 +143,7 @@ module P : sig
   val pp_area : Format.formatter -> area -> unit
   (** [pp_area ppf a] prints a textual representation of [a] on [ppf] *)
 
-  (** {1 Paths} *)
+  (** {1:paths Paths} *)
 
   type t = path
   (** The type for paths. *)
@@ -151,7 +151,7 @@ module P : sig
   val empty : path
   (** [empty] is the empty path. *)
 
-  (** {1 Subpaths and segments}
+  (** {1:subs Subpaths and segments}
 
       If a path segment is directly added to a path [p] which is
       {{!empty}[empty]} or whose last subpath is {{!close}closed}, a
@@ -200,7 +200,7 @@ module P : sig
   (** [close p] is [p] with a straight line from [p]'s last point to
       [p]'s current subpath starting point, this ends the subpath. *)
 
-  (** {2 Derived subpaths}
+  (** {2:derived Derived subpaths}
 
       The following convenience functions start and close a new subpath
       to the given path. *)
@@ -222,7 +222,7 @@ module P : sig
       [r] with round corners of radii [cr]. If [r] is empty, [p]
       is returned. *)
 
-  (** {1 Functions} *)
+  (** {1:funs Functions} *)
 
   val last_pt : path -> p2
   (** [last_pt p] is the last point of [p]'s last subpath.
@@ -242,7 +242,7 @@ module P : sig
       {b Bug.} Elliptical arcs transformation is currently broken if
       [m] doesn't scale uniformely or shears. *)
 
-  (** {1 Traversal} *)
+  (** {1:traversal Traversal} *)
 
   type fold =
     [ `Sub of p2
@@ -286,7 +286,7 @@ module P : sig
   (** [compare_f cmp p p'] is like {!compare} but uses [cmp] to compare
       floating point values. *)
 
-  (** {1 Printers} *)
+  (** {1:printers Printers} *)
 
   val to_string : path -> string
   (** [to_string p] is a textual representation of [p]. *)
@@ -309,7 +309,7 @@ end
     image to use as the last argument. *)
 module I : sig
 
-  (** {1 Images} *)
+  (** {1:images Images} *)
 
   type t = image
   (** The type for images. *)
@@ -630,7 +630,7 @@ module Vgr : sig
   val renderer_limit : renderer -> int
   (** [renderer_limit r] is [r]'s limit. *)
 
-  (** {1 Manual render destinations} *)
+  (** {1:manual Manual render destinations} *)
 
   (** Manual render destinations.
 
@@ -867,7 +867,7 @@ open Vg
     types has a constructor [v] in a module named after the
     capitalized type name ({!Gg.P2.v}, {!Gg.V2.v}, etc.).
 
-    {2 A collage model}
+    {2:collage A collage model}
 
     Usual vector graphics libraries follow a {e painter model} in
     which paths are filled, stroked and blended on top of each other
@@ -900,7 +900,7 @@ open Vg
     User Interfaces in a Functional Language}, Ph.D. Thesis, Yale
     University, 2004.}}
 
-    {2 Infinite images}
+    {2:infinite Infinite images}
 
     Images in [Vg] are immutable and abstract value of type
     {!image}. {e Conceptually}, images are seen as functions mapping
@@ -923,7 +923,7 @@ let gray = I.const (Color.gray 0.5)
     infinite images, we will explore some of them later. But for now
     let's just render that fascinating image.
 
-    {2 Rendering}
+    {2:rendering Rendering}
 
     An infinite image alone cannot be rendered. We need a {e finite}
     view rectangle and a specification of that view's physical size on
@@ -965,7 +965,7 @@ let () = svg_of_usquare gray]}
     rectangle are mapped on a rectangular area of the given physical
     size on the target.
 
-    {2 Scissors and glue}
+    {2:scissors Scissors and glue}
 
     Constant images can be boring. To make things more interesting
     [Vg] gives you scissors: the {!I.cut} combinator.
@@ -1046,7 +1046,7 @@ let dot = gray_circle >> I.blend circle_outline
     This means that with {!Vg.(>>)} and {!I.blend} left to right order in
     code maps to back to front image blending.
 
-    {2 Transforming images}
+    {2:transforming Transforming images}
 
     The combinators {!I.move}, {!I.rot}, {!I.scale}, and {!I.tr} allow
     to perform arbitrary
@@ -1083,7 +1083,7 @@ let scatter_plot pts pt_width =
     on independent normal distributions.
 {%html: <img src="doc-scatter-plot.png" style="width:40mm; height:40mm;"/> %}
 
-    {2 Paths}
+    {2:paths Paths}
 
     Paths are used to define areas of the plane. A path is an
     immutable value of type {!path} which is a list of disconnected
