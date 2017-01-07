@@ -22,11 +22,15 @@ val target : ?resize:bool -> ?resolution:Gg.v2 -> Dom_html.canvasElement Js.t
 (** [target resize resolution c] is a render target for rendering to the
     canvas element [c].
     {ul
-    {- [resize] if [true] (default) sets the canvas CSS size to
-       the physical size of {{!Vg.Vgr.renderable}renderables}. If
-       [false] the physical size of renderables is ignored and the view
-       rectangle is simply mapped on the canvas size at the given
-       resolution.}
+    {- [resize] if [true] (default) sets the canvas CSS size to the
+       physical size of {{!Vg.Vgr.renderable}renderables}. If [false]
+       the physical size of renderables is ignored and the view
+       rectangle is simply mapped on the canvas CSS size at the given
+       resolution but {b WARNING} for this to work do not use any
+       CSS [border] on the canvas element ([outline] can be used though)
+       as it interacts badly with the underlying canvas size computation
+       made by [Vgr_htmlc] (a typical symptom will be a vertically growing
+       canvas on redraws, this seems to happen regardless of [box-sizing]).}
     {- [resolution], specifies the rendering resolution in samples per
        meters. If unspecified the {!screen_resolution} is used in both
        dimensions.}}
