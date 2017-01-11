@@ -193,7 +193,7 @@ module P : sig
       image, in red, the elliptical arc from the left point to the
       right one.  The top row is [~large:false] and the left column
       is [~cw:false]:
-      {%html: <img src="../_assets/doc-earcs.png"
+      {%html: <img src="../../_assets/doc-earcs.png"
                    style="width:75mm; height:45mm;"/> %}
   *)
 
