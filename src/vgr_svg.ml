@@ -129,7 +129,7 @@ let b_init s size view =
 
 let w_path s p k r = try k (Hashtbl.find s.paths p) r with
 | Not_found ->
-    let rec b_seg s = function
+    let b_seg s = function
     | `Sub pt ->
         b_fmt s "M%g %g" (V2.x pt) (V2.y pt)
     | `Line pt ->
@@ -204,7 +204,7 @@ let pr_gradient_transforms b ts =
 
 let w_primitive s trs_p k r = try k (Hashtbl.find s.prims trs_p) r with
 | Not_found ->
-    let rec create = function
+    let create = function
     | _, Const c ->
         let clear () = Buffer.clear s.t_buf in
         let contents () = Buffer.contents s.t_buf in
@@ -280,7 +280,7 @@ let tr_primitive i =
   in
   loop [] i
 
-let rec w_cut s a i k path_id r = match i with
+let w_cut s a i k path_id r = match i with
 | Primitive (Raster _) -> assert false
 | Primitive p -> w_primitive s ([], p) (w_primitive_cut s a path_id k) r
 | Tr _ as i ->
@@ -290,7 +290,7 @@ let rec w_cut s a i k path_id r = match i with
     end
 | Blend _ | Cut _ | Cut_glyphs _ as i -> w_clip s a i path_id k r
 
-let rec w_cut_glyphs s a run i k r = match i with
+let w_cut_glyphs s a run i k r = match i with
 | Primitive (Raster _) -> assert false
 | Tr _ | Blend _ | Cut _ | Cut_glyphs _ as i ->
     warn s (`Unsupported_glyph_cut (a, image i)); k r
@@ -313,7 +313,7 @@ let rec w_cut_glyphs s a run i k r = match i with
         end r
     end
 
-let rec w_transforms s i k r =         (* collapses nested Tr in single <g>. *)
+let w_transforms s i k r =         (* collapses nested Tr in single <g>. *)
   let rec loop acc = function
   | Tr (tr, i) ->
       let tr = pr_tr s.buf tr in
