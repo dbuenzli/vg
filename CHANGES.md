@@ -1,3 +1,7 @@
+
+- Fix a stackoverlow in the SVG renderer. Thanks to Guyslain Naves for
+  the report.
+
 v0.9.0 2015-11-25 Zagreb
 ------------------------
 

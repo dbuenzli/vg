@@ -127,8 +127,9 @@ let b_init s size view =
     (Vgr.Private.P.miter_limit P.o)
     sx 0. 0. (-. sy) dx dy (* map view rect -> viewport *)
 
-let w_path s p k r = try k (Hashtbl.find s.paths p) r with
-| Not_found ->
+let w_path s p k r = match Hashtbl.find s.paths p with
+| id -> k id r
+| exception Not_found ->
     let b_seg s = function
     | `Sub pt ->
         b_fmt s "M%g %g" (V2.x pt) (V2.y pt)
@@ -202,8 +203,9 @@ let pr_gradient_transforms b ts =
   if ts = [] then () else
   (pr b " gradientTransform=\"%a\"" pr_trs ts)
 
-let w_primitive s trs_p k r = try k (Hashtbl.find s.prims trs_p) r with
-| Not_found ->
+let w_primitive s trs_p k r = match Hashtbl.find s.prims trs_p with
+| id -> k id r
+| exception Not_found ->
     let create = function
     | _, Const c ->
         let clear () = Buffer.clear s.t_buf in
@@ -252,8 +254,9 @@ let w_primitive_cut s a path_id k svg_prim r = match a with
 
 let w_clip_path s a i path_id k r =
   let clip = path_id, a in
-  try k (Hashtbl.find s.clips clip) r with
-  | Not_found ->
+  match Hashtbl.find s.clips clip with
+  | id -> k id r
+  | exception Not_found ->
       let id = new_id s in
       let astr = match a with
       | `O _ -> warn s (`Unsupported_cut (a, image i)); area_str `Anz
