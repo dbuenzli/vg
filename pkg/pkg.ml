@@ -60,8 +60,8 @@ let () =
 
     Pkg.test ~run:false "test/min_svg";
     Pkg.test ~run:false "test/min_pdf";
-    Pkg.test ~run:false "test/min_cairo_png";
-    Pkg.test ~run:false "test/min_cairo_mem";
+    Pkg.test ~run:false ~cond:cairo2 "test/min_cairo_png";
+    Pkg.test ~run:false ~cond:cairo2 "test/min_cairo_mem";
     Pkg.test ~run:false "test/rsvg";
     Pkg.test ~run:false ~cond:vgr_pdf "test/rpdf";
     Pkg.test ~run:false ~cond:cairo2 "test/rcairo";
