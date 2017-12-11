@@ -660,7 +660,7 @@ module Vgr : sig
 
       In order to provide a consistant interface for [Vg] users,
       renderer writers should follow the guidelines below.  You may
-      want to drop an email to %%MAINTAINER%% for help and discussion.
+      want to drop an email to the maintainer for help and discussion.
       {ul
       {- If you render to "Bla", define you renderer in a module
          called [Vgr_bla] (lowercase).}
