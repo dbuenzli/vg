@@ -1,3 +1,5 @@
+v0.9.1 2017-12-20 La Forclaz (VS)
+---------------------------------
 
 - Fix a stackoverlow in the SVG renderer. Thanks to Guyslain Naves for
   the report.
