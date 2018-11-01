@@ -1,5 +1,5 @@
 (*---------------------------------------------------------------------------
-   Copyright (c) 2013 Daniel C. Bünzli. All rights reserved.
+   Copyright (c) 2013 The vg programmers. All rights reserved.
    Distributed under the ISC license, see terms at the end of the file.
    %%NAME%% %%VERSION%%
   ---------------------------------------------------------------------------*)
@@ -79,7 +79,7 @@ let view = Box2.v_mid P2.o (Size2.v 550. 550.)
 let () = animate ~size ~view image ()
 
 (*---------------------------------------------------------------------------
-   Copyright (c) 2013 Daniel C. Bünzli
+   Copyright (c) 2013 The vg programmers
 
    Permission to use, copy, modify, and/or distribute this software for any
    purpose with or without fee is hereby granted, provided that the above

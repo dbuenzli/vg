@@ -1,5 +1,5 @@
 (*---------------------------------------------------------------------------
-   Copyright (c) 2013 Daniel C. Bünzli. All rights reserved.
+   Copyright (c) 2013 The vg programmers. All rights reserved.
    Distributed under the ISC license, see terms at the end of the file.
    %%NAME%% %%VERSION%%
   ---------------------------------------------------------------------------*)
@@ -8,7 +8,7 @@ open Gg
 open Vg
 
 
-let author = "Daniel C. Bünzli <daniel.buenzl i@erratique.ch>"
+let author = "The vg programmers <daniel.buenzl i@erratique.ch>"
 type node = Vg.image * Gg.p2
 ;;
 
@@ -40,7 +40,7 @@ Db.image "graph" ~author
     end;
 
 (*---------------------------------------------------------------------------
-   Copyright (c) 2013 Daniel C. Bünzli
+   Copyright (c) 2013 The vg programmers
 
    Permission to use, copy, modify, and/or distribute this software for any
    purpose with or without fee is hereby granted, provided that the above

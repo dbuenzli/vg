@@ -1,5 +1,5 @@
 (*---------------------------------------------------------------------------
-   Copyright (c) 2014 Arthur Wendling, Daniel C. Bünzli. All rights reserved.
+   Copyright (c) 2014 The vg programmers. All rights reserved.
    Distributed under the ISC license, see terms at the end of the file.
    %%NAME%% %%VERSION%%
   ---------------------------------------------------------------------------*)
@@ -76,7 +76,7 @@ val stored_target : [< `Pdf | `Png of Gg.V2.t | `Ps | `Svg ] ->
        in (non-linear) sRGB space. This doesn't respect Vg's semantics.}} *)
 
 (*---------------------------------------------------------------------------
-   Copyright (c) 2014 Arthur Wendling, Daniel C. Bünzli
+   Copyright (c) 2014 The vg programmers
 
    Permission to use, copy, modify, and/or distribute this software for any
    purpose with or without fee is hereby granted, provided that the above

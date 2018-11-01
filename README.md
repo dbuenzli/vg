@@ -23,8 +23,6 @@ license.
 [cairo2]: https://forge.ocamlcore.org/projects/cairo/
 
 Home page: http://erratique.ch/software/vg  
-Contact: Daniel Bünzli `<daniel.buenzl i@erratique.ch>`
-
 
 ## Installation
 
@@ -75,9 +73,3 @@ distribution. They can be built and listed with:
   font file can be specified, invoke with `-help` for options. 
 - `fglyphs.native`, renders a font's glyphs to a PDF file (without using
   Vg's glyph API).
-
-
-## Authors
-
-* [Daniel C. Bünzli](http://erratique.ch), main developer.
-* Arthur Wendling, Vgr_cairo backend.
