@@ -67,7 +67,7 @@ let image i = Vgr.Private.I.of_data i
 
 let view_rect s =           (* image view rect in current coordinate system. *)
   let tr = M3.inv s.gstate.g_tr in
-  Vgr.Private.Data.of_path (P.empty >> P.rect (Box2.tr tr s.view))
+  Vgr.Private.Data.of_path (P.empty |> P.rect (Box2.tr tr s.view))
 
 let css_color c =                               (* w3c bureaucrats are pigs. *)
   let srgb = Color.to_srgb c in

@@ -261,7 +261,7 @@ module P = struct
     let a0 = P2.v (cx +. r) cy in
     let api = P2.v (cx -. r) cy in
     let r = V2.v r r in
-    p >> sub a0 >> earc r api >> earc r a0 >> close
+    p |> sub a0 |> earc r api |> earc r a0 |> close
 
   let ellipse ?(rel = false) ?(angle = 0.) c r p =
     let c = if rel then abs p c else c in
@@ -271,7 +271,7 @@ module P = struct
     let xy = (if angle = 0. then 0.0 else sin angle) *. V2.x r in
     let a0 = P2.v (cx +. xx) (cy +. xy) in
     let api = P2.v (cx -. xx) (cy -. xy) in
-    p >> sub a0 >> earc r ~angle api >> earc r ~angle a0 >> close
+    p |> sub a0 |> earc r ~angle api |> earc r ~angle a0 |> close
 
   let rect ?(rel = false) r p =
     if Box2.is_empty r then p else
@@ -281,7 +281,7 @@ module P = struct
     let r = l +. Size2.w size in
     let b = P2.y lb in
     let t = b +. Size2.h size in
-    p >> sub lb >> line (P2.v r b) >> line (P2.v r t) >> line (P2.v l t) >>
+    p |> sub lb |> line (P2.v r b) |> line (P2.v r t) |> line (P2.v l t) |>
     close
 
   let rrect ?(rel = false) r cr p =
@@ -298,11 +298,11 @@ module P = struct
     let b_inset = b +. ry in
     let t = b +. Size2.h size in
     let t_inset = t -. ry in
-    p >> sub (P2.v l b_inset) >>
-    earc cr (P2.v l_inset b) >> line (P2.v r_inset b) >>
-    earc cr (P2.v r b_inset) >> line (P2.v r t_inset) >>
-    earc cr (P2.v r_inset t) >> line (P2.v l_inset t) >>
-    earc cr (P2.v l t_inset) >> close
+    p |> sub (P2.v l b_inset) |>
+    earc cr (P2.v l_inset b) |> line (P2.v r_inset b) |>
+    earc cr (P2.v r b_inset) |> line (P2.v r t_inset) |>
+    earc cr (P2.v r_inset t) |> line (P2.v l_inset t) |>
+    earc cr (P2.v l t_inset) |> close
 
   (* Geometry *)
 

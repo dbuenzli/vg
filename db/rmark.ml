@@ -23,8 +23,8 @@ let random_marks m =
   let rec rpts n acc = if n = 0 then acc else rpts (n-1) (rpt ():: acc) in
   let mark pt =
     let area = `O { P.o with P.width = 0.25 } in
-    (I.const (Color.gray 0.9) >> I.cut m) >> I.blend
-    (I.const (Color.gray 0.3) >> I.cut ~area m) >>
+    (I.const (Color.gray 0.9) |> I.cut m) |> I.blend
+    (I.const (Color.gray 0.3) |> I.cut ~area m) |>
     I.move pt
   in
   let nodes = List.map mark (rpts mark_count []) in
@@ -35,14 +35,14 @@ Db.image "rmark-dots" __POS__ ~author:Db.dbuenzli
   ~title:"Random dot mark"
   ~tags ~note ~size ~view
   begin fun _ ->
-    random_marks (P.empty >> P.circle P2.o 2.1)
+    random_marks (P.empty |> P.circle P2.o 2.1)
   end;
 
 Db.image "rmark-ticks" __POS__ ~author:Db.dbuenzli
   ~title:"Random line mark"
   ~tags ~note ~size ~view
   begin fun _ ->
-    random_marks (P.empty >> P.line (P2.v 0.5 1.1))
+    random_marks (P.empty |> P.line (P2.v 0.5 1.1))
   end;
 
 Db.image "rmark-qcurve" __POS__ ~author:Db.dbuenzli
@@ -50,7 +50,7 @@ Db.image "rmark-qcurve" __POS__ ~author:Db.dbuenzli
   ~tags ~note ~size ~view
   begin fun _ ->
     random_marks
-      (P.empty >> P.qcurve (P2.v 1.0 1.5) (P2.v 1.0 0.0))
+      (P.empty |> P.qcurve (P2.v 1.0 1.5) (P2.v 1.0 0.0))
   end;
 
 Db.image "rmark-ccurve" __POS__ ~author:Db.dbuenzli
@@ -58,7 +58,7 @@ Db.image "rmark-ccurve" __POS__ ~author:Db.dbuenzli
   ~tags ~note ~size ~view
   begin fun _ ->
     random_marks
-      (P.empty >> P.ccurve (P2.v 0.5 1.0) (P2.v 1.0 1.5) (P2.v 1.0 0.0))
+      (P.empty |> P.ccurve (P2.v 0.5 1.0) (P2.v 1.0 1.5) (P2.v 1.0 0.0))
   end;
 
 

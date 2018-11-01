@@ -27,7 +27,7 @@ Db.image "doc-gray-circle" __POS__ ~author:Db.dbuenzli
   ~view:Box2.unit
   ~note:"Indeed, gray circle."
   begin fun _ ->
-    let circle = P.empty >> P.circle (P2.v 0.5 0.5) 0.4 in
+    let circle = P.empty |> P.circle (P2.v 0.5 0.5) 0.4 in
     let gray = I.const (Color.gray 0.5) in
     let gray_circle = I.cut circle gray in
     gray_circle
@@ -39,7 +39,7 @@ Db.image "doc-circle-outline" __POS__ ~author:Db.dbuenzli
   ~size:(Size2.v 30. 30.)
   ~view:Box2.unit
   begin fun _ ->
-    let circle = P.empty >> P.circle (P2.v 0.5 0.5) 0.4 in
+    let circle = P.empty |> P.circle (P2.v 0.5 0.5) 0.4 in
     let circle_outline =
       let area = `O { P.o with P.width = 0.04 } in
       let black = I.const Color.black in
@@ -54,7 +54,7 @@ Db.image "doc-dot" __POS__ ~author:Db.dbuenzli
   ~size:(Size2.v 30. 30.)
   ~view:Box2.unit
   begin fun _ ->
-    let circle = P.empty >> P.circle (P2.v 0.5 0.5) 0.4 in
+    let circle = P.empty |> P.circle (P2.v 0.5 0.5) 0.4 in
     let area = `O { P.o with P.width = 0.04 } in
     let gray = I.const (Color.gray 0.5) in
     let black = I.const Color.black in
@@ -73,11 +73,11 @@ Db.image "doc-scatter-plot" __POS__ ~author:Db.dbuenzli
   begin fun _ ->
     let scatter_plot pts pt_width =
       let dot =
-        let circle = P.empty >> P.circle P2.o (0.5 *. pt_width) in
-        I.const Color.black >> I.cut circle
+        let circle = P.empty |> P.circle P2.o (0.5 *. pt_width) in
+        I.const Color.black |> I.cut circle
       in
-      let mark pt = dot >> I.move pt in
-      let blend_mark acc pt = acc >> I.blend (mark pt) in
+      let mark pt = dot |> I.move pt in
+      let blend_mark acc pt = acc |> I.blend (mark pt) in
       List.fold_left blend_mark I.void pts
     in
     let normal_pts count =
@@ -108,20 +108,20 @@ Db.image "doc-subpaths" __POS__ ~author:Db.dbuenzli
   begin fun _ ->
     let p =
       let rel = true in
-      P.empty >>
-      P.sub (P2.v 0.1 0.5) >>
-        P.line (P2.v 0.3 0.5) >>
-        P.qcurve ~rel (P2.v 0.2 0.5) (P2.v 0.2 0.0) >>
-        P.ccurve ~rel (P2.v 0.0 (-. 0.5)) (P2.v 0.1 (-. 0.5)) (P2.v 0.3 0.0) >>
-        P.earc ~rel (Size2.v 0.1 0.2) (P2.v 0.15 0.0) >>
-      P.sub (P2.v 0.18 0.26) >>
-        P.qcurve ~rel (P2.v (0.01) (-0.1)) (P2.v 0.1 (-. 0.05)) >>
-        P.close >>
-      P.sub (P2.v 0.65 0.8) >>
+      P.empty |>
+      P.sub (P2.v 0.1 0.5) |>
+        P.line (P2.v 0.3 0.5) |>
+        P.qcurve ~rel (P2.v 0.2 0.5) (P2.v 0.2 0.0) |>
+        P.ccurve ~rel (P2.v 0.0 (-. 0.5)) (P2.v 0.1 (-. 0.5)) (P2.v 0.3 0.0) |>
+        P.earc ~rel (Size2.v 0.1 0.2) (P2.v 0.15 0.0) |>
+      P.sub (P2.v 0.18 0.26) |>
+        P.qcurve ~rel (P2.v (0.01) (-0.1)) (P2.v 0.1 (-. 0.05)) |>
+        P.close |>
+      P.sub (P2.v 0.65 0.8) |>
         P.line ~rel (P2.v 0.1 (-. 0.05))
     in
     let area = `O { P.o with P.width = 0.01 } in
-    I.const Color.black >> I.cut ~area p
+    I.const Color.black |> I.cut ~area p
   end
 ;;
 
@@ -130,7 +130,7 @@ let directed_pentagram arrow area r =
     let l = V2.(p1 - p0) in
     let angle = V2.angle l in
     let loc = V2.(p0 + 0.2 * l) in
-    I.const Color.black >> I.cut arrow >> I.rot angle >> I.move loc
+    I.const Color.black |> I.cut arrow |> I.rot angle |> I.move loc
   in
   let a = Float.pi_div_2 in                     (* points of the pentagram. *)
   let da = Float.two_pi /. 5. in
@@ -140,52 +140,52 @@ let directed_pentagram arrow area r =
   let p3 = V2.polar r (a -. da) in
   let p4 = V2.polar r (a +. 2. *. da) in
   let pentagram =          (* http://mathworld.wolfram.com/StarPolygon.html *)
-    P.(empty >> sub p0 >> line p1 >> line p2 >> line p3 >> line p4 >> close)
+    P.(empty |> sub p0 |> line p1 |> line p2 |> line p3 |> line p4 |> close)
   in
   let lines = `O { P.o with P.width = 0.01 } in
-  I.const (Color.gray 0.8) >> I.cut ~area pentagram >>
-  I.blend (I.const Color.black >> I.cut ~area:lines pentagram) >>
-  I.blend (arrow p0 p1) >> I.blend (arrow p1 p2) >> I.blend (arrow p2 p3) >>
-  I.blend (arrow p3 p4) >> I.blend (arrow p4 p0)
+  I.const (Color.gray 0.8) |> I.cut ~area pentagram |>
+  I.blend (I.const Color.black |> I.cut ~area:lines pentagram) |>
+  I.blend (arrow p0 p1) |> I.blend (arrow p1 p2) |> I.blend (arrow p2 p3) |>
+  I.blend (arrow p3 p4) |> I.blend (arrow p4 p0)
 
 let directed_annulus arrow ~rev area r =
   let arrow ?(rev = false) r a =       (* arrow at polar coordinate (r, a). *)
     let angle = a +. (if rev then -. Float.pi_div_2 else Float.pi_div_2) in
     let loc = V2.polar r a in
-    I.const Color.black >> I.cut arrow >> I.rot angle >> I.move loc
+    I.const Color.black |> I.cut arrow |> I.rot angle |> I.move loc
   in
   let arrows ?(rev = false) r =
-    arrow ~rev r 0. >>
-    I.blend (arrow ~rev r (Float.pi_div_2)) >>
-    I.blend (arrow ~rev r (2. *. Float.pi_div_2)) >>
+    arrow ~rev r 0. |>
+    I.blend (arrow ~rev r (Float.pi_div_2)) |>
+    I.blend (arrow ~rev r (2. *. Float.pi_div_2)) |>
     I.blend (arrow ~rev r (-. Float.pi_div_2))
   in
   let circle ?(rev = false) r =
-    let c = P.empty >> P.circle P2.o r in
+    let c = P.empty |> P.circle P2.o r in
     if rev then (* flip *) P.tr (M3.scale2 (V2.v (- 1.) 1.)) c else c
   in
   let outer = r in
   let inner = r *. 0.6 in
   let annulus = P.append (circle outer) (circle ~rev inner) in
   let outline = `O { P.o with P.width = 0.01 } in
-  I.const (Color.gray 0.8) >> I.cut ~area annulus >>
-  I.blend (I.const Color.black >> I.cut ~area:outline annulus) >>
-  I.blend (arrows outer) >>
+  I.const (Color.gray 0.8) |> I.cut ~area annulus |>
+  I.blend (I.const Color.black |> I.cut ~area:outline annulus) |>
+  I.blend (arrows outer) |>
   I.blend (arrows ~rev inner)
 
 let area_rule_examples area =
   let arrow =
     let a = Float.two_pi /. 3. in
     let pt a = V2.polar 0.032 a in
-    P.(empty >> sub (pt 0.) >> line (pt (-. a)) >> line (pt a) >> close)
+    P.(empty |> sub (pt 0.) |> line (pt (-. a)) |> line (pt a) |> close)
   in
   let pentagram = directed_pentagram arrow area 0.4 in
   let annulus   = directed_annulus arrow ~rev:false area 0.3 in
   let annulus_r = directed_annulus arrow ~rev:true  area 0.3 in
   let y = 0.46 in
-  pentagram >> I.move (V2.v 0.5 y) >>
-  I.blend (annulus   >> I.move (V2.v 1.5 y)) >>
-  I.blend (annulus_r >> I.move (V2.v 2.5 y))
+  pentagram |> I.move (V2.v 0.5 y) |>
+  I.blend (annulus   |> I.move (V2.v 1.5 y)) |>
+  I.blend (annulus_r |> I.move (V2.v 2.5 y))
 ;;
 
 Db.image "doc-anz" __POS__ ~author:Db.dbuenzli
@@ -216,13 +216,13 @@ Db.image "doc-caps" __POS__ ~author:Db.dbuenzli
   begin fun _ ->
     let gray = I.const (Color.gray 0.3) in
     let white = I.const Color.white in
-    let line = P.(empty >> sub (P2.v 0.25 0.333) >> line (P2.v 0.75 0.333)) in
+    let line = P.(empty |> sub (P2.v 0.25 0.333) |> line (P2.v 0.75 0.333)) in
     let line x cap =
       let outline = I.cut ~area:(`O { P.o with P.width = 0.2; cap}) line gray in
       let data = I.cut ~area:(`O { P.o with P.width = 0.01 }) line white in
-      outline >> I.blend data >> I.move (P2.v x 0.)
+      outline |> I.blend data |> I.move (P2.v x 0.)
     in
-    (line 0. `Butt) >> I.blend (line 1.0 `Round) >> I.blend (line 2. `Square)
+    (line 0. `Butt) |> I.blend (line 1.0 `Round) |> I.blend (line 2. `Square)
   end;
 
 Db.image "doc-joins" __POS__ ~author:Db.dbuenzli
@@ -236,16 +236,16 @@ Db.image "doc-joins" __POS__ ~author:Db.dbuenzli
     let gray = I.const (Color.gray 0.3) in
     let white = I.const Color.white in
     let wedge =
-      P.empty >>
-      P.sub (P2.v 0.2 0.) >> P.line (P2.v 0.5 0.5) >> P.line (P2.v 0.8 0.)
+      P.empty |>
+      P.sub (P2.v 0.2 0.) |> P.line (P2.v 0.5 0.5) |> P.line (P2.v 0.8 0.)
     in
     let path x join =
       let area = (`O { P.o with P.width = 0.2; join }) in
       let outline = I.cut ~area wedge gray in
       let data = I.cut ~area:(`O { P.o with P.width = 0.01 }) wedge white in
-      outline >> I.blend data >> I.move (P2.v x 0.2)
+      outline |> I.blend data |> I.move (P2.v x 0.2)
     in
-    (path 0. `Miter) >> I.blend (path 1. `Round) >> I.blend (path 2. `Bevel)
+    (path 0. `Miter) |> I.blend (path 1. `Round) |> I.blend (path 2. `Bevel)
   end;
 
 Db.image "doc-earcs" __POS__ ~author:Db.dbuenzli
@@ -261,28 +261,28 @@ Db.image "doc-earcs" __POS__ ~author:Db.dbuenzli
     let r = Size2.v 1.0 0.5 in
     let p0 = P2.v 0. (Size2.h r) in
     let p1 = P2.v (Size2.w r) 0.0 in
-    let square = P.empty >> P.rect (Box2.v_mid P2.o (Size2.v 0.1 0.1)) in
-    let mark pt = I.const (Color.gray 0.1) >> I.cut square >> I.move pt in
+    let square = P.empty |> P.rect (Box2.v_mid P2.o (Size2.v 0.1 0.1)) in
+    let mark pt = I.const (Color.gray 0.1) |> I.cut square |> I.move pt in
     let ellipses =
       let area = `O { P.o with P.width = 0.02 } in
       let els =
-        P.empty >> P.ellipse ~angle P2.o r >> P.ellipse ~angle V2.(p0 + p1) r
+        P.empty |> P.ellipse ~angle P2.o r |> P.ellipse ~angle V2.(p0 + p1) r
       in
-      I.const (Color.gray 0.5) >> I.cut ~area els
+      I.const (Color.gray 0.5) |> I.cut ~area els
     in
     let solution x y sol =
-      ellipses >> I.blend sol >> I.blend (mark p0) >> I.blend (mark p1) >>
+      ellipses |> I.blend sol |> I.blend (mark p0) |> I.blend (mark p1) |>
       I.move (P2.v x y)
     in
     let arc ~large ~cw =
-      let a = P.(empty >> sub p0 >> earc ~large ~cw ~angle r  p1) in
-      I.const Color.red >> I.cut ~area:(`O { P.o with P.width = 0.02 }) a
+      let a = P.(empty |> sub p0 |> earc ~large ~cw ~angle r  p1) in
+      I.const Color.red |> I.cut ~area:(`O { P.o with P.width = 0.02 }) a
     in
     let l, r, t, b = 1.5, 5.0, 3.0, 1.0 in
-    (arc ~large:false ~cw:false >> solution l t) >> I.blend
-    (arc ~large:false ~cw:true  >> solution r t) >> I.blend
-    (arc ~large:true  ~cw:false >> solution l b) >> I.blend
-    (arc ~large:true  ~cw:true  >> solution r b)
+    (arc ~large:false ~cw:false |> solution l t) |> I.blend
+    (arc ~large:false ~cw:true  |> solution r t) |> I.blend
+    (arc ~large:true  ~cw:false |> solution l b) |> I.blend
+    (arc ~large:true  ~cw:true  |> solution r b)
   end;
 
 

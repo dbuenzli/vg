@@ -107,53 +107,53 @@ let add_contours tr size contours acc =
     in
     let find_start acc = match contour with
     | (true, px, py as p) :: pts ->
-        [p], p, acc >> P.sub (pt px py), pts
+        [p], p, acc |> P.sub (pt px py), pts
     | (false, cx, cy as c) :: (true, px, py as p) :: pts ->
-        [c; p], p, acc >> P.sub (pt px py), pts
+        [c; p], p, acc |> P.sub (pt px py), pts
     | (false, cx, cy as c) :: ((false, cx', cy') :: _ as pts) ->
         let px = (cx + cx') / 2 in
         let py = (cy + cy') / 2 in
         let p = (true, px, py) in
-        [c; p], p, acc >> P.sub (pt px py), pts
+        [c; p], p, acc |> P.sub (pt px py), pts
     | pts -> (* degenerate *)
-        [true, 0, 0], (true, 0, 0), acc >> P.sub P2.o, pts
+        [true, 0, 0], (true, 0, 0), acc |> P.sub P2.o, pts
     in
     let rec add_pts ends (last_on, lx, ly) acc = function
     | (false, cx, cy as last) :: pts ->
         if last_on then add_pts ends last acc pts else
         let px = (lx + cx) / 2 in
         let py = (ly + cy) / 2 in
-        let acc' = acc >> P.qcurve (pt lx ly) (pt px py) in
+        let acc' = acc |> P.qcurve (pt lx ly) (pt px py) in
         add_pts ends last acc' pts
     | (true, px, py as last) :: pts ->
         let seg =
           if last_on then P.line (pt px py) else
           P.qcurve (pt lx ly) (pt px py)
         in
-        add_pts ends last (acc >> seg) pts
+        add_pts ends last (acc |> seg) pts
     | [] ->
         if last_on then begin match ends with
         | [(true, px, py)] ->
             acc
-            >> P.line (pt px py)
-            >> P.close
+            |> P.line (pt px py)
+            |> P.close
         | [(false, cx, cy); (true, px, py)] ->
             acc
-            >> P.qcurve (pt cx cy) (pt px py)
-            >> P.close
+            |> P.qcurve (pt cx cy) (pt px py)
+            |> P.close
         | _ -> assert false
         end else begin match ends with
         | [(true, px, py)] ->
             acc
-            >> P.qcurve (pt lx ly) (pt px py)
-            >> P.close
+            |> P.qcurve (pt lx ly) (pt px py)
+            |> P.close
         | [(false, cx, cy); (true, px, py)] ->
             let nx = (lx + cx) / 2 in
             let ny = (ly + cy) / 2 in
             acc
-            >> P.qcurve (pt lx ly) (pt nx ny)
-            >> P.qcurve (pt cx cy) (pt px py)
-            >> P.close
+            |> P.qcurve (pt lx ly) (pt nx ny)
+            |> P.qcurve (pt cx cy) (pt px py)
+            |> P.close
         | _ -> assert false
         end
     in
@@ -203,13 +203,13 @@ let renderable fi fsize cols nobb =
   let bbox =
     if nobb then I.void else
     let area = `O { P.o with P.width = 0.01 *. fsize } in
-    black >> I.cut ~area (P.empty >> P.rect bbox)
+    black |> I.cut ~area (P.empty |> P.rect bbox)
   in
   let rec add_glyphs acc i =
     if i = gcount then acc else
     let glyph = glyph_path fi i fsize in
-    let glyph = bbox >> I.blend (black >> I.cut glyph) >> I.move (pos i) in
-    add_glyphs (acc >> I.blend glyph) (i + 1)
+    let glyph = bbox |> I.blend (black |> I.cut glyph) |> I.move (pos i) in
+    add_glyphs (acc |> I.blend glyph) (i + 1)
   in
   let i = add_glyphs (I.const Color.white) 0 in
   let view = Box2.v P2.o size in

@@ -149,8 +149,8 @@ let renderable (fname, info) size kern text =
   let glyphs, advances = List.rev glyphs_rev, List.rev advances_rev in
   let font = { Font.name = fname; slant = `Normal; weight = `W400; size } in
   let i =
-    I.const (Color.black) >>
-    I.cut_glyphs ~text ~advances font glyphs >>
+    I.const (Color.black) |>
+    I.cut_glyphs ~text ~advances font glyphs |>
     I.move V2.(0.5 * (v size size))
   in
   let size = Size2.v (len +. size) (2. *. size) in

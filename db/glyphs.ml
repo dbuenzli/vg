@@ -30,7 +30,7 @@ Db.image "glyph-revolt" __POS__ ~author:Db.dbuenzli
   begin fun _ ->
     let font = { open_sans_xbold with Font.size = 0.7 } in
     let text = "Revolt!" in
-    I.const Color.black >> I.cut_glyphs ~text font glyphs >>
+    I.const Color.black |> I.cut_glyphs ~text font glyphs |>
     I.move (V2.v 0.23 0.25)
   end;
 
@@ -45,7 +45,7 @@ Db.image "glyph-revolt-outline" __POS__ ~author:Db.dbuenzli
     let font = { open_sans_xbold with Font.size = 0.7 } in
     let area = `O { P.o with P.width = 0.03; join = `Bevel } in
     let text = "Revolt!" in
-    I.const Color.black >> I.cut_glyphs ~area ~text font glyphs >>
+    I.const Color.black |> I.cut_glyphs ~area ~text font glyphs |>
     I.move (V2.v 0.23 0.25)
   end;
 
@@ -60,7 +60,7 @@ Db.image "glyph-revolt-fade" __POS__ ~author:Db.dbuenzli
     let font = { open_sans_xbold with Font.size = 0.7 } in
     let text = "Revolt!" in
     let stops = [0.0, Color.black; 1.0, Color.white] in
-    I.axial stops P2.o (P2.v 3. 0.) >> I.cut_glyphs ~text font glyphs >>
+    I.axial stops P2.o (P2.v 3. 0.) |> I.cut_glyphs ~text font glyphs |>
     I.move (V2.v 0.23 0.25)
   end;
 
@@ -74,9 +74,9 @@ Db.image "glyph-aspect" __POS__ ~author:Db.dbuenzli
   begin fun _ ->
     let font = { open_sans_xbold with Font.size = 0.5 } in
     let text = "R" in
-    let sq = P.empty >> P.rect (Box2.v (P2.v 0. 0.75) (P2.v 0.25 0.25)) in
-    I.const Color.black >> I.cut sq >>
-    I.blend (I.const Color.black >> I.cut_glyphs ~text font [53;]) >>
+    let sq = P.empty |> P.rect (Box2.v (P2.v 0. 0.75) (P2.v 0.25 0.25)) in
+    I.const Color.black |> I.cut sq |>
+    I.blend (I.const Color.black |> I.cut_glyphs ~text font [53;]) |>
     I.scale (V2.v 4.0 1.0)
   end;
 
@@ -91,7 +91,7 @@ Db.image "glyph-multi" __POS__ ~author:Db.dbuenzli
     let text = "Revolt!" in
     let angle = Float.rad_of_deg 30. in
     let revolt pos =
-      I.const Color.black >> I.cut_glyphs ~text font glyphs >>
+      I.const Color.black |> I.cut_glyphs ~text font glyphs |>
       I.move pos
     in
     let next max dv pt =
@@ -103,14 +103,14 @@ Db.image "glyph-multi" __POS__ ~author:Db.dbuenzli
     let dv = V2.v 0.11 0.03 in
     let rec blend_revolt acc = function
     | None -> acc
-    | Some pt -> blend_revolt (acc >> I.blend (revolt pt)) (next max dv pt)
+    | Some pt -> blend_revolt (acc |> I.blend (revolt pt)) (next max dv pt)
     in
     let margin =
       let area = `O { P.o with P.width = 0.1 } in
-      I.const Color.white >> I.cut ~area (P.empty >> P.rect view)
+      I.const Color.white |> I.cut ~area (P.empty |> P.rect view)
     in
-    blend_revolt (I.const Color.white) (Some P2.o) >> I.rot angle >>
-    I.move (P2.v 0.2 (-. sin (angle))) >>
+    blend_revolt (I.const Color.white) (Some P2.o) |> I.rot angle |>
+    I.move (P2.v 0.2 (-. sin (angle))) |>
     I.blend margin
   end;
 
@@ -139,9 +139,9 @@ Db.image "glyph-advances" __POS__ ~author:Db.dbuenzli
       in
       I.cut_glyphs ~text ~advances:(List.mapi adv advances) font glyphs
     in
-    black >> funky_advances >> I.move (ypos 0.) >>
-    I.blend (black >> adv_advances >> I.move (ypos 1.)) >>
-    I.blend (black >> no_advances >> I.move (ypos 2.))
+    black |> funky_advances |> I.move (ypos 0.) |>
+    I.blend (black |> adv_advances |> I.move (ypos 1.)) |>
+    I.blend (black |> no_advances |> I.move (ypos 2.))
   end
 ;;
 
@@ -157,7 +157,7 @@ Db.image "glyph-affiche-blocks" __POS__ ~author:Db.dbuenzli
     let glyphs = [ 36; 605; 70; 75; 171 ] in
     let text = "Affiche\xCC\x81" in
     let blocks = false, [(1,1); (3,1); (1,1); (1,1); (2,1)] in
-    I.const Color.black >> I.cut_glyphs ~text ~blocks font glyphs >>
+    I.const Color.black |> I.cut_glyphs ~text ~blocks font glyphs |>
     I.move (V2.v 0.23 0.25)
   end
 ;;

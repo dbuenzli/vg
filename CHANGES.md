@@ -1,3 +1,7 @@
+
+
+- Deprecate `Vg.(>>)`. Use OCaml's stdlib's `|>` operator instead.
+
 v0.9.1 2017-12-20 La Forclaz (VS)
 ---------------------------------
 

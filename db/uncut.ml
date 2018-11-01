@@ -29,8 +29,8 @@ Db.image "uncut-const-tr" __POS__ ~author:Db.dbuenzli
   ~size:(Size2.v 120. 60.)
   ~view:(Box2.v P2.o (P2.v 2. 1.))
   begin fun _ ->
-    I.const emerald >>
-    I.move (V2.v 1. 1.) >> I.scale (V2.v 3. 4.) >> I.blend I.void >>
+    I.const emerald |>
+    I.move (V2.v 1. 1.) |> I.scale (V2.v 3. 4.) |> I.blend I.void |>
     I.move (V2.v 0.25 0.0)
   end;
 
@@ -53,8 +53,8 @@ Db.image "uncut-axial-tr" __POS__ ~author:Db.dbuenzli
   ~view:(Box2.v P2.o (Size2.v 2. 1.))
   begin fun _ ->
     let stops = [0.0, Color.black; 1.0, emerald] in
-    I.axial stops (P2.v (-1.) (0.)) (P2.v 3. 0.) >>
-    I.move (V2.v 0.5 0.0) >> I.scale (V2.v 0.5 1.0) >> I.blend I.void >>
+    I.axial stops (P2.v (-1.) (0.)) (P2.v 3. 0.) |>
+    I.move (V2.v 0.5 0.0) |> I.scale (V2.v 0.5 1.0) |> I.blend I.void |>
     I.move (V2.v 0.25 0.0)
   end;
 
@@ -77,8 +77,8 @@ Db.image "uncut-radial-tr" __POS__ ~author:Db.dbuenzli
   ~view:(Box2.v P2.o (Size2.v 2. 1.))
   begin fun _ ->
     let stops = [0.0, Color.black; 1.0, emerald] in
-    I.radial stops P2.o 2.0 >>
-    I.move (V2.v 0.5 0.5) >> I.scale (V2.v 0.5 0.5) >> I.blend I.void >>
+    I.radial stops P2.o 2.0 |>
+    I.move (V2.v 0.5 0.5) |> I.scale (V2.v 0.5 0.5) |> I.blend I.void |>
     I.move (V2.v 0.75 0.25)
   end;
 

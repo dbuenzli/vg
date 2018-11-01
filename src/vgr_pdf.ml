@@ -180,7 +180,7 @@ let get_prim_id s ctm prim =
 let view_rect s =           (* image view rect in current coordinate system. *)
   let userspace = M3.mul s.inv_view_tr s.gstate.g_tr in    (* remove view tr *)
   Vgr.Private.Data.of_path
-    (P.empty >> P.rect (Box2.tr (M3.inv userspace) s.view))
+    (P.empty |> P.rect (Box2.tr (M3.inv userspace) s.view))
 
 let b_c3 b c = Printf.bprintf b "%f %f %f" (Color.r c) (Color.g c) (Color.b c)
 let b_v2 b v = Printf.bprintf b "%f %f" (V2.x v) (V2.y v)
@@ -905,7 +905,7 @@ let w_end s k r =
   let id_info = new_obj_id s in
   let id_catalog = new_obj_id s in
   let id_meta = match s.xmp with None -> None | Some _ -> Some (new_obj_id s) in
-  r >>
+  r |>
   w_resources s @@
   w_fonts s @@
   w_page_root s @@

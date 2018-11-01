@@ -36,19 +36,19 @@ let glyph_chart font =
   let black = I.const Color.black in
   let gray = I.const (Color.gray 0.75) in
   let cage = Box2.v (P2.v (-0.2) (-0.2)) (Size2.v 0.8 0.8) in
-  let cage = P.empty >> P.rect cage in
+  let cage = P.empty |> P.rect cage in
   let area = `O { P.o with P.width = 0.01 } in
   let glyph_box i acc u =
     let y = 15. -. float (i / 16) in
     let x = float (i mod 16) in
     let glyph =
-      I.cut_glyphs ~text:(utf8 u) font [] black >>
-      I.blend (I.cut ~area cage gray) >>
+      I.cut_glyphs ~text:(utf8 u) font [] black |>
+      I.blend (I.cut ~area cage gray) |>
       I.move (P2.v x y)
     in
-    acc >> I.blend glyph
+    acc |> I.blend glyph
   in
-  foldi_uchars glyph_box I.void >>
+  foldi_uchars glyph_box I.void |>
   I.move (P2.v 2. 2.)
 
 let font ?(bold = false) ?(slant = `Normal) name size =

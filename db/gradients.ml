@@ -16,7 +16,7 @@ Db.image "gradient-axial" __POS__ ~author:Db.dbuenzli
   ~size:(Size2.v 60. 20.)
   ~view:(Box2.v P2.o (Size2.v 2. 1.))
   begin fun _ ->
-    let r = P.empty >> P.rect (Box2.v P2.o (Size2.v 2. 1.)) in
+    let r = P.empty |> P.rect (Box2.v P2.o (Size2.v 2. 1.)) in
     let stops = [0.0, Color.black; 0.5, Color.red; 1.0, Color.white] in
     I.cut r (I.axial stops P2.o (P2.v 2. 0.))
   end;
@@ -31,10 +31,10 @@ Db.image "gradient-radial" __POS__ ~author:Db.dbuenzli
   ~view:(Box2.v P2.o (Size2.v 2. 2.))
   begin fun _ ->
     let radial x y f  =
-      let r = P.empty >> P.rect (Box2.v P2.o (Size2.v 1. 1.)) in
+      let r = P.empty |> P.rect (Box2.v P2.o (Size2.v 1. 1.)) in
       let stops = [0.0, Color.white; 0.5, Color.red; 1.0, Color.black] in
       let c = P2.v 0.5 0.5 in
-      I.cut r (I.radial stops ~f c 0.5) >> I.move (P2.v x y)
+      I.cut r (I.radial stops ~f c 0.5) |> I.move (P2.v x y)
     in
     let d45 = Float.pi_div_4 in
     let d120 = 2. *. Float.pi /. 3. in
@@ -42,9 +42,9 @@ Db.image "gradient-radial" __POS__ ~author:Db.dbuenzli
     let f1 = V2.(f0 + 0.25 * P2.v (cos d45) (sin d45)) in
     let f2 = V2.(f0 + 0.499 * P2.v (cos d45) (sin d45)) in
     let f3 = V2.(f0 + 0.25 * P2.v (cos d120) (sin d120)) in
-    radial 0. 1. f0 >>
-    I.blend (radial 1. 1. f1) >>
-    I.blend (radial 1. 0. f2) >>
+    radial 0. 1. f0 |>
+    I.blend (radial 1. 1. f1) |>
+    I.blend (radial 1. 0. f2) |>
     I.blend (radial 0. 0. f3)
   end;
 
@@ -62,13 +62,13 @@ Db.image "gradient-axial-move" __POS__ ~author:Db.dbuenzli
     let stops = [ 0., Color.red; 0.5, Color.black; 1.0, Color.red ] in
     let axial = I.axial stops (V2.v (-0.5) 0.) (V2.v 0.5 0.) in
     let left =
-      let circle = P.empty >> P.circle c r in
-      axial >> I.move c >> I.cut circle
+      let circle = P.empty |> P.circle c r in
+      axial |> I.move c |> I.cut circle
     in
     let right =
-      let circle' = P.empty >> P.circle c 0.25 in
+      let circle' = P.empty |> P.circle c 0.25 in
       let area = `O { P.o with P.width = 0.5 } in
-      axial >> I.move c >> I.cut ~area circle' >> I.move (V2.v 1.0 0.)
+      axial |> I.move c |> I.cut ~area circle' |> I.move (V2.v 1.0 0.)
     in
     I.blend left right
   end;
@@ -87,13 +87,13 @@ Db.image "gradient-radial-move" __POS__ ~author:Db.dbuenzli
     let stops = [ 0., Color.red; 1.0, Color.black ] in
     let radial = I.radial stops P2.o r in
     let left =
-      let circle = P.empty >> P.circle c r in
-      radial >> I.move c >> I.cut circle
+      let circle = P.empty |> P.circle c r in
+      radial |> I.move c |> I.cut circle
     in
     let right =
-      let circle' = P.empty >> P.circle c 0.25 in
+      let circle' = P.empty |> P.circle c 0.25 in
       let area = `O { P.o with P.width = 0.5 } in
-      radial >> I.move c >> I.cut ~area circle' >> I.move (V2.v 1.0 0.)
+      radial |> I.move c |> I.cut ~area circle' |> I.move (V2.v 1.0 0.)
     in
     I.blend left right
   end;
@@ -112,12 +112,12 @@ Db.image "gradient-scaling" __POS__ ~author:Db.dbuenzli
     let stops = [ 0.0, r; 0.5, b; 1.0, y] in
     let axial = I.axial stops P2.o (P2.v 0.45 0.) in
     let radial = I.radial stops ~f:(P2.v 0.25 0.25) (P2.v 0.5 0.5) 0.5 in
-    let scaled i = i >> I.scale (Size2.v 0.5 0.333) in
-    let r = P.empty >> P.rect (Box2.v (P2.v 0. 0.) (Size2.v 0.45 0.45)) in
-    let square ~at i = i >> I.cut r >> I.move at in
-    square ~at:(P2.v 0.0 0.55) axial >>
-    I.blend (square ~at:(P2.v 0.55 0.55) (scaled axial)) >>
-    I.blend (square ~at:(P2.v 0.0 0.0) radial) >>
+    let scaled i = i |> I.scale (Size2.v 0.5 0.333) in
+    let r = P.empty |> P.rect (Box2.v (P2.v 0. 0.) (Size2.v 0.45 0.45)) in
+    let square ~at i = i |> I.cut r |> I.move at in
+    square ~at:(P2.v 0.0 0.55) axial |>
+    I.blend (square ~at:(P2.v 0.55 0.55) (scaled axial)) |>
+    I.blend (square ~at:(P2.v 0.0 0.0) radial) |>
     I.blend (square ~at:(P2.v 0.55 0.0) (scaled radial))
   end;
 
@@ -130,11 +130,11 @@ Db.image "gradient-rgb-squares" __POS__ ~author:Db.dbuenzli
   begin fun _ ->
     let w = 2. in
     let r = Box2.v P2.o (Size2.v w w) in
-    let p = P.empty >> P.rect r in
+    let p = P.empty |> P.rect r in
     let shade c = I.axial [0., c; 1., Color.void] V2.ox V2.oy in
-    let sq ~at c = shade c >> I.scale (Box2.size r) >> I.cut p >> I.move at in
-    sq ~at:P2.o Color.red >>
-    I.blend (sq ~at:(P2.v w 0.) Color.green) >>
+    let sq ~at c = shade c |> I.scale (Box2.size r) |> I.cut p |> I.move at in
+    sq ~at:P2.o Color.red |>
+    I.blend (sq ~at:(P2.v w 0.) Color.green) |>
     I.blend (sq ~at:(P2.v w w) Color.blue)
   end
 

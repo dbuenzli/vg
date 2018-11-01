@@ -25,12 +25,12 @@ Db.image "graph" ~author
       in
       let rec rpts n acc = if n = 0 then acc else rpts (n-1) (rpt ():: acc) in
       let ( ++ ) = I.blend in
-      let node_shape = P.empty >> P.circle P2.o 2.0 in
+      let node_shape = P.empty |> P.circle P2.o 2.0 in
       let node pt =
         let area = `O { P.o with P.width = 0.5 } in
         let i =
-          (I.const (Color.gray 0.9) >> I.cut node_shape) ++
-          (I.const (Color.gray 0.3) >> I.cut ~area node_shape) >>
+          (I.const (Color.gray 0.9) |> I.cut node_shape) ++
+          (I.const (Color.gray 0.3) |> I.cut ~area node_shape) |>
           I.move pt
         in
         i, pt

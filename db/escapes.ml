@@ -18,7 +18,7 @@ Db.image "escape-xmp" __POS__ ~author:Db.dbuenzli
   ~size:(Size2.v 50. 50.)
   ~view:Box2.unit
   begin fun _ ->
-    I.const (Color.gray 0.3) >> I.cut (P.empty >> P.rect Box2.unit)
+    I.const (Color.gray 0.3) |> I.cut (P.empty |> P.rect Box2.unit)
   end;
 
 

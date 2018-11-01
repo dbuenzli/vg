@@ -21,13 +21,13 @@ Db.image "arrowhead" __POS__ ~author:Db.dbuenzli
     let arrowhead_path i len =
       let angle = Float.pi /. 3. in
       let rec loop i len sign turn p =
-        if i = 0 then p >> P.line ~rel:true V2.(polar len turn) else
-        p >>
-        loop (i - 1) (len /. 2.) (-. sign) (turn +. sign *. angle) >>
-        loop (i - 1) (len /. 2.) sign turn >>
+        if i = 0 then p |> P.line ~rel:true V2.(polar len turn) else
+        p |>
+        loop (i - 1) (len /. 2.) (-. sign) (turn +. sign *. angle) |>
+        loop (i - 1) (len /. 2.) sign turn |>
         loop (i - 1) (len /. 2.) (-. sign) (turn -. sign *. angle)
       in
-      P.empty >> loop i len 1. 0.
+      P.empty |> loop i len 1. 0.
     in
     let area = `O { P.o with P.width = 0.005 } in
     let gray = I.const (Color.gray 0.2) in
@@ -36,7 +36,7 @@ Db.image "arrowhead" __POS__ ~author:Db.dbuenzli
       let x = float (i mod 2) +. 0.1 in
       let y = 0.85 *. float (i / 2) +. 0.1 in
       acc :=
-        gray >> I.cut ~area (arrowhead_path i 0.8) >> I.move (V2.v x y) >>
+        gray |> I.cut ~area (arrowhead_path i 0.8) |> I.move (V2.v x y) |>
         I.blend !acc
     done;
     !acc

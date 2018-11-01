@@ -18,7 +18,7 @@
      {{!examples}examples}.
 
     Open the module to use it, this defines only modules and types in
-    your scope and a single {{!(>>)}composition operator}.
+    your scope.
 
     {e %%VERSION%% - {{:%%PKG_HOMEPAGE%% }homepage}} *)
 
@@ -94,6 +94,7 @@ type image
 (** The type for images. *)
 
 val ( >> ) : 'a -> ('a -> 'b) -> 'b
+[@@ocaml.deprecated "Use |> instead."]
 (** [x >> f] is [f x], associates to left.
     Used to build paths and compose images. *)
 
@@ -101,9 +102,9 @@ val ( >> ) : 'a -> ('a -> 'b) -> 'b
 
     Consult their {{!sempaths}semantics}.
 
-    The composition operator {!Vg.(>>)} is used to build paths from
-    the empty path. For this reason path combinators always take the
-    path to use as the last argument. *)
+    The [|>] operator is used to build paths from the empty path. For
+    this reason path combinators always take the path to use as the
+    last argument. *)
 module P : sig
 
   (** {1 Path areas} *)
@@ -233,7 +234,7 @@ module P : sig
   (** [append p' p] appends [p'] to [p]. If [p]'s last subpath had no
       segment it is closed.
 
-      {b Warning.} To accomodate {!(>>)} the argument order is the opposite of
+      {b Warning.} To accomodate [|>] the argument order is the opposite of
       {!List.append}. *)
 
   val tr : Gg.m3 -> path -> path
@@ -305,9 +306,9 @@ end
 
     Consult their {{!semimages}semantics}.
 
-    The composition operator {!Vg.(>>)} is used to compose images.
-    For this reason image combinators always take the
-    image to use as the last argument. *)
+    The [|>] operator is used to compose images. For this reason
+    image combinators always take the image to use as the last
+    argument. *)
 module I : sig
 
   (** {1:images Images} *)
@@ -855,8 +856,7 @@ end
 (** {1:basics Basics}
 
     [Vg] is designed to be opened in your module. This defines only
-    types and modules in your scope and a {e single} value, the
-    composition operator {!(>>)}. Thus to use [Vg] start with :
+    types and modules in your scope. Thus to use [Vg] start with :
 {[
 open Gg
 open Vg
@@ -984,7 +984,7 @@ fun pt -> if inside path pt then img pt else Color.void
     The following code cuts a circle of radius [0.4] centered in the
     unit square in the [gray] image defined before.
 {[
-let circle = P.empty >> P.circle (P2.v 0.5 0.5) 0.4
+let circle = P.empty |> P.circle (P2.v 0.5 0.5) 0.4
 let gray_circle = I.cut circle gray
 ]}
     Rendered by [svg_of_usquare] the result is:
@@ -1043,12 +1043,12 @@ let dot = I.blend circle_outline gray_circle
 
     The order of arguments in {!I.blend} is defined so that images can
     be blended using the left-associative composition operator
-    {!Vg.(>>)}. That is [dot] can also be written as follows:
+    [|>]. That is [dot] can also be written as follows:
 {[
-let dot = gray_circle >> I.blend circle_outline
+let dot = gray_circle |> I.blend circle_outline
 ]}
 
-    This means that with {!Vg.(>>)} and {!I.blend} left to right order in
+    This means that with [|>] and {!I.blend} left to right order in
     code maps to back to front image blending.
 
     {2:transforming Transforming images}
@@ -1072,11 +1072,11 @@ fun pt -> img (V2.(pt - v))
 {[
 let scatter_plot pts pt_width =
   let dot =
-    let circle = P.empty >> P.circle P2.o (0.5 *. pt_width) in
-    I.const Color.black >> I.cut circle
+    let circle = P.empty |> P.circle P2.o (0.5 *. pt_width) in
+    I.const Color.black |> I.cut circle
   in
-  let mark pt = dot >> I.move pt in
-  let blend_mark acc pt = acc >> I.blend (mark pt) in
+  let mark pt = dot |> I.move pt in
+  let blend_mark acc pt = acc |> I.blend (mark pt) in
   List.fold_left blend_mark I.void pts
 ]}
     Note that [dot] is defined outside [mark], this means that all [mark]s
@@ -1102,7 +1102,7 @@ let scatter_plot pts pt_width =
     add a new segment and so forth.
 
     Path combinators take the path they act upon as the last argument
-    so that the left-associative operator {!Vg.(>>)} can be used to
+    so that the left-associative operator [|>] can be used to
     construct paths.
 
     The image below is made by cutting the outline of the single path [p]
@@ -1112,20 +1112,20 @@ let scatter_plot pts pt_width =
 {[
 let p =
   let rel = true in
-  P.empty >>
-  P.sub (P2.v 0.1 0.5) >>
-    P.line (P2.v 0.3 0.5) >>
-    P.qcurve ~rel (P2.v 0.2 0.5) (P2.v 0.2 0.0) >>
-    P.ccurve ~rel (P2.v 0.0 (-. 0.5)) (P2.v 0.1 (-. 0.5)) (P2.v 0.3 0.0) >>
-    P.earc ~rel (Size2.v 0.1 0.2) (P2.v 0.15 0.0) >>
-  P.sub (P2.v 0.18 0.26) >>
-    P.qcurve ~rel (P2.v (0.01) (-0.1)) (P2.v 0.1 (-. 0.05)) >>
-    P.close >>
-  P.sub (P2.v 0.65 0.8) >>
+  P.empty |>
+  P.sub (P2.v 0.1 0.5) |>
+    P.line (P2.v 0.3 0.5) |>
+    P.qcurve ~rel (P2.v 0.2 0.5) (P2.v 0.2 0.0) |>
+    P.ccurve ~rel (P2.v 0.0 (-. 0.5)) (P2.v 0.1 (-. 0.5)) (P2.v 0.3 0.0) |>
+    P.earc ~rel (Size2.v 0.1 0.2) (P2.v 0.15 0.0) |>
+  P.sub (P2.v 0.18 0.26) |>
+    P.qcurve ~rel (P2.v (0.01) (-0.1)) (P2.v 0.1 (-. 0.05)) |>
+    P.close |>
+  P.sub (P2.v 0.65 0.8) |>
     P.line ~rel (P2.v 0.1 (-. 0.05))
 in
 let area = `O { P.o with P.width = 0.01 } in
-I.const Color.black >> I.cut ~area p
+I.const Color.black |> I.cut ~area p
 ]}
 
     Except for {!P.close} which has no other argument but a path, the
