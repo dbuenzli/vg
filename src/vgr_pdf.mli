@@ -127,7 +127,7 @@ val target :
     {- Use [`Helvetica], [`Times] or [`Courier] to perform glyph
        layout using PDF's standard fonts without having to embed the fonts in
        the PDF (the font metrics can be downloaded
-    {{:http://partners.adobe.com/public/developer/font/index.html#pcfi}here}).
+    {{:https://www.adobe.com/devnet/font.html}here}).
        PDFs without embedded fonts are however not recommended.}}  *)
 
 (** {1:limits Render warnings and limitations}
