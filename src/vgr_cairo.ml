@@ -204,7 +204,7 @@ let set_path s p =
                                                       (e01 m) (e11 m)
                                                       0.      0.));
               let arc = if cw then Cairo.arc_negative else Cairo.arc in
-              P2.(arc s.ctx ~x:(x c) ~y:(y c) ~r:1.0 ~a1:a ~a2:a');
+              P2.(arc s.ctx (x c) (y c) ~r:1.0 ~a1:a ~a2:a');
               Cairo.restore s.ctx;
               loop pt segs
           end
@@ -375,7 +375,7 @@ let stored_render backend =
       in
       let set_page_size set =
         let surf = Cairo.get_target s.ctx in
-        set surf ~width:(Size2.w size *. mm2pt) ~height:(Size2.h size *. mm2pt)
+        set surf ~w:(Size2.w size *. mm2pt) ~h:(Size2.h size *. mm2pt)
       in
       begin match backend with
       | `Png _ -> ()

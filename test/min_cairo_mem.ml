@@ -24,9 +24,9 @@ let raster, stride =
   let h = int_of_float (res *. Size2.h size) in
   let stride = Cairo.Image.(stride_for_width ARGB32 w) in
   let data = Bigarray.(Array1.create int8_unsigned c_layout (stride * h)) in
-  let surface = Cairo.Image.(create_for_data8 data ARGB32 ~stride w h) in
+  let surface = Cairo.Image.(create_for_data8 data ARGB32 ~stride ~w ~h) in
   let ctx = Cairo.create surface in
-  Cairo.scale ctx ~x:res ~y:res;
+  Cairo.scale ctx res res;
   let target = Vgr_cairo.target ctx in
   let warn w = Vgr.pp_warning Format.err_formatter w in
   let r = Vgr.create ~warn target `Other in

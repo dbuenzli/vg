@@ -1,4 +1,5 @@
 
+- Require `cairo2` 0.6.
 - Require OCaml 4.03.
 - Deprecate `Vg.(>>)`. Use OCaml's stdlib's `|>` operator instead.
 
