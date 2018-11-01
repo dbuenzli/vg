@@ -25,7 +25,7 @@ type image =
 let images = Hashtbl.create 537
 let image id loc ~title ~author ?(tags = []) ?note ~size ~view image =
   let file, line, _, _ = loc in
-  let id = String.lowercase id in
+  let id = String.lowercase_ascii id in
   try ignore (Hashtbl.find images id); invalid_arg (err_id id) with
   | Not_found ->
       Hashtbl.add images id
