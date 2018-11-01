@@ -84,17 +84,20 @@ let set_dashes s = function
 
 let init_ctx s size view_tr =
   let o = s.gstate.g_outline in
+  (* Clear and clip surface *)
+  Cairo.transform s.ctx (cairo_matrix_of_m3 M3.id);
+  Cairo.set_operator s.ctx Cairo.CLEAR;
+  Cairo.rectangle s.ctx 0. 0. (Size2.w size) (Size2.h size);
+  Cairo.clip_preserve s.ctx;
+  Cairo.fill s.ctx;
+  (* Setup base state *)
+  Cairo.set_operator s.ctx Cairo.OVER;
   Cairo.transform s.ctx (cairo_matrix_of_m3 view_tr);
   Cairo.set_line_width s.ctx o.P.width;
   Cairo.set_line_cap s.ctx (cairo_cap o.P.cap);
   Cairo.set_line_join s.ctx (cairo_join o.P.join);
   Cairo.set_miter_limit s.ctx (Vgr.Private.P.miter_limit o);
-  set_dashes s o.P.dashes;
-  Cairo.set_operator s.ctx Cairo.CLEAR;
-  Cairo.rectangle s.ctx 0. 0. (Size2.w size) (Size2.h size);
-  Cairo.clip_preserve s.ctx;
-  Cairo.fill s.ctx;
-  Cairo.set_operator s.ctx Cairo.OVER
+  set_dashes s o.P.dashes
 
 let push_transform s tr =
   let m = match tr with
