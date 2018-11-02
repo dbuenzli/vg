@@ -1,3 +1,5 @@
+v0.9.2 2018-11-02 Zagreb
+------------------------
 
 - Fix bug in `cairo2` backend. The initial clip region and clear
   was not done correctly.
