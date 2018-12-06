@@ -17,7 +17,8 @@
 val screen_resolution : Gg.v2
 (** [screen_resolution] is the screen resolution in pixels per meters. *)
 
-val target : ?resize:bool -> ?resolution:Gg.v2 -> Dom_html.canvasElement Js.t
+val target : ?resize:bool -> ?resolution:Gg.v2
+  -> Js_of_ocaml.Dom_html.canvasElement Js_of_ocaml.Js.t
   -> [`Other] Vg.Vgr.target
 (** [target resize resolution c] is a render target for rendering to the
     canvas element [c].

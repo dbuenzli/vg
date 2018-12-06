@@ -7,6 +7,7 @@
 open Gg
 open Vg
 open Vgr.Private.Data
+open Js_of_ocaml
 
 let str = Format.sprintf
 let warn_dash = "Outline dashes unsupported in this browser"
