@@ -1391,6 +1391,7 @@ The file [min_htmlc.ml] contains the following code. Step by step we have:
 {[
 open Gg
 open Vg
+open Js_of_ocaml
 
 (* 1. Define your image *)
 

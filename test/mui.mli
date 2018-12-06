@@ -56,8 +56,10 @@ module Ui : sig
     'a list ->
     ('a list, 'a list) conf
 
-  val canvas : ?id:string -> unit -> unit t * Dom_html.canvasElement Js.t
-  val canvas_data : Dom_html.canvasElement Js.t -> string
+  val canvas : ?id:string -> unit
+    -> unit t * Js_of_ocaml.Dom_html.canvasElement Js_of_ocaml.Js.t
+  val canvas_data : Js_of_ocaml.Dom_html.canvasElement Js_of_ocaml.Js.t
+    -> string
 (*  val canvas_blob : Dom_html.canvasElement Js.t -> File.blob Js.t *)
 
 

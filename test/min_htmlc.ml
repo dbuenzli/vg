@@ -11,6 +11,7 @@
 
 open Gg
 open Vg
+open Js_of_ocaml
 
 (* 1. Define your image *)
 

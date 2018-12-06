@@ -1,3 +1,6 @@
+
+- jsoo 3.3.0 support. Thanks to @monstasat for the patch.
+
 v0.9.2 2018-11-02 Zagreb
 ------------------------
 

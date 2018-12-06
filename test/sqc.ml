@@ -9,6 +9,7 @@
 
 open Gg
 open Vg
+open Js_of_ocaml
 
 (* [animate] is reusable, it hides browser bureaucracy and jsoo *)
 
