@@ -1,4 +1,7 @@
+v0.9.3 2019-06-14 Zagreb
+------------------------
 
+- Fix 4.08 `Pervasives`' deprecation.
 - jsoo 3.3.0 support. Thanks to @monstasat for the patch.
 
 v0.9.2 2018-11-02 Zagreb
