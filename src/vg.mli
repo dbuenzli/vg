@@ -63,7 +63,7 @@ module Font : sig
       point values. *)
 
   val compare : t -> t -> int
-  (** [compare font font'] is [Pervasives.compare font font'] *)
+  (** [compare font font'] is [Stdlib.compare font font'] *)
 
   val compare_f : (float -> float -> int) -> t -> t -> int
   (** [compare_f cmp font font'] is like {!compare} but uses [cmp] to compare
@@ -282,7 +282,7 @@ module P : sig
       point values. *)
 
   val compare : path -> path -> int
-  (** [compare p p'] is {!Pervasives.compare}[ p p']. *)
+  (** [compare p p'] is {!Stdlib.compare}[ p p']. *)
 
   val compare_f : (float -> float -> int) -> path -> path -> int
   (** [compare_f cmp p p'] is like {!compare} but uses [cmp] to compare
@@ -460,7 +460,7 @@ module I : sig
       {b Note.} Raster images are tested with {!Gg.Raster.equal}. *)
 
   val compare : image -> image -> int
-  (** [compare i i'] is [Pervasives.compare i i']. *)
+  (** [compare i i'] is [Stdlib.compare i i']. *)
 
   val compare_f : (float -> float -> int) -> image -> image -> int
   (** [compare_f cmp i i'] is like {!compare} but uses [cmp] to
@@ -571,7 +571,7 @@ module Vgr : sig
   (** {1:render Rendering} *)
 
   type dst_stored =
-    [ `Buffer of Buffer.t | `Channel of Pervasives.out_channel | `Manual ]
+    [ `Buffer of Buffer.t | `Channel of out_channel | `Manual ]
   (** The type for stored renderer destination. With a [`Manual]
       destination the client must provide output storage see
       {!Manual.dst}. *)

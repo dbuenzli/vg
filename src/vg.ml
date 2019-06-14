@@ -6,6 +6,8 @@
 
 open Gg
 
+let stdlib_compare = compare
+
 (* Invalid_arg strings *)
 
 let err_empty = "empty path"
@@ -57,13 +59,13 @@ module Font = struct
     font.name = font'.name && eq font.size font'.size &&
     font.weight = font'.weight && font.slant = font'.slant
 
-  let compare = Pervasives.compare
+  let compare = stdlib_compare
   let compare_f cmp font font' =
-    let c = Pervasives.compare font.name font'.name in
+    let c = stdlib_compare font.name font'.name in
     if c <> 0 then c else
-    let c = Pervasives.compare font.slant font'.slant in
+    let c = stdlib_compare font.slant font'.slant in
     if c <> 0 then c else
-    let c = Pervasives.compare font.weight font'.weight in
+    let c = stdlib_compare font.weight font'.weight in
     if c <> 0 then c else
     let c = cmp font.size font'.size in
     c
@@ -123,11 +125,11 @@ module P = struct
       | d :: ds, d' :: ds' ->
           let c = cmp d d' in
           if c <> 0 then c else dashes ds ds'
-      | ds, ds' -> Pervasives.compare ds ds'
+      | ds, ds' -> stdlib_compare ds ds'
       in
       let c = cmp f f' in
       if c <> 0 then c else dashes ds ds'
-  | d, d' -> Pervasives.compare d d'
+  | d, d' -> stdlib_compare d d'
 
   let pp_dashes pp_f ppf = function
   | None -> () | Some (f, ds) ->
@@ -151,9 +153,9 @@ module P = struct
   let cmp_outline cmp o o' =
     let c = cmp o.width o'.width in
     if c <> 0 then c else
-    let c = Pervasives.compare o.cap o'.cap in
+    let c = stdlib_compare o.cap o'.cap in
     if c <> 0 then c else
-    let c = Pervasives.compare o.join o'.join in
+    let c = stdlib_compare o.join o'.join in
     if c <> 0 then c else
     let c = cmp o.miter_angle o'.miter_angle in
     if c <> 0 then c else cmp_dashes cmp o.dashes o'.dashes
@@ -176,7 +178,7 @@ module P = struct
 
   let cmp_area cmp a a' = match a, a' with
   | `O o, `O o' -> cmp_outline cmp o o'
-  | a, a' -> Pervasives.compare a a'
+  | a, a' -> stdlib_compare a a'
 
   let pp_area_f pp_f ppf = function
   | `Anz -> pp ppf "@[<1>anz@]"
@@ -430,7 +432,7 @@ module P = struct
     | [], [] -> true
     | _ -> false
 
-  let compare p p' = Pervasives.compare p p'
+  let compare p p' = stdlib_compare p p'
   let rec compare_f cmp p p' =
     let compare_seg cmp s s' = match s, s' with
     | `Sub pt, `Sub pt'
@@ -445,21 +447,21 @@ module P = struct
         let c = V2.compare_f cmp c1 c1' in
         if c <> 0 then c else V2.compare_f cmp pt pt'
     | `Earc (l, cw, a, r, pt), `Earc (l', cw', a', r', pt') ->
-        let c = Pervasives.compare l l' in
+        let c = stdlib_compare l l' in
         if c <> 0 then c else
-        let c = Pervasives.compare cw cw' in
+        let c = stdlib_compare cw cw' in
         if c <> 0 then c else
         let c = cmp a a' in
         if c <> 0 then c else
         let c = V2.compare_f cmp r r' in
         if c <> 0 then c else V2.compare_f cmp pt pt'
-    | s, s' -> Pervasives.compare s s'
+    | s, s' -> stdlib_compare s s'
     in
     match p, p' with
     | s :: p, s' :: p' ->
         let c = compare_seg cmp s s' in
         if c <> 0 then c else compare_f cmp p p'
-    | p, p' -> Pervasives.compare p p'
+    | p, p' -> stdlib_compare p p'
 
   (* Printers *)
 
@@ -546,7 +548,7 @@ module I = struct
       if c <> 0 then c else
       let c = V4.compare_f cmp sc sc' in
       if c <> 0 then c else cmp_stops cmp ss ss'
-  | ss, ss' -> Pervasives.compare ss ss'
+  | ss, ss' -> stdlib_compare ss ss'
 
   (* Primitives *)
 
@@ -586,7 +588,7 @@ module I = struct
   | Raster (r, ri), Raster (r', ri') ->
       let c = Box2.compare_f cmp r r' in
       if c <> 0 then c else Raster.compare ri ri'
-  | i, i' -> Pervasives.compare i i'
+  | i, i' -> stdlib_compare i i'
 
   let pp_primitive pp_f ppf = function
   | Const c ->
@@ -611,7 +613,7 @@ module I = struct
       glyphs : glyph list; }
 
   let eq_blocks (rev0, bs0) (rev1, bs1) = rev0 = rev1 && bs0 = bs1
-  let cmp_blocks b0 b1 = Pervasives.compare b0 b1
+  let cmp_blocks b0 b1 = stdlib_compare b0 b1
 
   let eq_advances eq r1 r2 =
     try List.for_all2 (V2.equal_f eq) r1.advances r2.advances with
@@ -622,7 +624,7 @@ module I = struct
     | a1 :: a1s, a2 :: a2s ->
         let c = V2.compare_f cmp a1 a2 in
         if c <> 0 then c else adv a1s a2s
-    | a1s, a2s -> Pervasives.compare a1s a2s
+    | a1s, a2s -> stdlib_compare a1s a2s
     in
     adv a1s a2s
 
@@ -634,7 +636,7 @@ module I = struct
   let cmp_glyph_run cmp r1 r2 =
     let c = Font.compare_f cmp r1.font r2.font in
     if c <> 0 then c else
-    let c = Pervasives.compare r1.text r2.text in
+    let c = stdlib_compare r1.text r2.text in
     if c <> 0 then c else
     let c = V2.compare_f cmp r1.o r2.o in
     if c <> 0 then c else
@@ -642,7 +644,7 @@ module I = struct
     if c <> 0 then c else
     let c = cmp_advances cmp r1.advances r2.advances in
     if c <> 0 then c else
-    Pervasives.compare r1.glyphs r2.glyphs
+    stdlib_compare r1.glyphs r2.glyphs
 
   let pp_glyph_run ppf r =
     let pp_text ppf = function
@@ -734,11 +736,11 @@ module I = struct
     in
     loop [(i, i')]
 
-  let compare i i' = Pervasives.compare i i'
+  let compare i i' = stdlib_compare i i'
   let compare_f cmp i i' =
     let cmp_alpha cmp a a' = match a, a' with
     | Some a, Some a' -> cmp a a'
-    | a, a' -> Pervasives.compare a a'
+    | a, a' -> stdlib_compare a a'
     in
     let rec loop = function
     | [] -> assert false
@@ -757,7 +759,7 @@ module I = struct
             let c = cmp_glyph_run cmp r r' in
             if c <> 0 then c else loop ((i, i') :: acc)
         | Blend (b, a, i1, i2), Blend (b', a', i1', i2') ->
-            let c = Pervasives.compare b b' in
+            let c = stdlib_compare b b' in
             if c <> 0 then c else
             let c = cmp_alpha cmp a a' in
             if c <> 0 then c else
@@ -766,7 +768,7 @@ module I = struct
             let c = cmp_tr cmp tr tr' in
             if c <> 0 then c else
             loop ((i, i') :: acc)
-        | i, i' -> Pervasives.compare i i'
+        | i, i' -> stdlib_compare i i'
     in
     loop [(i, i')]
 
@@ -955,7 +957,7 @@ module Vgr = struct
   (* Rendering *)
 
   type dst_stored =
-    [ `Buffer of Buffer.t | `Channel of Pervasives.out_channel | `Manual ]
+    [ `Buffer of Buffer.t | `Channel of out_channel | `Manual ]
 
   type dst = [ dst_stored | `Other ]
 
