@@ -25,7 +25,7 @@
 type otf_font
 (** The type for OpenType fonts. *)
 
-val otf_font : string -> ([> `Otf of otf_font], Otfm.error) Result.result
+val otf_font : string -> ([> `Otf of otf_font], Otfm.error) result
 (** [otf_font bytes] is an OpenType font from the OpenType byte
     serialization [bytes]. *)
 

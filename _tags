@@ -1,4 +1,4 @@
-true : bin_annot, safe_string, package(bytes), package(uchar), package(result)
+true : bin_annot, safe_string
 true : package(gg)
 
 <src> : include

@@ -59,7 +59,6 @@ let pdf_font_program (normal, slant) font =
   `Pdf_font (if font.Font.weight < `W700 then regular else bold)
 
 let otf_font s =
-  let open Result in
   let ( >>= ) x f = match x with Error e -> Error e | Ok v -> f v in
   let add_adv acc _ adv _ = adv :: acc in
   let d = Otfm.decoder (`String s) in

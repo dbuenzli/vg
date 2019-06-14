@@ -8,7 +8,6 @@
 
 open Gg
 open Vg
-open Result
 
 let str = Printf.sprintf
 let otfm_err_str err =
