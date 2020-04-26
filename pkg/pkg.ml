@@ -22,7 +22,7 @@ let doc_images () =
 
 let build =
   let cmd c os files =
-    let jsoo = Cmd.(v "-plugin-tag" % "package(js_of_ocaml.ocamlbuild)") in
+    let jsoo = Cmd.(v "-plugin-tag" % "package(js_of_ocaml-ocamlbuild)") in
     OS.Cmd.run @@ Cmd.(Pkg.build_cmd c os %% jsoo %% of_list files)
   in
   Pkg.build ~cmd ()
