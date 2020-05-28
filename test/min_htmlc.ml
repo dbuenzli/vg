@@ -3,7 +3,7 @@
    Minimal Vgr_htmlc example. Compile with:
 
    ocamlfind ocamlc \
-    -package js_of_ocaml,js_of_ocaml.ppx \
+    -package js_of_ocaml,js_of_ocaml-ppx \
     -package gg,vg,vg.htmlc \
     -linkpkg -o min_htmlc.byte min_htmlc.ml \
    && js_of_ocaml min_htmlc.byte

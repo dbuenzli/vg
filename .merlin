@@ -1,2 +1,2 @@
-PKG uutf otfm gg js_of_ocaml js_of_ocaml.ppx cairo2
+PKG uutf otfm gg js_of_ocaml js_of_ocaml-ppx cairo2
 B _build/**
