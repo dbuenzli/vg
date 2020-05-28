@@ -612,19 +612,20 @@ module Vgr : sig
          call {!render} with [`Await] until
          [`Ok] is returned.}
       {- [`Ok] when the encoder is ready to encode a new [`Image] (if
-         the renderer supports it) or [`End].}}  For [`Manual]
-         destinations, encoding [`End] always returns [`Partial] the
-         client should as usual use {!Manual.dst} and continue with
-         [`Await] until [`Ok] is returned at which point
-         {!Manual.dst_rem}[ r] is guaranteed to be the size of the
-         last provided buffer (i.e. nothing was written).
+         the renderer supports it) or [`End].}}
 
-         {b Semantics of multiple images render.} The semantics
-         of multiple image renders are left to the backend.
+      For [`Manual] destinations, encoding [`End] always returns
+      [`Partial] the client should as usual use {!Manual.dst} and
+      continue with [`Await] until [`Ok] is returned at which point
+      {!Manual.dst_rem}[ r] is guaranteed to be the size of the last
+      provided buffer (i.e. nothing was written).
 
-         @raise Invalid_argument if [`Image] or [`End] is encoded after
-         a [`Partial] encode. Or if multiple [`Image]s are encoded in
-         a renderer that doesn't support them. *)
+      {b Semantics of multiple images render.} The semantics
+      of multiple image renders are left to the backend.
+
+      @raise Invalid_argument if [`Image] or [`End] is encoded after
+      a [`Partial] encode. Or if multiple [`Image]s are encoded in
+      a renderer that doesn't support them. *)
 
   val renderer_dst : renderer -> dst
   (** [render_dst r] is [r]'s destination. *)
