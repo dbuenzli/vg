@@ -1,12 +1,13 @@
 true : bin_annot, safe_string
 true : package(gg)
+<_b0> : -traverse
 
 <src> : include
 <db> : include
 <test> : include
 
 <src/vgr_pdf.*> : package(uutf), package(otfm)
-<src/vgr_htmlc.*> : package(js_of_ocaml.ppx)
+<src/vgr_htmlc.*> : package(js_of_ocaml-ppx)
 <src/vgr_cairo.*> : package(cairo2)
 
 <db/glyphs_pdf.*> : package(uutf)
@@ -15,13 +16,13 @@ true : package(gg)
 <test/rsvg.*> : package(uutf), package(unix)
 <test/rcairo.*> : package(uutf), package(unix), package(cairo2)
 
-<test/mui.*> : package(js_of_ocaml), package(js_of_ocaml.ppx)
+<test/mui.*> : package(js_of_ocaml), package(js_of_ocaml-ppx)
 <test/rhtmlc.*> : package(otfm), package(uutf), package(js_of_ocaml)
 
 <test/min_pdf.*> : package(uutf), package(otfm)
 <test/min_cairo*> : package(cairo2)
-<test/min_htmlc.*> : package(js_of_ocaml), package(js_of_ocaml.ppx)
+<test/min_htmlc*> : package(js_of_ocaml), package(js_of_ocaml-ppx)
 
-<test/sqc.*> : package(js_of_ocaml), package(js_of_ocaml.ppx)
+<test/sqc.*> : package(js_of_ocaml), package(js_of_ocaml-ppx)
 <test/vecho.*> : package(uutf), package(otfm)
 <test/fglyphs.*> : package(uutf), package(otfm)

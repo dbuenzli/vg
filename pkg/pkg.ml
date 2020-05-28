@@ -20,19 +20,11 @@ let doc_images () =
   OS.File.fold ~skip (fun p acc -> p :: acc) [] ["doc"]
   >>= fun files -> Ok (Pkg.flatten (List.fold_left mv [] files))
 
-let build =
-  let cmd c os files =
-    let jsoo = Cmd.(v "-plugin-tag" % "package(js_of_ocaml-ocamlbuild)") in
-    OS.Cmd.run @@ Cmd.(Pkg.build_cmd c os %% jsoo %% of_list files)
-  in
-  Pkg.build ~cmd ()
-
 let publish =
   Pkg.publish ~artefacts:[`Doc; `Distrib; `Alt "www-demos"] ()
 
-
 let () =
-  Pkg.describe "vg" ~build ~publish @@ fun c ->
+  Pkg.describe "vg" ~publish @@ fun c ->
   let uutf = Conf.value c uutf in
   let otfm = Conf.value c otfm in
   let jsoo = Conf.value c jsoo in
