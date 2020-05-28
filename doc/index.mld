@@ -1,0 +1,9 @@
+{0 Vg {%html: <span class="version">%%VERSION%%</span>%}}
+
+Vg is a declarative 2D vector graphics library.
+
+See the {{!Vg.basics}basics} for an introduction.
+
+{1:api API}
+
+{!modules: Vg Vgr_cairo Vgr_htmlc Vgr_pdf Vgr_svg}
