@@ -39,6 +39,7 @@ let () =
     Pkg.mllib ~cond:cairo2 "src/vgr_cairo.mllib";
     Pkg.bin ~cond:vgr_pdf "test/vecho";
 
+    Pkg.doc "doc/index.mld" ~dst:"odoc-pages/index.mld";
     Pkg.doc "test/examples.ml";
     Pkg.doc "test/min_htmlc.html";
     Pkg.doc "test/min_htmlc.ml";

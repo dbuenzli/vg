@@ -18,9 +18,7 @@
      {{!examples}examples}.
 
     Open the module to use it, this defines only modules and types in
-    your scope.
-
-    {e %%VERSION%% - {{:%%PKG_HOMEPAGE%% }homepage}} *)
+    your scope. *)
 
 open Gg
 
@@ -1244,8 +1242,9 @@ I.const Color.black |> I.cut ~area p
 {%html: <img src="../_assets/doc-aeo.png" style="width:90mm; height:30mm;"/> %}}
     {- \[[`O o], [p]\]{_[pt]} is [true] iff [pt] is in the outline
         area of [p] as defined by the value [o] of type {!type:P.outline}.
+        See {!semoutlines}, {!semjoins}, {!semcaps}, {!semdashes}.}}
 
-        {4:semoutlines Outline areas}
+        {3:semoutlines Outline areas}
 
         The outline area of a path is the union of its subpaths
         outline areas. A subpath outline area is inside the parallel
@@ -1293,7 +1292,7 @@ I.const Color.black |> I.cut ~area p
         the length of alternating dashes and gaps (starting with
         dashes). The {e dash offset} [off] is a {e positive} offset
         that indicates where to start in the dash pattern at the
-        beginning of a subpath.}}  *)
+        beginning of a subpath.  *)
 
 (** {1:examples Examples}
 
@@ -1428,7 +1427,7 @@ let () = Dom_html.window ##. onload := Dom_html.handler main
 This file needs to be compiled to byte code and then [js_of_ocaml]
 must be applied. This can be achieved with:
 {[> ocamlfind ocamlc \
-  -package js_of_ocaml,js_of_ocaml.ppx \
+  -package js_of_ocaml,js_of_ocaml-ppx \
   -package gg,vg,vg.htmlc \
   -linkpkg -o min_htmlc.byte min_htmlc.ml \
   && js_of_ocaml min_htmlc.byte]}
