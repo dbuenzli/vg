@@ -1,3 +1,10 @@
+
+
+- Fix `Vgr_pdf` glyph cut rendering. All glyphs id of the form `0xHH0D`
+  were rendered as id `0xHH0A`. The text of the 2008 standard of the
+  `Tj` operator (§9.4.3) misleads, PDF strings do perform newline
+  normalisation (§7.3.4.2) so `0D` bytes also need to be escaped.
+  
 v0.9.4 2020-05-28 La Forclaz (VS)
 ---------------------------------
 

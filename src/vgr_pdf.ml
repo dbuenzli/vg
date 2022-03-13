@@ -21,6 +21,7 @@ external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
 let u_lpar   = 0x0028 (* U+0028 *)
 let u_rpar   = 0x0029 (* U+0029 *)
 let u_bslash = 0x005C (* U+005C *)
+let u_cr     = 0x000D (* U+000D *)
 
 let n_linear_srgb = "/srgb_l"
 let max_buf = 65528
@@ -217,6 +218,9 @@ let b_str_byte s byte =        (* escapes bytes that need to in PDF strings. *)
   let b s byte = Buffer.add_char s.buf (unsafe_chr byte) in
   if byte = u_lpar || byte = u_rpar || byte = u_bslash
   then (b s u_bslash; b s byte)
+  else if byte = u_cr (* PDF strings map 0x0D to 0x0A so this must be escaped
+                         aswell *)
+  then (b s u_bslash; b s 0x72 (* r *))
   else (b s byte)
 
 let b_start s = b_str s "%PDF-1.7\n%\xCF\xC3\xE1\xED\xEC\n"
