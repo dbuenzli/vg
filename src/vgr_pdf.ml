@@ -295,7 +295,7 @@ let push_transform s tr =
 let one_div_3 = 1. /. 3.
 let two_div_3 = 2. /. 3.
 let cubic_earc tol cubic acc p0 large cw a r p1 =
-  match Vgr.Private.P.earc_params p0 large cw a r p1 with
+  match Vgr.Private.P.earc_params p0 ~large ~cw a r p1 with
   | None -> (* line with a cubic *)
       let c0 = V2.add (V2.smul two_div_3 p0) (V2.smul one_div_3 p1) in
       let c1 = V2.add (V2.smul one_div_3 p0) (V2.smul two_div_3 p1) in

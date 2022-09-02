@@ -86,7 +86,7 @@ let init_ctx s size view_tr =
   (* Clear and clip surface *)
   Cairo.transform s.ctx (cairo_matrix_of_m3 M3.id);
   Cairo.set_operator s.ctx Cairo.CLEAR;
-  Cairo.rectangle s.ctx 0. 0. (Size2.w size) (Size2.h size);
+  Cairo.rectangle s.ctx 0. 0. ~w:(Size2.w size) ~h:(Size2.h size);
   Cairo.clip_preserve s.ctx;
   Cairo.fill s.ctx;
   (* Setup base state *)
@@ -136,12 +136,14 @@ let get_primitive s p = try Hashtbl.find s.prims p with
         Pattern V4.(Cairo.Pattern.create_rgba (x c) (y c) (z c) (w c))
     | Axial (stops, pt, pt') ->
         let g =
-          V2.(Cairo.Pattern.create_linear (x pt) (y pt) (x pt') (y pt'))
+          V2.(Cairo.Pattern.create_linear
+                ~x0:(x pt) ~y0:(y pt) ~x1:(x pt') ~y1:(y pt'))
         in
         List.iter (add_stop g) stops; Pattern g
     | Radial (stops, f, c, r) ->
         let g =
-          V2.(Cairo.Pattern.create_radial (x f) (y f) 0.0 (x c) (y c) r)
+          V2.(Cairo.Pattern.create_radial
+                ~x0:(x f) ~y0:(y f) ~r0:0.0 ~x1:(x c) ~y1:(y c) ~r1:r)
         in
         List.iter (add_stop g) stops; Pattern g
     | Raster _ -> assert false
@@ -197,7 +199,7 @@ let set_path s p =
           P2.(Cairo.curve_to s.ctx (x c) (y c) (x c') (y c') (x pt) (y pt));
           loop pt segs
       | `Earc (large, cw, r, a, pt) ->
-          begin match Vgr.Private.P.earc_params last large cw r a pt with
+          begin match Vgr.Private.P.earc_params last ~large ~cw r a pt with
           | None -> P2.(Cairo.line_to s.ctx (x pt) (y pt)); loop pt segs
           | Some (c, m, a, a') ->
               Cairo.save s.ctx;
@@ -346,10 +348,11 @@ let stored_state r backend size =
   let w = Size2.w size *. (V2.x scale) in
   let h = Size2.h size *. (V2.y scale) in
   let surface = match backend with
-  | `Png _ -> Cairo.Image.(create ARGB32 (int_of_float w) (int_of_float h))
-  | `Pdf -> Cairo.PDF.create_for_stream (vgr_output r) w h
-  | `Ps -> Cairo.PS.create_for_stream (vgr_output r) w h
-  | `Svg -> Cairo.SVG.create_for_stream  (vgr_output r) w h
+  | `Png _ ->
+      Cairo.Image.(create ARGB32 ~w:(int_of_float w) ~h:(int_of_float h))
+  | `Pdf -> Cairo.PDF.create_for_stream (vgr_output r) ~w ~h
+  | `Ps -> Cairo.PS.create_for_stream (vgr_output r) ~w ~h
+  | `Svg -> Cairo.SVG.create_for_stream  (vgr_output r) ~w ~h
   in
   let ctx = Cairo.create surface in
   Cairo.scale ctx (V2.x scale) (V2.y scale);
