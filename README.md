@@ -40,8 +40,11 @@ build instructions and a complete specification of the dependencies.
 The documentation and API reference is generated from the source
 interfaces. It can be consulted [online][doc] or via `odig doc vg`.
 
-[doc]: http://erratique.ch/software/vg/doc/
+Questions are welcome but better asked on the [OCaml forum]
+than on the issue tracker.
 
+[doc]: http://erratique.ch/software/vg/doc/
+[OCaml forum]: https://discuss.ocaml.org/
 
 ## Sample programs and images
 

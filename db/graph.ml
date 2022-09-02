@@ -5,13 +5,9 @@
 
 open Gg
 open Vg
-
-
-let author = "The vg programmers <daniel.buenzl i@erratique.ch>"
-type node = Vg.image * Gg.p2
 ;;
 
-Db.image "graph" ~author
+Db.image "graph" __POS__ ~author:Db.dbuenzli
   ~title:"Graph drawing with combinators"
   ~tags:["graph"; "image"; ]
   ~size:(Size2.v 120. 60.)

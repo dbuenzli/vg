@@ -21,8 +21,7 @@ let renderer fmt dst _ =
   Vgr.create (Vgr_cairo.stored_target cairo_fmt) dst
 
 let ftypes = List.map fst formats
-let () =
-  Rstored.main_multiformats "PNG, PDF, PS or SVG" ftypes renderer
+let () = Rstored.main_multiformats "PNG, PDF, PS or SVG" ftypes renderer
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2014 The vg programmers

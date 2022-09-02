@@ -1,1 +1,1 @@
-(srcs-i src doc)
+(srcs-x pkg tmp test db)
