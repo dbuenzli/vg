@@ -1,7 +1,6 @@
 (*---------------------------------------------------------------------------
    Copyright (c) 2014 The vg programmers. All rights reserved.
    Distributed under the ISC license, see terms at the end of the file.
-   %%NAME%% %%VERSION%%
   ---------------------------------------------------------------------------*)
 
 (* Renders a font's glyphs to a PDF file (does not use Vg's glyph API). *)

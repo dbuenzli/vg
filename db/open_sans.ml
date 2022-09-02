@@ -1,7 +1,6 @@
 (*---------------------------------------------------------------------------
    Copyright (c) 2013 The vg programmers. All rights reserved.
    Distributed under the ISC license, see terms at the end of the file.
-   %%NAME%% %%VERSION%%
   ---------------------------------------------------------------------------*)
 (* N.B. the following font program is (c) Steve Matteson and
    distributed under the Apache Licence version 2.0.

@@ -1,16 +1,13 @@
 (*---------------------------------------------------------------------------
    Copyright (c) 2013 The vg programmers. All rights reserved.
    Distributed under the ISC license, see terms at the end of the file.
-   %%NAME%% %%VERSION%%
   ---------------------------------------------------------------------------*)
 
 (** Vg HTML canvas renderer.
 
     {b References.}
     {ul {- Rik Cabanier et al. {e {{:http://www.w3.org/TR/2dcontext/}HTML
-     Canvas 2D Context}}, 2012-12-17.}}
-
-    {e %%VERSION%% - {{:%%PKG_HOMEPAGE%% }homepage}} *)
+     Canvas 2D Context}}, 2012-12-17.}} *)
 
 (** {1:target HTML canvas render targets} *)
 

@@ -1,16 +1,13 @@
 (*---------------------------------------------------------------------------
    Copyright (c) 2013 The vg programmers. All rights reserved.
    Distributed under the ISC license, see terms at the end of the file.
-   %%NAME%% %%VERSION%%
   ---------------------------------------------------------------------------*)
 
 (** Vg SVG renderer.
 
     {b References.}
     {ul {- Erik Dahlström et al. {{:http://www.w3.org/TR/SVG11/}{e
-    Scalable Vector Graphics (SVG) 1.1}}, 2011.}}
-
-    {e %%VERSION%% - {{:%%PKG_HOMEPAGE%% }homepage}} *)
+    Scalable Vector Graphics (SVG) 1.1}}, 2011.}} *)
 
 (** {1:target SVG render targets} *)
 

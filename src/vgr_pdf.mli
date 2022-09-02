@@ -1,7 +1,6 @@
 (*---------------------------------------------------------------------------
    Copyright (c) 2013 The vg programmers. All rights reserved.
    Distributed under the ISC license, see terms at the end of the file.
-   %%NAME%% %%VERSION%%
   ---------------------------------------------------------------------------*)
 
 (** Vg PDF renderer.
@@ -12,9 +11,7 @@
     {b Bug reports.}  PDF being an insane standard, rendering
     abilities of PDF readers vary wildly. No rendering bug report for
     this renderer will be considered if it cannot be reproduced in the
-    latest Adobe Acrobat Reader.
-
-    {e %%VERSION%% - {{:%%PKG_HOMEPAGE%% }homepage}} *)
+    latest Adobe Acrobat Reader. *)
 
 (** {1:fonts Font resolution}
 
