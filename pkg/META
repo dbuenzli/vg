@@ -1,4 +1,4 @@
-version = "%%VERSION%%"
+version = "%%VERSION_NUM%%"
 description = "Declarative 2D vector graphics for OCaml"
 requires = "gg"
 archive(byte) = "vg.cma"
@@ -7,7 +7,7 @@ plugin(byte) = "vg.cma"
 plugin(native) = "vg.cmxs"
 
 package "svg" (
-  version = "%%VERSION%%"
+  version = "%%VERSION_NUM%%"
   description = "Vg's SVG renderer"
   requires = "vg"
   archive(byte) = "vgr_svg.cma"
@@ -18,7 +18,7 @@ package "svg" (
 )
 
 package "pdf" (
-  version = "%%VERSION%%"
+  version = "%%VERSION_NUM%%"
   description = "Vg's PDF renderer"
   requires = "vg uutf otfm"
   archive(byte) = "vgr_pdf.cma"
@@ -29,7 +29,7 @@ package "pdf" (
 )
 
 package "htmlc" (
-  version = "%%VERSION%%"
+  version = "%%VERSION_NUM%%"
   description = "Vg's HTML canvas renderer"
   requires = "vg js_of_ocaml"
   archive(byte) = "vgr_htmlc.cma"
@@ -40,7 +40,7 @@ package "htmlc" (
 )
 
 package "cairo" (
-  version = "%%VERSION%%"
+  version = "%%VERSION_NUM%%"
   description = "Vg's Cairo renderer"
   requires = "vg cairo2"
   archive(byte) = "vgr_cairo.cma"
