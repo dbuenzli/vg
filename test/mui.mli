@@ -51,16 +51,13 @@ module Ui : sig
   val select : ?id:string -> ?title:string -> 'a printer -> 'a option ->
     'a list -> ('a option, 'a select_conf) conf
 
-  val mselect : ?id:string -> ?title:string -> 'a printer -> 'a list ->
-    'a list ->
+  val mselect :
+    ?id:string -> ?title:string -> 'a printer -> 'a list -> 'a list ->
     ('a list, 'a list) conf
 
-  val canvas : ?id:string -> unit
-    -> unit t * Js_of_ocaml.Dom_html.canvasElement Js_of_ocaml.Js.t
-  val canvas_data : Js_of_ocaml.Dom_html.canvasElement Js_of_ocaml.Js.t
-    -> string
+  val canvas : ?id:string -> unit -> unit t * Brr.El.t
+  val canvas_data : Brr.El.t -> string
 (*  val canvas_blob : Dom_html.canvasElement Js.t -> File.blob Js.t *)
-
 
   type object_conf =
     [ `Data of string | `Size of float * float | `Name of string]
@@ -73,10 +70,9 @@ module Ui : sig
 
   val classify : 'a t -> string -> bool -> unit
   val visible : ?relayout:bool -> 'a t -> bool -> unit
-  val set_raw_child : 'a t -> string -> unit
   val set_svg_child : 'a t -> string -> unit
   val set_txt_child : 'a t -> string -> unit
-  val client_size : 'a t -> int * int
+(*  val client_size : 'a t -> int * int *)
   val set_height : 'a t -> string -> unit
   val set_width : 'a t -> string -> unit
 
@@ -106,9 +102,6 @@ module Store : sig
 
   type scope = [ `Session | `Persist ]
   (** The storage scope. *)
-
-  val support : scope -> bool
-  (** [support scope] is [true] iff values can be stored in [scope]. *)
 
   (** {1 Keys} *)
 
@@ -157,10 +150,6 @@ end
 module Time : sig
   val now : unit -> float
   (** [now ()] is the current UTC time as a Unix timestamp (in secs). *)
-
-  val now_date : unit -> (int * int * int) * (int * int * int)
-  (** [now_date ()] is the current UTC time as
-      [(YYYY, MM, DD), (HH, mm, ss)]. *)
 
   val duration : ('a -> 'b) -> 'a -> float * 'b
   (** [duration f v] is [(t, f v)] with [t] the time taken by the call in

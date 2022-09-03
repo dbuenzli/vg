@@ -31,7 +31,7 @@ package "pdf" (
 package "htmlc" (
   version = "%%VERSION_NUM%%"
   description = "Vg's HTML canvas renderer"
-  requires = "vg js_of_ocaml"
+  requires = "vg brr"
   archive(byte) = "vgr_htmlc.cma"
   archive(native) = "vgr_htmlc.cmxa"
   plugin(byte) = "vgr_htmlc.cma"

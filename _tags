@@ -7,7 +7,7 @@ true : package(gg)
 <test> : include
 
 <src/vgr_pdf.*> : package(uutf), package(otfm)
-<src/vgr_htmlc.*> : package(js_of_ocaml-ppx)
+<src/vgr_htmlc.*> : package(brr)
 <src/vgr_cairo.*> : package(cairo2)
 
 <db/glyphs_pdf.*> : package(uutf)

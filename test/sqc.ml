@@ -8,29 +8,7 @@
 
 open Gg
 open Vg
-open Js_of_ocaml
-
-(* [animate] is reusable, it hides browser bureaucracy and jsoo *)
-
-let animate ~size ~view next acc =
-  let now () = Js.to_float ((new%js Js.date_now) ## getTime) /. 1000. in
-  let start = now () in
-  let d = Dom_html.window ##. document in
-  let c = Dom_html.createCanvas d in
-  let r = Vgr.create (Vgr_htmlc.target c) `Other in
-  let acc = ref acc in
-  let rec loop () =
-    let i, acc' = next ~start ~now:(now ()) !acc in
-    assert (Vgr.render r (`Image (size, view, i)) = `Ok);
-    acc := acc';
-    Dom_html._requestAnimationFrame (Js.wrap_callback loop)
-  in
-  let start _ =
-    Dom.appendChild d ##. body c;
-    Dom_html._requestAnimationFrame (Js.wrap_callback loop);
-    Js._false
-  in
-  Dom_html.window ##. onload := Dom_html.handler start
+open Brr
 
 (* Illusion *)
 
@@ -66,17 +44,26 @@ let ring dt r =
   in
   squares I.void (truncate n) |> I.rot rot
 
-let image ~start ~now () =
-  let dt = now -. start in
+let image ~dt =
   let add_ring acc r = acc |> I.blend (ring dt r) in
   let rings = List.fold_left add_ring I.void rings in
-  let next = background |> I.blend rings |> I.scale (V2.v 0.6 0.6) in
-  next, ()
+  background |> I.blend rings |> I.scale (V2.v 0.6 0.6)
 
 let size = Size2.v 150. 150.
 let view = Box2.v_mid P2.o (Size2.v 550. 550.)
 
-let () = animate ~size ~view image ()
+let main () =
+  let c = Brr_canvas.Canvas.create [] in
+  let r = Vgr.create (Vgr_htmlc.target c) `Other in
+  let rec animate now =
+    let i = image ~dt:(now /. 1000.) in
+    ignore (Vgr.render r (`Image (size, view, i)));
+    ignore (G.request_animation_frame animate)
+  in
+  El.append_children (Document.body G.document) [Brr_canvas.Canvas.to_el c];
+  ignore (G.request_animation_frame animate)
+
+let () = main ()
 
 (*---------------------------------------------------------------------------
    Copyright (c) 2013 The vg programmers

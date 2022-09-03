@@ -27,7 +27,7 @@ let to_str_of_pp pp v =
   Format.flush_str_formatter ()
 
 let src_link =
-  format_of_string "https://github.com/dbuenzli/vg/blob/master/%s#L%d"
+  format_of_string "https://github.com/dbuenzli/vg/blob/master/db/%s#L%d"
 
 let open_sans_xbold = match Vgr_pdf.otf_font Open_sans.extra_bold with
 | Error e -> Log.msg "%a" Otfm.pp_error e; `Sans
@@ -46,8 +46,7 @@ let pp_res ppf d = pp ppf "%3d ppi" (Float.int_of_round ((d *. 2.54) /. 100.))
 (* Persistent ui state. *)
 
 module S = struct
-
-  let store_version = "%%VERSION%%-004"
+  let store_version = "%%VERSION%%-005"
   let () = Store.force_version store_version
 
   type t =
@@ -243,7 +242,7 @@ let ui_render_targets () =
           if not (valid s) then () (* user moved on *) else
           if exn then (activate false; finish dur steps; show_target i `N) else
           let svg = Buffer.contents b in
-          let u = "data:image/svg+xml," ^
+          let u = "data:image/svg+xml;base64," ^
                     (Ui.escape_binary (Buffer.contents b))
           in
           conf_svg_link (`Href u);
@@ -279,7 +278,7 @@ let ui_render_targets () =
         let finish ~exn dur steps =
           if not (valid s) then () (* user moved on *) else
           if exn then (activate false; finish dur steps; show_target i `N) else
-          let u = "data:application/pdf," ^
+          let u = "data:application/pdf;base64," ^
                     (Ui.escape_binary (Buffer.contents b))
           in
           let size = V2.(i.Db.size + (v pdf_pad pdf_pad)) in
@@ -369,7 +368,9 @@ let ui () =
   in
   let link () =
     on_change white (fun s b -> { s with S.white_bg = b });
-    on_change res (fun s r -> { s with S.resolution = r });
+    on_change res (fun s r ->
+        Format.printf "RES: %g@." r;
+        { s with S.resolution = r });
     on_change ids begin fun s id -> match id with
     | Some id -> { s with S.id = id }
     | None -> s

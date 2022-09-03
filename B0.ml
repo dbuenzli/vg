@@ -3,12 +3,9 @@ open B00_std
 
 (* OCaml library names *)
 
+let brr = B0_ocaml.libname "brr"
 let cairo = B0_ocaml.libname "cairo2"
-let js_of_ocaml = B0_ocaml.libname "js_of_ocaml"
-let js_of_ocaml_compiler_runtime =
-  B0_ocaml.libname "js_of_ocaml-compiler.runtime"
 
-let js_of_ocaml_ppx = B0_ocaml.libname "js_of_ocaml-ppx"
 let gg = B0_ocaml.libname "gg"
 let otfm = B0_ocaml.libname "otfm"
 let unix = B0_ocaml.libname "unix"
@@ -39,12 +36,10 @@ let vg_svg_lib =
   let srcs = mod_srcs "vgr_svg" in
   B0_ocaml.lib vg_svg ~doc:"The vg.svg library" ~srcs ~requires:[vg; gg]
 
-(* XXX needs ppx
 let vg_htmlc_lib =
   let srcs = mod_srcs "vgr_htmlc" in
-  let requires = [vg; gg; js_of_ocaml; js_of_ocaml_ppx] in
+  let requires = [vg; gg; brr] in
   B0_ocaml.lib vg_htmlc ~doc:"The vg.htmlc library" ~srcs ~requires
-*)
 
 let vg_cairo_lib =
   let srcs = mod_srcs "vgr_cairo" in
@@ -77,13 +72,23 @@ let test_rcairo =
   test "rcairo" ~requires:[vg; gg; uutf; vg_cairo] ~more_srcs:r_srcs
 
 let test_examples = test "examples" ~requires:[vg; gg; vg_svg]
-let test_fglphys = test "fglyphs" ~requires:[vg; gg; vg_pdf; otfm]
+let test_fglyphs = test "fglyphs" ~requires:[vg; gg; vg_pdf; otfm]
 
-(* TODO
-jsoo_test ~cond:jsoo "test/min_htmlc";
-    jsoo_test ~cond:jsoo "test/sqc";
-    jsoo_test ~cond:jsoo "test/rhtmlc";
-*)
+let test_jsoo ?(more_srcs = []) ?(requires = []) ?doc base =
+  let srcs = `File (Fpath.v (Fmt.str "test/%s.ml" base)) ::
+             `File (Fpath.v (Fmt.str "test/%s.html" base)) :: more_srcs
+  in
+  let meta = B0_jsoo.meta ~requires () in
+  B0_jsoo.web base ?doc ~srcs ~meta
+
+let test_min_htmlc = test_jsoo "min_htmlc" ~requires:[vg; gg; vg_htmlc; brr]
+let test_sqc = test_jsoo "sqc" ~requires:[vg; gg; vg_htmlc; brr]
+let test_rhtmlc =
+  let more_srcs = [`File (Fpath.v "test/mui.ml");
+                  `File (Fpath.v "test/mui.mli"); db ]
+  in
+  let requires = [gg; vg; vg_svg; vg_pdf; vg_htmlc; uutf; otfm; brr] in
+  test_jsoo "rhtmlc" ~requires ~more_srcs
 
 (* Packs *)
 

@@ -10,16 +10,15 @@ and compose these values.
 Renderers for PDF, SVG, Cairo and the HTML canvas are distributed with the
 module. An API allows to implement new renderers.
      
-Vg depends only on [Gg][gg]. The SVG renderer has no dependency, the
-PDF renderer depends on [Uutf][uutf] and [Otfm][otfm], the HTML canvas
-renderer depends on [js_of_ocaml][jsoo], the Cairo renderer depends on
-[cairo2][cairo2]. Vg and its renderers are distributed under the ISC
-license.
+Vg depends only on [Gg]. The SVG renderer has no dependency, the PDF
+renderer depends on [Uutf] and [Otfm], the HTML canvas renderer
+depends on [Brr], the Cairo renderer depends on [cairo2]. Vg and its
+renderers are distributed under the ISC license.
      
-[gg]: http://erratique.ch/software/gg
-[uutf]: http://erratique.ch/software/uutf
-[otfm]: http://erratique.ch/software/otfm
-[jsoo]: http://ocsigen.org/js_of_ocaml/ 
+[Gg]: http://erratique.ch/software/gg
+[Uutf]: http://erratique.ch/software/uutf
+[Otfm]: http://erratique.ch/software/otfm
+[Brr]: http://ocsigen.org/js_of_ocaml/ 
 [cairo2]: https://forge.ocamlcore.org/projects/cairo/
 
 Home page: http://erratique.ch/software/vg  
@@ -29,7 +28,7 @@ Home page: http://erratique.ch/software/vg
 Vg can be installed with `opam`:
 
     opam install vg                               # SVG renderer only
-    opam install uutf otfm js_of_ocaml cairo2 vg  # all renderers
+    opam install uutf otfm brr cairo2 vg  # all renderers
     
 If you don't use `opam` consult the [`opam`](opam) file for
 build instructions and a complete specification of the dependencies.

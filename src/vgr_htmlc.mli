@@ -14,11 +14,13 @@
 val screen_resolution : Gg.v2
 (** [screen_resolution] is the screen resolution in pixels per meters. *)
 
-val target : ?resize:bool -> ?resolution:Gg.v2
-  -> Js_of_ocaml.Dom_html.canvasElement Js_of_ocaml.Js.t
-  -> [`Other] Vg.Vgr.target
+val target :
+  ?resize:bool -> ?resolution:Gg.v2 -> 'a -> [`Other] Vg.Vgr.target
 (** [target resize resolution c] is a render target for rendering to the
-    canvas element [c].
+    canvas element [c] (you need to make sure this is an
+    {{:https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement}
+    HTMLCanvasElement} JavaScript object otherwise a runtime error will
+    occur).
     {ul
     {- [resize] if [true] (default) sets the canvas CSS size to the
        physical size of {{!Vg.Vgr.renderable}renderables}. If [false]

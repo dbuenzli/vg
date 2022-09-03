@@ -5,7 +5,7 @@ open Topkg
 
 let uutf = Conf.with_pkg "uutf"
 let otfm = Conf.with_pkg "otfm"
-let jsoo = Conf.with_pkg "js_of_ocaml"
+let brr = Conf.with_pkg "brr"
 let cairo2 = Conf.with_pkg "cairo2"
 
 let jsoo_test ~cond test =
@@ -27,7 +27,7 @@ let () =
   Pkg.describe "vg" ~publish @@ fun c ->
   let uutf = Conf.value c uutf in
   let otfm = Conf.value c otfm in
-  let jsoo = Conf.value c jsoo in
+  let brr = Conf.value c brr in
   let cairo2 = Conf.value c cairo2 in
   let vgr_pdf = uutf && otfm in
   doc_images () >>= fun doc_images ->
@@ -35,7 +35,7 @@ let () =
     Pkg.mllib "src/vg.mllib";
     Pkg.mllib "src/vgr_svg.mllib";
     Pkg.mllib ~cond:vgr_pdf "src/vgr_pdf.mllib";
-    Pkg.mllib ~cond:jsoo "src/vgr_htmlc.mllib";
+    Pkg.mllib ~cond:brr "src/vgr_htmlc.mllib";
     Pkg.mllib ~cond:cairo2 "src/vgr_cairo.mllib";
     Pkg.bin ~cond:vgr_pdf "test/vecho";
 
@@ -61,7 +61,7 @@ let () =
     Pkg.test ~run:false "test/examples";
     Pkg.test ~run:false ~cond:vgr_pdf "fglyphs";
 
-    jsoo_test ~cond:jsoo "test/min_htmlc";
+(*    jsoo_test ~cond:jsoo "test/min_htmlc";
     jsoo_test ~cond:jsoo "test/sqc";
-    jsoo_test ~cond:jsoo "test/rhtmlc";
+    jsoo_test ~cond:jsoo "test/rhtmlc"; *)
 ]

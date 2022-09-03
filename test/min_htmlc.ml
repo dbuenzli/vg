@@ -3,15 +3,15 @@
    Minimal Vgr_htmlc example. Compile with:
 
    ocamlfind ocamlc \
-    -package js_of_ocaml,js_of_ocaml-ppx \
-    -package gg,vg,vg.htmlc \
+    -package brr -package gg,vg,vg.htmlc \
     -linkpkg -o min_htmlc.byte min_htmlc.ml \
    && js_of_ocaml min_htmlc.byte
 *)
 
 open Gg
 open Vg
-open Js_of_ocaml
+open Brr
+open Brr_canvas
 
 (* 1. Define your image *)
 
@@ -22,23 +22,22 @@ let image = I.const (Color.v_srgb 0.314 0.784 0.471)
 
 (* Browser bureaucracy. *)
 
-let main _ =
-  let d = Dom_html.window ##. document in
+let main () =
   let a = (* 2 *)
-    let a = Dom_html.createA d in
-    a ##. title := Js.string "Download PNG file";
-    a ##. href := Js.string "#";
-    a ## (setAttribute (Js.string "download") (Js.string "min_htmlc.png"));
-    Dom.appendChild (d ##. body) a; a
+    let href = At.href (Jstr.v "#") in
+    let title = At.title (Jstr.v "Download PNG file") in
+    let download = At.v (Jstr.v "download") (Jstr.v "min_htmlc.png") in
+    let a = El.a ~at:[href; title; download] [] in
+    El.append_children (Document.body G.document) [a]; a
   in
   let c = (* 3 *)
-    let c = Dom_html.createCanvas d in
-    Dom.appendChild a c; c
+    let c = Brr_canvas.Canvas.create [] in
+    El.set_children a [Brr_canvas.Canvas.to_el c]; c
   in
   let r = Vgr.create (Vgr_htmlc.target c) `Other in   (* 4 *)
   ignore (Vgr.render r (`Image (size, view, image))); (* 5 *)
   ignore (Vgr.render r `End);
-  a ##. href := (c ## toDataURL); (* 6 *)
-  Js._false
+  let data = Canvas.to_data_url c |> Console.log_if_error ~use:Jstr.empty in
+  El.set_at At.Name.href (Some data) a
 
-let () = Dom_html.window ##. onload := Dom_html.handler main
+let () = main ()

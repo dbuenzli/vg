@@ -1,5 +1,7 @@
 
-
+- `Vgr_htmlc` is now implemented via `brr` which becomes an optional
+  dependency of the package. The mandatory `js_of_ocaml` and
+  `js_of_ocaml-ppx` dependencies are dropped.
 - Fix `Vgr_pdf` glyph cut rendering. All glyphs id of the form `0xHH0D`
   were rendered as id `0xHH0A`. The text of the 2008 standard of the
   `Tj` operator (§9.4.3) misleads, PDF strings do perform newline
