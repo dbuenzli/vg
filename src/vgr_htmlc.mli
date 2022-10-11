@@ -11,8 +11,8 @@
 
 (** {1:target HTML canvas render targets} *)
 
-val screen_resolution : Gg.v2
-(** [screen_resolution] is the screen resolution in pixels per meters. *)
+val screen_resolution : unit -> Gg.v2
+(** [screen_resolution ()] is the screen resolution in pixels per meters. *)
 
 val target :
   ?resize:bool -> ?resolution:Gg.v2 -> 'a -> [`Other] Vg.Vgr.target

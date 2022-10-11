@@ -389,12 +389,12 @@ let render s v k r = match v with
     init_ctx s cw ch;
     r_image s k r
 
-let screen_resolution = (* in pixel per meters *)
+let screen_resolution () = (* in pixel per meters *)
   let device_pixel_ratio = Brr.Window.device_pixel_ratio Brr.G.window in
   let screen = (96. /. 2.54) *. 100. *. device_pixel_ratio in
   V2.v screen screen
 
-let target ?(resize = true) ?(resolution = screen_resolution) c =
+let target ?(resize = true) ?(resolution = screen_resolution ()) c =
   let target r _ =
     let c = Canvas.of_jv (Obj.magic c : Jv.t) in
     let ctx = C2d.create c in
