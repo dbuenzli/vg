@@ -397,7 +397,7 @@ let screen_resolution () = (* in pixel per meters *)
 let target ?(resize = true) ?(resolution = screen_resolution ()) c =
   let target r _ =
     let c = Canvas.of_jv (Obj.magic c : Jv.t) in
-    let ctx = C2d.create c in
+    let ctx = C2d.get_context c in
     true, render { r; c; ctx;
                    resize;
                    resolution;

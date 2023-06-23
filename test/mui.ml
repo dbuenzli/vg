@@ -36,8 +36,12 @@ module Ui = struct
   let a_title = Jstr.v "title"
   let el ?id ?title ?(at = []) (f : 'a cons) classes children =
     let at = List.rev_append (List.map At.class' classes) at in
-    let at = At.add_if_some At.Name.id (Option.map Jstr.v id) at in
-    let at = At.add_if_some At.Name.title (Option.map Jstr.v id) at in
+    let at = match id with
+    | None -> at | Some id -> At.id (Jstr.v id) :: at
+    in
+    let at = match title with
+    | None -> at | Some t -> At.name (Jstr.v t) :: at
+    in
     f ~d:G.document ~at children
 
   let rem_childs e = List.iter El.remove (El.children e)
@@ -71,14 +75,14 @@ module Ui = struct
       let ui = { n = l; on_change = nop } in
       let set _ = failwith "Unimplemented" in
       let cb _ = Log.msg "Unimplemented" in
-      Ev.listen Ev.change cb (El.as_target s);
+      ignore (Ev.listen Ev.change cb (El.as_target s));
       ui, set
     else
       let l = el ?id El.h1 [c_label; c_label_text] [txt str] in
       let ui = { n = l; on_change = nop } in
       let set _ = failwith "Unimplemented" in
       let cb _ = Log.msg "Unimplemented" in
-      Ev.listen Ev.change cb (El.as_target l);
+      ignore (Ev.listen Ev.change cb (El.as_target l));
       ui, set
 
   let label ?id ?title ?ctrl str = fst (label_mut ?id ?title ?ctrl str)
@@ -89,7 +93,7 @@ module Ui = struct
     let ui = { n = p; on_change = nop } in
     let set str = El.set_children p [El.txt (Jstr.v str)] in
     let cb _ = Log.msg "Unimplemented" in
-    Ev.listen Ev.change cb (El.as_target p);
+    ignore (Ev.listen Ev.change cb (El.as_target p));
     ui, set
 
   let c_bool = Jstr.v "mu-bool"
@@ -108,7 +112,7 @@ module Ui = struct
       in
       ui.on_change b
     in
-    set v; Ev.listen Ev.change cb (El.as_target c);
+    set v; ignore (Ev.listen Ev.change cb (El.as_target c));
     ui, set
 
   let make_focusable e = El.set_at At.Name.tabindex (Some (Jstr.v "0")) e; e
@@ -128,7 +132,7 @@ module Ui = struct
     in
     let cb _  = ui.on_change () in
     El.set_at At.Name.href (Some (Jstr.v href)) a;
-    Ev.listen Ev.click cb (El.as_target a);
+    ignore (Ev.listen Ev.click cb (El.as_target a));
     ui, conf
 
   type 'a select_conf = [ `Select of 'a option | `List of 'a list ]
@@ -177,7 +181,7 @@ module Ui = struct
       let span = el El.span [] [txt (str pp v)] in
       let li = el El.li [] [span] in
       let on_click _ = set_selected (Some i) in
-      Ev.listen Ev.click on_click (El.as_target li);
+      ignore (Ev.listen Ev.click on_click (El.as_target li));
       El.append_children ui.n [li];
       li
     in
@@ -211,7 +215,7 @@ module Ui = struct
           end
       | _ -> ()
     in
-    Ev.listen Ev.keydown on_keydown (El.as_target ul);
+    ignore (Ev.listen Ev.keydown on_keydown (El.as_target ul));
     conf (`List l); conf (`Select s);
     ui, conf
 
@@ -234,7 +238,7 @@ module Ui = struct
       in
       if List.mem v sels
       then (selected := v :: !selected; El.set_class c_selected true li);
-      Ev.listen Ev.click on_click (El.as_target li);
+      ignore (Ev.listen Ev.click on_click (El.as_target li));
       li
     in
     let set l = rem_childs ui.n; El.append_children ui.n (List.map li l) in
@@ -265,7 +269,7 @@ module Ui = struct
       let () = Ev.stop_propagation e in
       ui.on_change !els_v.(El.prop selected_idx m)
     in
-    Ev.listen Ev.change on_change (El.as_target m);
+    ignore (Ev.listen Ev.change on_change (El.as_target m));
     conf (`List l);
     conf (`Select v);
     ui, conf
@@ -351,7 +355,7 @@ module Ui = struct
 
   let on_hash_change cb =
     let on_change _ = cb (hash ()) in
-    Ev.listen Ev.hashchange on_change (Window.as_target G.window)
+    ignore (Ev.listen Ev.hashchange on_change (Window.as_target G.window))
 
   let escape_binary d =
     let data = Base64.data_of_binary_jstr (Jstr.binary_of_octets d) in
@@ -361,7 +365,7 @@ module Ui = struct
   let show ui = El.set_children (Document.body G.document) [ui.n]
   let main m =
     let main _ = m () in
-    Ev.listen Ev.load main (Window.as_target G.window)
+    ignore (Ev.listen Ev.load main (Window.as_target G.window))
 end
 
 let ( *> ) = Ui.( *> )
