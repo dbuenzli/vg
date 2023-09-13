@@ -73,19 +73,17 @@ let test_rcairo =
 let test_examples = test "examples" ~requires:[vg; gg; vg_svg]
 let test_fglyphs = test "fglyphs" ~requires:[vg; gg; vg_pdf; otfm]
 
-let test_jsoo ?(more_srcs = []) ?(requires = []) ?doc base =
-  let srcs = `File (Fpath.v (Fmt.str "test/%s.ml" base)) ::
-             `File (Fpath.v (Fmt.str "test/%s.html" base)) :: more_srcs
+let test_jsoo ?(more_srcs = []) ?requires ?doc base =
+  let srcs =
+    `File ~/(Fmt.str "test/%s.ml" base) ::
+    `File ~/(Fmt.str "test/%s.html" base) :: more_srcs
   in
-  let meta = B0_jsoo.meta ~requires () in
-  B0_jsoo.web base ?doc ~srcs ~meta
+  B0_jsoo.web base ?requires ~srcs ?doc
 
 let test_min_htmlc = test_jsoo "min_htmlc" ~requires:[vg; gg; vg_htmlc; brr]
 let test_sqc = test_jsoo "sqc" ~requires:[vg; gg; vg_htmlc; brr]
 let test_rhtmlc =
-  let more_srcs = [`File (Fpath.v "test/mui.ml");
-                  `File (Fpath.v "test/mui.mli"); db ]
-  in
+  let more_srcs = [`File ~/"test/mui.ml"; `File ~/"test/mui.mli"; db ] in
   let requires = [gg; vg; vg_svg; vg_pdf; vg_htmlc; uutf; otfm; brr] in
   test_jsoo "rhtmlc" ~requires ~more_srcs
 
@@ -93,31 +91,34 @@ let test_rhtmlc =
 
 let default =
   let meta =
-    let open B0_meta in
-    empty
-    |> add authors ["The vg programmers"]
-    |> add maintainers ["Daniel Bünzli <daniel.buenzl i@erratique.ch>"]
-    |> add homepage "https://erratique.ch/software/vg"
-    |> add online_doc "https://erratique.ch/software/vg/doc"
-    |> add licenses ["ISC"]
-    |> add repo "git+https://erratique.ch/repos/vg.git"
-    |> add issues "https://github.com/dbuenzli/vg/issues"
-    |> add description_tags ["pdf"; "svg"; "canvas"; "cairo"; "browser";
-                             "declarative"; "graphics"; "org:erratique"; ]
-    |> add B0_opam.Meta.build
+    B0_meta.empty
+    |> B0_meta.(add authors) ["The vg programmers"]
+    |> B0_meta.(add maintainers)
+       ["Daniel Bünzli <daniel.buenzl i@erratique.ch>"]
+    |> B0_meta.(add homepage) "https://erratique.ch/software/vg"
+    |> B0_meta.(add online_doc) "https://erratique.ch/software/vg/doc"
+    |> B0_meta.(add licenses) ["ISC"]
+    |> B0_meta.(add repo) "git+https://erratique.ch/repos/vg.git"
+    |> B0_meta.(add issues) "https://github.com/dbuenzli/vg/issues"
+    |> B0_meta.(add description_tags)
+      ["pdf"; "svg"; "canvas"; "cairo"; "browser"; "declarative"; "graphics";
+       "org:erratique"; ]
+    |> B0_meta.tag B0_opam.tag
+    |> B0_meta.add B0_opam.build
       {|[["ocaml" "pkg/pkg.ml" "build" "--dev-pkg" "%{dev}%"
           "--with-uutf" "%{uutf:installed}%"
           "--with-otfm" "%{otfm:installed}%"
           "--with-js_of_ocaml" "%{js_of_ocaml:installed}%"
           "--with-cairo2" "%{cairo2:installed}%"]]|}
-    |> add B0_opam.Meta.depopts ["uutf", "";
-                                 "otfm", "";
-                                 "cairo2", ""; ]
-    |> add B0_opam.Meta.conflicts [
-      "otfm", {|< "0.3.0"|};
-      "cairo2", {|< "0.6"|};
-      "uutf", {|< "1.0.0"|}; ]
-    |> add B0_opam.Meta.depends
+    |> B0_meta.add B0_opam.depopts
+      [ "uutf", "";
+        "otfm", "";
+        "cairo2", "" ]
+    |> B0_meta.add B0_opam.conflicts
+      [ "otfm", {|< "0.3.0"|};
+        "cairo2", {|< "0.6"|};
+        "uutf", {|< "1.0.0"|}; ]
+    |> B0_meta.add B0_opam.depends
       [ "ocaml", {|>= "4.08.0"|};
         "ocamlfind", {|build|};
         "ocamlbuild", {|build|};
@@ -126,7 +127,7 @@ let default =
         "js_of_ocaml", {|>= "3.6.0"|};
         "js_of_ocaml-compiler", {|>= "3.6.0"|};
         "js_of_ocaml-ppx", {|>= "3.6.0"|};]
-    |> tag B0_opam.tag
+
   in
-  B0_pack.v "default" ~doc:"logs package" ~meta ~locked:true @@
+  B0_pack.make "default" ~doc:"logs package" ~meta ~locked:true @@
   B0_unit.list ()
