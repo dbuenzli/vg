@@ -204,6 +204,29 @@ module P : sig
       The following convenience functions start and close a new subpath
       to the given path. *)
 
+  val smooth_ccurve : ?rel:bool -> p2 -> p2 -> path -> path
+  (** [smooth_ccurve c' pt p] is similar to [ccurve c c' pt p] where
+      the control point [c] is defined as the reflexion of the second
+      control point of the last cubic curve relatively to the last
+      point of the path.
+
+       If the previous element of the path is not a cubic curve, then
+       the control point is the last point (following the SVG
+       specification). If the path is empty, the control point is
+       defined as the origin. *)
+
+  
+  val smooth_qcurve : ?rel:bool -> p2 -> path -> path
+  (** [smooth_qcurve pt p] is similar to [qcurve c pt p] where the
+      control point [c] is defined as the reflexion of the control
+      point of the last quadratic curve relatively to the last point
+      of the path.
+
+       If the previous element of the path is not a quadratic curve,
+       then the control point is the last point (following the SVG
+       specification). If the path is empty, the control point is
+       defined as the origin. *)
+    
   val circle : ?rel:bool -> p2 -> float -> path -> path
   (** [circle c r p] is [p] with a circle subpath of center [c]
       and radius [r]. *)
