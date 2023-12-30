@@ -1,4 +1,5 @@
-
+- Add two functions `smooth_ccurve` and `smooth_qcurve` to draw smooth
+  Bézier curves
 - `Vgr_htmlc` is now implemented via `brr` which becomes an optional
   dependency of the package. The mandatory `js_of_ocaml` and
   `js_of_ocaml-ppx` dependencies are dropped.
