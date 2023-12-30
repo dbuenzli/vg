@@ -84,6 +84,107 @@ Db.image "path-cubics" __POS__ ~author:Db.dbuenzli
     b20 |> I.blend b21
   end;
 
+Db.image "paths-smooths" __POS__ ~author:("François Thiré", "franth2@gmail.com")
+  ~title:"Smooth paths"
+  ~tags:["path"]
+  ~note:"Geometric cases for smooth paths"
+  ~size:(Size2.v 115. 105.)
+  ~view:(Box2.v (P2.v (-0.75) (0.625)) (Size2.v 5.75 5.25))
+  begin fun _ ->
+    let square = P.empty |> P.rect (Box2.v_mid P2.o (Size2.v 0.06 0.06)) in
+    let lgray = Color.gray 0.5 |> I.const in
+    let mgray = Color.gray 0.3 |> I.const in
+    let dgray = Color.gray 0.1 |> I.const in
+    let blue  = Color.blue     |> I.const in
+    let red   = Color.red      |> I.const in    
+    let ctrl_pt pt = blue |> I.cut square |> I.move pt in
+    let smooth_pt pt =
+      red |> I.cut square |> I.move pt in    
+    let end_pt pt = dgray |> I.cut square |> I.move pt in
+    let tangent p0 p1 =
+      let t = P.empty |> P.sub p0 |> P.line p1 in
+      lgray |> I.cut ~area:(`O { P.o with P.width = 0.01 }) t
+    in
+    let t = 0.55191502449 in
+    let smooth_cubic ?(rel=false) ~at p0 c0 c1 p1 c2 p2 =
+      let curve = P.empty |> P.sub p0 |>
+                  P.ccurve ~rel c0 c1 p1 |> P.smooth_ccurve ~rel c2 p2
+      in
+      let smooth = P2.tr (M3.rot2 ~pt:p1 Float.pi) c1 in
+      let c0 = if rel then V2.(c0 + p0) else c0 in
+      let c1 = if rel then V2.(c1 + p0) else c1 in
+      let p1 = if rel then V2.(p1 + p0) else p1 in
+      let c2 = if rel then V2.(c2 + p1) else c2 in
+      let p2 = if rel then V2.(p2 + p1) else p2 in                              
+      mgray |> I.cut ~area:(`O { P.o with P.width = 0.02 }) curve |>
+      I.blend (tangent p0 c0)    |> I.blend (tangent p1 c1) |>
+      I.blend (ctrl_pt c0)       |> I.blend (ctrl_pt c1)    |>
+      I.blend (end_pt p0)        |> I.blend (end_pt p1)     |>
+      I.blend (smooth_pt smooth) |> I.blend (tangent p1 smooth) |>
+      I.blend (ctrl_pt c2)       |> I.blend (tangent p2 c2) |>
+      I.blend (end_pt p2)        |> I.move at
+    in
+    let smooth_quadratic ?(rel=false) ~at p0 c0 p1 p2 =
+      let curve = P.empty |> P.sub p0 |>
+                  P.qcurve ~rel c0 p1 |> P.smooth_qcurve ~rel p2
+      in
+      let smooth = P2.tr (M3.rot2 ~pt:p1 Float.pi) c0 in
+      let c0 = if rel then V2.(c0 + p0) else c0 in
+      let p1 = if rel then V2.(p1 + p0) else p1 in
+      let p2 = if rel then V2.(p2 + p1) else p2 in         
+      mgray |> I.cut ~area:(`O { P.o with P.width = 0.02 }) curve |>
+      I.blend (tangent p0 c0)    |> I.blend (tangent p1 c0) |>
+      I.blend (ctrl_pt c0)       |> I.blend (ctrl_pt c0)    |>
+      I.blend (end_pt p0)        |> I.blend (end_pt p1)     |>
+      I.blend (smooth_pt smooth) |> I.blend (tangent p1 smooth) |>
+      I.blend (tangent p2 smooth) |>
+      I.blend (end_pt p2)        |> I.move at
+    in
+    let tr p =
+     p |> P2.tr (M3.rot2 (-. Float.pi_div_4)) |> P2.tr (M3.scale2 (V2.v 0.75 0.50))
+    in
+    let p0 = P2.v 0.0 0.0 in
+    let c0 = P2.v 0.0 t in
+    let c1 = P2.v (1. -. t) 1. in
+    let p1 = P2.v 1. 1. in
+    let c2 = P2.v 2. t in
+    let p2 = P2.v 2. 0. in
+    let b00 = smooth_cubic ~at:(P2.v 0.00 4.00) p0 c0 c1 p1 c2 p2 in
+    let p0 = tr p0 in
+    let c0 = tr c0 in
+    let c1 = tr c1 in
+    let p1 = tr p1 in
+    let c2 = tr c2 in
+    let p2 = tr p2 in
+    let b01 = smooth_cubic ~at:(P2.v 2.5 5.) p0 c0 c1 p1 c2 p2 in
+    let p0 = P2.v 0. 0. in
+    let c0 = P2.v 0. 1. in
+    let p1 = P2.v 1. 1. in
+    let p2 = P2.v 2. 0. in
+    let b10 = smooth_quadratic ~at:(P2.v 0. 2.5) p0 c0 p1 p2 in
+    let p0 = tr p0 in
+    let c0 = tr c0 in
+    let p1 = tr p1 in
+    let p2 = tr p2 in
+    let b11 = smooth_quadratic ~at:(P2.v 2.5 3.5) p0 c0 p1 p2 in
+    let q0 = P2.v 0.0 0.0 in
+    let d0 = P2.v 0.0 t in
+    let d1 = P2.v (1. -. t) 1. in
+    let q1 = P2.v 1. 1. in
+    let d2 = P2.v 1. (-. (1. -. t)) in
+    let q2 = P2.v 1. (-. 1.) in
+    let b20 = smooth_cubic ~rel:true ~at:(P2.v 0. 1.5) q0 d0 d1 q1 d2 q2 in
+    let q0 = P2.v 0. 0. in
+    let d0 = P2.v 0. 1. in
+    let q1 = P2.v 1. 1. in
+    let q2 = P2.v 1. (-. 1.) in
+    let b21 = smooth_quadratic ~rel:true ~at:(P2.v 2.5 1.5) q0 d0 q1 q2 in
+    (* let b01 = cubic ~at:(P2.v 2.85 3.60) p0 c1 c2 pb in *)
+    (* let b10 = cubic ~at:(P2.v 0.50 1.75) p0 c1 c2 pc in *)
+    (* let b11 = cubic ~at:(P2.v 3.15 1.75) p0 c1 c2 pd in *)
+    b00 |> I.blend b01 |> I.blend b10 |> I.blend b11 |> I.blend b20 |> I.blend b21
+  end;
+
 Db.image "path-dashes" __POS__ ~author:Db.dbuenzli
   ~title:"Dash patterns"
   ~tags:["path"; "dashes";]
