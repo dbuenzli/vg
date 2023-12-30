@@ -203,19 +203,22 @@ module P = struct
      element preceding a `Close it's a `Sub. *)
 
   let empty = []
+
+  (* This function finds the initial point of the subpath
+     matching a `Close. The invariants on the datatype ensure it
+     exists. *)
+  let rec find_sub = function
+  | `Sub pt :: _ -> pt
+  | _ :: ss -> find_sub ss
+  | [] -> assert false
+
   let last_pt = function
   | [] -> None
   | s :: ss ->
       match s with
       | `Sub pt | `Line pt | `Qcurve (_, pt) | `Ccurve (_, _, pt)
       | `Earc (_, _, _, _, pt) -> Some pt
-      | `Close ->
-          let rec find_sub = function
-          | `Sub pt :: _ -> pt
-          | _ :: ss -> find_sub ss
-          | [] -> assert false
-          in
-          Some (find_sub ss)
+      | `Close -> Some (find_sub ss)
 
   (* Subpath and segments *)
 
