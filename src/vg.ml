@@ -323,17 +323,18 @@ module P = struct
       | `Earc (_, _, _, _, pt) -> pt
       | `Close -> find_sub_start ss
 
+  let reflect_pt pt ~over =
+    V2.v (2. *. V2.x over -. V2.x pt) (2. *. V2.y over -. V2.y pt)
+
   let smooth_qcurve ?(rel = false) pt p =
     let o = abs_origin p in
-    let c =
-      last_control_point `Quadratic p |> P2.tr (M3.rot2 ~pt:o Float.pi)
-    in
+    let c = reflect_pt (last_control_point `Quadratic p) ~over:o in
     if not rel then push (`Qcurve (c, pt)) p else
     push (`Qcurve (c, V2.(o + pt))) p
 
   let smooth_ccurve ?(rel = false) c' pt p =
     let o = abs_origin p in
-    let c = last_control_point `Cubic p |> P2.tr (M3.rot2 ~pt:o Float.pi) in
+    let c = reflect_pt (last_control_point `Cubic p) ~over:o in
     if not rel then push (`Ccurve (c, c', pt)) p else
     push (`Ccurve (c, V2.(o + c'), V2.(o + pt))) p
 
