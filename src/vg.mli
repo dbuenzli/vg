@@ -204,29 +204,6 @@ module P : sig
       The following convenience functions start and close a new subpath
       to the given path. *)
 
-  val smooth_ccurve : ?rel:bool -> p2 -> p2 -> path -> path
-  (** [smooth_ccurve c' pt p] is similar to [ccurve c c' pt p] where
-      the control point [c] is defined as the reflexion of the second
-      control point of the last cubic curve relatively to the last
-      point of the path.
-
-       If the previous element of the path is not a cubic curve, then
-       the control point is the last point (following the SVG
-       specification). If the path is empty, the control point is
-       defined as the origin. *)
-
-  
-  val smooth_qcurve : ?rel:bool -> p2 -> path -> path
-  (** [smooth_qcurve pt p] is similar to [qcurve c pt p] where the
-      control point [c] is defined as the reflexion of the control
-      point of the last quadratic curve relatively to the last point
-      of the path.
-
-       If the previous element of the path is not a quadratic curve,
-       then the control point is the last point (following the SVG
-       specification). If the path is empty, the control point is
-       defined as the origin. *)
-    
   val circle : ?rel:bool -> p2 -> float -> path -> path
   (** [circle c r p] is [p] with a circle subpath of center [c]
       and radius [r]. *)
@@ -243,6 +220,20 @@ module P : sig
   (** [rrect r cr p] is [p] with an axis-aligned rectangle subpath
       [r] with round corners of radii [cr]. If [r] is empty, [p]
       is returned. *)
+
+  val smooth_qcurve : ?rel:bool -> p2 -> path -> path
+  (** [smooth_qcurve pt p] is [qcurve c pt p] with control point [c]
+      defined as the reflexion of the control point of the previous
+      quadratic curve relative to the last point of [p]. If the
+      previous segment of [p] is not a quadratic curve, [c] is
+      the last point of [p] or the origin if the path is empty. *)
+
+  val smooth_ccurve : ?rel:bool -> p2 -> p2 -> path -> path
+  (** [smooth_ccurve c' pt p] is [ccurve c c' pt p] with control point
+      [c] defined as the reflexion of the second control point of the
+      previous cubic curve relative to the last point of [p]. If the
+      previous segment of [p] is not a cubic curve, [c] is the last point
+      of [p] or the origin if the path is empty. *)
 
   (** {1:funs Functions} *)
 

@@ -1,5 +1,6 @@
-- Add two functions `smooth_ccurve` and `smooth_qcurve` to draw smooth
-  Bézier curves
+- Add `Vg.P.smooth_{ccurve,qcurve}` to smoothly stitch cubic and
+  quadratic Bézier curves. Thanks to François Thiré for the patch
+  (#33).
 - `Vgr_htmlc` is now implemented via `brr` which becomes an optional
   dependency of the package. The mandatory `js_of_ocaml` and
   `js_of_ocaml-ppx` dependencies are dropped.

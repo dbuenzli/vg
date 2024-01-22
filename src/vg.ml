@@ -207,9 +207,9 @@ module P = struct
   (* This function finds the initial point of the subpath
      matching a `Close. The invariants on the datatype ensure it
      exists. *)
-  let rec find_sub = function
+  let rec find_sub_start = function
   | `Sub pt :: _ -> pt
-  | _ :: ss -> find_sub ss
+  | _ :: ss -> find_sub_start ss
   | [] -> assert false
 
   let last_pt = function
@@ -218,8 +218,8 @@ module P = struct
       match s with
       | `Sub pt | `Line pt | `Qcurve (_, pt) | `Ccurve (_, _, pt)
       | `Earc (_, _, _, _, pt) -> Some pt
-      | `Close -> Some (find_sub ss)
- 
+      | `Close -> Some (find_sub_start ss)
+
   (* Subpath and segments *)
 
   let abs_origin p = match last_pt p with None -> P2.o | Some o -> o
@@ -258,37 +258,6 @@ module P = struct
 
   (* Derived subpaths *)
 
-  let last_control_point kind = function
-  | [] ->
-      (* The invariant on the path ensures the last element of a path
-         is `Sub. To preserve this invariant, the function [push] always
-         adds an element [`Sub P2.o] if the path is empty. Therefore,
-         for consistency, we return [P2.o] too. *)
-      P2.o
-  | s :: ss ->
-      match s with
-      | `Qcurve (c, _) when kind = `Quadratic -> c
-      | `Ccurve (_,c',_) when kind = `Cubic -> c'      
-      | `Sub pt
-      | `Line pt
-      | `Qcurve (_,pt)
-      | `Ccurve (_,_,pt)
-      | `Earc (_,_,_,_,pt) -> pt
-      | `Close -> find_sub ss
-  
-  let smooth_ccurve ?(rel = false) c' pt p =
-    let o = abs_origin p in
-    let c = last_control_point `Cubic p |> P2.tr (M3.rot2 ~pt:o Float.pi) in
-    if not rel then push (`Ccurve (c,c',pt)) p else
-    push (`Ccurve (c, V2.(o + c'), V2.(o + pt))) p
-
-  let smooth_qcurve ?(rel = false) pt p =
-    let o = abs_origin p in
-    let c = last_control_point `Quadratic p |> P2.tr (M3.rot2 ~pt:o Float.pi) in    
-    if not rel then push (`Qcurve (c,pt)) p else
-    push (`Qcurve (c, V2.(o + pt))) p
-
-  
   let circle ?(rel = false) c r p =
     let c = if rel then abs p c else c in
     let cx = P2.x c in
@@ -338,6 +307,35 @@ module P = struct
     earc cr (P2.v r b_inset) |> line (P2.v r t_inset) |>
     earc cr (P2.v r_inset t) |> line (P2.v l_inset t) |>
     earc cr (P2.v l t_inset) |> close
+
+  let last_control_point kind = function
+  | [] ->
+      (* The invariant on the path ensures the last element of a path
+         is `Sub. To preserve this invariant, the function [push] always
+         adds an element [`Sub P2.o] if the path is empty. Therefore,
+         for consistency, we return [P2.o] too. *)
+      P2.o
+  | s :: ss ->
+      match s with
+      | `Qcurve (c, _) when kind = `Quadratic -> c
+      | `Ccurve (_, c', _) when kind = `Cubic -> c'
+      | `Sub pt | `Line pt | `Qcurve (_, pt) | `Ccurve (_ ,_ , pt)
+      | `Earc (_, _, _, _, pt) -> pt
+      | `Close -> find_sub_start ss
+
+  let smooth_qcurve ?(rel = false) pt p =
+    let o = abs_origin p in
+    let c =
+      last_control_point `Quadratic p |> P2.tr (M3.rot2 ~pt:o Float.pi)
+    in
+    if not rel then push (`Qcurve (c, pt)) p else
+    push (`Qcurve (c, V2.(o + pt))) p
+
+  let smooth_ccurve ?(rel = false) c' pt p =
+    let o = abs_origin p in
+    let c = last_control_point `Cubic p |> P2.tr (M3.rot2 ~pt:o Float.pi) in
+    if not rel then push (`Ccurve (c, c', pt)) p else
+    push (`Ccurve (c, V2.(o + c'), V2.(o + pt))) p
 
   (* Geometry *)
 
