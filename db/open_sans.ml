@@ -1,6 +1,6 @@
 (*---------------------------------------------------------------------------
    Copyright (c) 2013 The vg programmers. All rights reserved.
-   Distributed under the ISC license, see terms at the end of the file.
+   SPDX-License-Identifier: ISC
   ---------------------------------------------------------------------------*)
 (* N.B. the following font program is (c) Steve Matteson and
    distributed under the Apache Licence version 2.0.
@@ -12374,20 +12374,3 @@ let extra_bold =
    \x86\x16\x90\xF8\xE2\xB7\xE7\x35\x04\x47\x54\x58\xCA\x43\x16\xBC\xA0\xC4\
    \x04\x4A\x27\x64\xBA\xBF\x0D\xD0\x31\x8E\xA5\x80\xC7\xF7\x39\x10\xB4\x10\
    \x38\x58\x90\x35\xEA\xD7\x12\x71\x10\x96\x4A\xD5\x00\x00"
-
-
-(*---------------------------------------------------------------------------
-   Copyright (c) 2013 The vg programmers
-
-   Permission to use, copy, modify, and/or distribute this software for any
-   purpose with or without fee is hereby granted, provided that the above
-   copyright notice and this permission notice appear in all copies.
-
-   THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-   WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-   MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-   ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-   WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-  ---------------------------------------------------------------------------*)
