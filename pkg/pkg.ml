@@ -40,6 +40,9 @@ let () =
     Pkg.bin ~cond:vgr_pdf "test/vecho";
 
     Pkg.doc "doc/index.mld" ~dst:"odoc-pages/index.mld";
+    Pkg.doc "doc/tutorial.mld" ~dst:"odoc-pages/tutorial.mld";
+    Pkg.doc "doc/semantics.mld" ~dst:"odoc-pages/semantics.mld";
+    Pkg.doc "doc/semantics.mld" ~dst:"odoc-pages/image_howto.mld";
     Pkg.doc "test/examples.ml";
     Pkg.doc "test/min_htmlc.html";
     Pkg.doc "test/min_htmlc.ml";

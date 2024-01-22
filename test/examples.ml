@@ -1,24 +1,24 @@
-(* This code is in the public domain *)
+(*---------------------------------------------------------------------------
+   Copyright (c) 2024 The vg programmers. All rights reserved.
+   SPDX-License-Identifier: CC0-1.0
+  ---------------------------------------------------------------------------*)
 
 open Gg
 open Vg
 
 let gray = I.const (Color.gray 0.5)
 
-let svg_of_usquare i =
-  let size = Size2.v 30. 30. in
-  let view = Box2.unit in
+let svg_of_unit_square i =
   try
-    let oc = open_out "/tmp/vg-basics.svg" in
+    Out_channel.with_open_bin "/tmp/vg-basics.svg" @@ fun oc ->
+    let size = Size2.v 30. 30. (* mm *) in
+    let view = Box2.unit in
     let r = Vgr.create (Vgr_svg.target ()) (`Channel oc) in
-    try
-      ignore (Vgr.render r (`Image (size, view, i)));
-      ignore (Vgr.render r `End);
-      close_out oc
-    with e -> close_out oc; raise e
+    ignore (Vgr.render r (`Image (size, view, i)));
+    ignore (Vgr.render r `End);
   with Sys_error e -> prerr_endline e
 
-let () = svg_of_usquare gray
+let () = svg_of_unit_square gray
 
 
 let circle = P.empty |> P.circle (P2.v 0.5 0.5) 0.4

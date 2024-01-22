@@ -5,16 +5,8 @@
 
 (** Declarative 2D vector graphics.
 
-    [Vg] is a declarative 2D vector graphics library. In [Vg], images
-    are {{!Vg.image}values} that denote functions mapping points of
-    the cartesian plane to colors. The library provides
-    {{!Vg.I}combinators} to define and compose them. Renderers for
-    {{!Vgr_pdf}PDF}, {{!Vgr_svg}SVG} and the HTML {{!Vgr_htmlc}canvas}
-    are distributed with the library. An API allows to implement
-    new renderers.
-
-    Consult the {{!basics}basics}, the {{!semantics}semantics} and
-     {{!examples}examples}.
+    Consult the {{!page-tutorial}tutorial}, the {{!page-semantics}semantics}
+    and the {{!page-image_howto}image howto}.
 
     Open the module to use it, this defines only modules and types in
     your scope. *)
@@ -90,14 +82,16 @@ type path
 type image
 (** The type for images. *)
 
+(**/**)
 val ( >> ) : 'a -> ('a -> 'b) -> 'b
 [@@ocaml.deprecated "Use |> instead."]
 (** [x >> f] is [f x], associates to left.
     Used to build paths and compose images. *)
+(**/**)
 
 (** Paths.
 
-    Consult their {{!sempaths}semantics}.
+    Consult their {{!page-semantics.sempaths}semantics}.
 
     The [|>] operator is used to build paths from the empty path. For
     this reason path combinators always take the path to use as the
@@ -107,13 +101,13 @@ module P : sig
   (** {1 Path areas} *)
 
   type cap = [ `Butt | `Round | `Square ]
-  (** The type for path caps. {{!semcaps}Semantics}.*)
+  (** The type for path caps. {{!page-semantics.semcaps}Semantics}.*)
 
   type join = [ `Bevel | `Miter | `Round ]
-  (** The type for segment jointures. {{!semjoins}Semantics}.*)
+  (** The type for segment jointures. {{!page-semantics.semjoins}Semantics}.*)
 
   type dashes = float * float list
-  (** The type for dashes. {{!semdashes}Semantics}. *)
+  (** The type for dashes. {{!page-semantics.semdashes}Semantics}. *)
 
   type outline =
     { width : float;          (** Outline width. *)
@@ -124,7 +118,7 @@ module P : sig
                                     (in \[0;pi\]).*)
       dashes : dashes option; (** Outline dashes. *) }
   (** The type for path outline area specifications.
-      {{!semoutlines}Semantics}.*)
+      {{!page-semantics.semoutlines}Semantics}.*)
 
   val o : outline
   (** [o] holds a default set of values. [width] is [1.],
@@ -136,7 +130,7 @@ module P : sig
 
   type area = [ `Aeo | `Anz | `O of outline ]
   (** The type for path area specifications.
-      {{!sempaths}Semantics}.*)
+      {{!page-semantics.sempaths}Semantics}.*)
 
   val pp_area : Format.formatter -> area -> unit
   (** [pp_area ppf a] prints a textual representation of [a] on [ppf] *)
@@ -239,7 +233,7 @@ module P : sig
 
   val last_pt : path -> p2
   (** [last_pt p] is the last point of [p]'s last subpath.
-      @raise Invalid_argument if [p] is [empty]. *)
+      Raises [Invalid_argument] if [p] is [empty]. *)
 
   val append : path -> path -> path
   (** [append p' p] appends [p'] to [p]. If [p]'s last subpath had no
@@ -315,7 +309,7 @@ end
 
 (** Images.
 
-    Consult their {{!semimages}semantics}.
+    Consult their {{!page-semantics.semimages}semantics}.
 
     The [|>] operator is used to compose images. For this reason
     image combinators always take the image to use as the last
@@ -339,8 +333,8 @@ module I : sig
 
   val axial : Color.stops -> p2 -> p2 -> image
   (** [axial stops pt pt'] is an image with an axial color gradient
-      varying between [pt] and [pt'] according to {{!semstops} color stops}
-      [stops].
+      varying between [pt] and [pt'] according to {{!page-semantics.semstops}
+      color stops} [stops].
 
       {ul {- \[[axial stops pt pt']\]{_[q]} [=] \[[stops]\]{_[t]} if [q] is
       on the line perpendicular to the line [pt] and [pt'] at
@@ -348,8 +342,8 @@ module I : sig
 
   val radial : Color.stops -> ?f:p2 -> p2 -> float -> image
   (** [radial stops ~f c r] is an image with a color gradient varying
-      according to {{!semstops} color stops} [stops] on circles whose
-      center are on the segment from [f] to [c] and radius vary,
+      according to {{!page-semantics.semstops} color stops} [stops] on
+      circles whose center are on the segment from [f] to [c] and radius vary,
       respectively, from [0] to [r]. The focus [f] defaults to [c], it
       must be inside the circle [(c, r)].
 
@@ -371,7 +365,7 @@ module I : sig
   (** {1:cut Cutting images} *)
 
   val cut : ?area:P.area -> path -> image -> image
-  (** [cut area p i] is [i] with the {{!sempaths}area} outside
+  (** [cut area p i] is [i] with the {{!page-semantics.sempaths}area} outside
       \[[a], [p]\] cut out, i.e. mapped to {!Gg.Color.void}. [area]
       defaults to {{!P.area}[`Anz]}.
       {ul
@@ -864,676 +858,3 @@ module Vgr : sig
         U+FFFD. *)
   end
 end
-
-(** {1:basics Basics}
-
-    [Vg] is designed to be opened in your module. This defines only
-    types and modules in your scope. Thus to use [Vg] start with :
-{[
-open Gg
-open Vg
-]}
-    {!Gg} gives us types for points ({!Gg.p2}), vectors ({!Gg.v2}), 2D
-    extents ({!Gg.size2}), rectangles ({!Gg.box2}) and colors
-    ({!Gg.color}). Later you may want to read {!Gg}'s documentation
-    {{!Gg.basics}basics} but for now it is sufficient to know that each of these
-    types has a constructor [v] in a module named after the
-    capitalized type name ({!Gg.P2.v}, {!Gg.V2.v}, etc.).
-
-    {2:collage A collage model}
-
-    Usual vector graphics libraries follow a {e painter model} in
-    which paths are filled, stroked and blended on top of each other
-    to produce a final image. [Vg] departs from that, it has a {e
-    collage model} in which paths define 2D areas in infinite images
-    that are {e cut} to define new infinite images to be blended on
-    top of each other.
-
-    The collage model maps very well to a declarative imaging model.
-    It is also very clear from a specification point of view, both
-    mathematically and metaphorically. This cannot be said from the
-    painter model where the semantics of an operation like stroking a
-    self-intersecting translucent path —  which usually applies the
-    paint only once —  doesn't directly map to the underlying paint
-    stroke metaphor. The collage model is also more economical from a
-    conceptual point view since image cuts and blends naturally unify
-    the distinct concepts of clipping paths, path strokes, path fills
-    and compositing groups (unsupported for now in [Vg]) of the
-    painter model.
-
-    The collage model introduced in the following sections was stolen
-    and adapted from the following works.
-    {ul
-    {- Conal Elliott.
-    {e {{:http://conal.net/papers/bridges2001/}Functional Image
-    Synthesis}}, Proceedings of Bridges, 2001.}
-    {- Antony Courtney. {e Haven : Functional Vector Graphics}, chapter 6
-    in
-    {{:http://web.archive.org/web/20060207195702/http://www.apocalypse.org/pub/u/antony/work/pubs/ac-thesis.pdf}Modeling
-    User Interfaces in a Functional Language}, Ph.D. Thesis, Yale
-    University, 2004.}}
-
-    {2:infinite Infinite images}
-
-    Images in [Vg] are immutable and abstract value of type
-    {!image}. {e Conceptually}, images are seen as functions mapping
-    points of the infinite 2D plane to colors:
-
-    [type Vg.image ] ≈  [Gg.p2 -> Gg.color]
-
-    The simplest image is a constant image: an image that associates
-    the same color to every point in the plane. For a constant
-    gray of intensity 0.5 this would be expressed by the function:
-{[
-fun _ -> Color.gray 0.5
-]}
-    In [Vg] the combinator {!I.const} represents constant infinite images
-    and the above function is written:
-{[
-let gray = I.const (Color.gray 0.5)
-]}
-    The module {!I} contains all the combinators to define and compose
-    infinite images, we will explore some of them later. But for now
-    let's just render that fascinating image.
-
-    {2:rendering Rendering}
-
-    An infinite image alone cannot be rendered. We need a {e finite}
-    view rectangle and a specification of that view's physical size on
-    the render target. These informations are coupled together with an
-    image to form a {!Vgr.type-renderable}.
-
-    Renderables can be given to a renderer for display via the
-    function {!Vgr.val-render}.  Renderers are created with {!Vgr.create}
-    and need a {{!Vgr.target}render target} value that defines the
-    concrete renderer implementation used (PDF, SVG, HTML canvas etc.).
-
-    The following function outputs the unit square of [gray] on a
-    30x30 millimeters SVG target in the file [/tmp/vg-basics.svg]:
-{[let svg_of_usquare i =
-  let size = Size2.v 30. 30. in
-  let view = Box2.unit in
-  try
-    let oc = open_out "/tmp/vg-basics.svg" in
-    let r = Vgr.create (Vgr_svg.target ()) (`Channel oc) in
-    try
-      ignore (Vgr.render r (`Image (size, view, i)));
-      ignore (Vgr.render r `End);
-      close_out oc
-    with e -> close_out oc; raise e
-  with Sys_error e -> prerr_endline e
-
-let () = svg_of_usquare gray]}
-    The result should be an SVG image with a gray square
-    like this:
-{%html: <img src="../_assets/doc-gray-square.png"
-             style="width:30mm; height:30mm;"/> %}
-
-    {2:coordinates Coordinate space}
-
-    [Vg]'s cartesian coordinate space has its origin at the bottom
-    left with the x-axis pointing right, the y-axis pointing up. It
-    has no units, you define what they mean to you. However a
-    {{!Vgr.type-renderable}renderable} implicitely defines a physical unit
-    for [Vg]'s coordinate space: the corners of the specified view
-    rectangle are mapped on a rectangular area of the given physical
-    size on the target.
-
-    {2:scissors Scissors and glue}
-
-    Constant images can be boring. To make things more interesting
-    [Vg] gives you scissors: the {!I.val-cut} combinator.
-
-    This combinator takes a finite area of the plane defined by a path
-    [path] (more on paths later) and a source image [img] to define the
-    image [I.cut path img] that has the color of the source image in the
-    area defined by the path and the invisible transparent black color
-    ({!Gg.Color.void}) everywhere else. In other words [I.cut path img]
-    represents this function:
-{[
-fun pt -> if inside path pt then img pt else Color.void
-]}
-    The following code cuts a circle of radius [0.4] centered in the
-    unit square in the [gray] image defined before.
-{[
-let circle = P.empty |> P.circle (P2.v 0.5 0.5) 0.4
-let gray_circle = I.cut circle gray
-]}
-    Rendered by [svg_of_usquare] the result is:
-
-{%html: <img src="../_assets/doc-gray-circle.png"
-             style="width:30mm; height:30mm;"/> %}
-
-    Note that the background white color surrounding the circle does
-    not belong to the image itself, it is the color of the webpage
-    background against which the image is composited. Your eyes
-    require a wavelength there and {!Gg.Color.void} cannot provide it.
-
-    {!I.val-cut} has an optional [area] argument of type {!P.area} that
-    determines how a path should be interpreted as an area of the
-    plane. The default value is [`Anz], which means that it uses the
-    non-zero winding number rule and for [circle] that defines its
-    interior.
-
-    But the [circle] path can also be seen as defining a thin outline
-    area around the ideal mathematical circle of [circle]. This can be
-    specified by using an outline area `O o. The value [o] of type
-    {!P.outline} defines various parameters that define the outline
-    area; for example its width. The following code cuts the [circle]
-    outline area of width [0.04] in an infinite black image.
-
-{[
-let circle_outline =
-  let area = `O { P.o with P.width = 0.04 } in
-  let black = I.const Color.black in
-  I.cut ~area circle black
-]}
-
-    Below is the result and again, the white you see here is in
-    fact {!Gg.Color.void}.
-
-{%html: <img src="../_assets/doc-circle-outline.png"
-             style="width:30mm; height:30mm;"/> %}
-
-    {!I.val-cut} gives us scissors but to combine the results of cuts we
-    need some glue: the {!I.val-blend} combinator. This combinator takes
-    two infinite images [front] and [back] and defines an image
-    [I.blend front back] that has the colors of [front] alpha blended
-    on top of those of [back]. [I.blend front back] represents
-    this function:
-{[
-let i' = fun pt -> Color.blend (front pt) (back pt)
-]}
-    If we blend [circle_outline] on top of [gray_circle]:
-{[
-let dot = I.blend circle_outline gray_circle
-]}
-    We get:
-
-{%html: <img src="../_assets/doc-dot.png"
-             style="width:30mm; height:30mm;"/> %}
-
-    The order of arguments in {!I.val-blend} is defined so that images can
-    be blended using the left-associative composition operator
-    [|>]. That is [dot] can also be written as follows:
-{[
-let dot = gray_circle |> I.blend circle_outline
-]}
-
-    This means that with [|>] and {!I.val-blend} left to right order in
-    code maps to back to front image blending.
-
-    {2:transforming Transforming images}
-
-    The combinators {!I.move}, {!I.rot}, {!I.scale}, and {!I.tr} allow
-    to perform arbitrary
-    {{:http://mathworld.wolfram.com/AffineTransformation.html}affine
-    transformations} on an image. For example the image [I.move v i]
-    is [i] but translated by the vector [v], that is the following
-    function:
-{[
-fun pt -> img (V2.(pt - v))
-]}
-    The following example uses [I.move]. The function [scatter_plot]
-    takes a list of points and returns a scatter plot of the
-    points. First we define a [dot] around the origin, just a black
-    circle of diameter [pt_width].  Second we define the function [mark]
-    that given a point returns an image with [dot] at that
-    point and [blend_mark] that blends a [mark] at a point on an image.
-    Finally we blend all the marks toghether.
-{[
-let scatter_plot pts pt_width =
-  let dot =
-    let circle = P.empty |> P.circle P2.o (0.5 *. pt_width) in
-    I.const Color.black |> I.cut circle
-  in
-  let mark pt = dot |> I.move pt in
-  let blend_mark acc pt = acc |> I.blend (mark pt) in
-  List.fold_left blend_mark I.void pts
-]}
-    Note that [dot] is defined outside [mark], this means that all [mark]s
-    share the same [dot], doing so allows renderers to perform space
-    and time optimizations. For example the SVG renderer will output a single
-    [circle] path shared by all marks.
-
-    Here's the result of [scatter_point] on 800 points with coordinates
-    on independent normal distributions.
-{%html: <img src="../_assets/doc-scatter-plot.png"
-             style="width:40mm; height:40mm;"/> %}
-
-    {2:paths Paths}
-
-    Paths are used to define areas of the plane. A path is an
-    immutable value of type {!path} which is a list of disconnected
-    subpaths. A {e subpath} is a list of directed and connected curved
-    segments.
-
-    To build a path you start with the empty path {!P.empty}, give it
-    to {!P.sub} to start a new subpath and give the result to
-    {!P.line}, {!P.qcurve}, {!P.ccurve}, {!P.earc} or {!P.close} to
-    add a new segment and so forth.
-
-    Path combinators take the path they act upon as the last argument
-    so that the left-associative operator [|>] can be used to
-    construct paths.
-
-    The image below is made by cutting the outline of the single path [p]
-    defined hereafter.
-{%html: <img src="../_assets/doc-subpaths.png"
-             style="width:30mm; height:30mm;"/> %}
-{[
-let p =
-  let rel = true in
-  P.empty |>
-  P.sub (P2.v 0.1 0.5) |>
-    P.line (P2.v 0.3 0.5) |>
-    P.qcurve ~rel (P2.v 0.2 0.5) (P2.v 0.2 0.0) |>
-    P.ccurve ~rel (P2.v 0.0 (-. 0.5)) (P2.v 0.1 (-. 0.5)) (P2.v 0.3 0.0) |>
-    P.earc ~rel (Size2.v 0.1 0.2) (P2.v 0.15 0.0) |>
-  P.sub (P2.v 0.18 0.26) |>
-    P.qcurve ~rel (P2.v (0.01) (-0.1)) (P2.v 0.1 (-. 0.05)) |>
-    P.close |>
-  P.sub (P2.v 0.65 0.8) |>
-    P.line ~rel (P2.v 0.1 (-. 0.05))
-in
-let area = `O { P.o with P.width = 0.01 } in
-I.const Color.black |> I.cut ~area p
-]}
-
-    Except for {!P.close} which has no other argument but a path, the
-    last point argument before the path argument is always the concrete end
-    point of the segment. When [true] the optional [rel] argument
-    indicates that the coordinates given to the constructor are
-    expressed relative to end point of the last segment (or [P2.o] if
-    there is no such segment).
-
-    Note that after a [P.close] or on the [P.empty] path, the
-    call to {!P.sub} can be omitted. In that case an implicit
-    [P.sub P2.o] is introduced.
-
-    For more information about how paths are intepreted as
-    areas, consult their {{!sempaths}semantics}.
-
-    {2:remarkstips Remarks and tips}
-    {ul
-    {- Angles follow [Gg]'s {{!Gg.mathconv}conventions}.}
-    {- Matrices given to {!P.tr} and {!I.tr} are supposed to
-       be affine and as such ignore the last row of the matrix.}
-    {- [to_string] functions are not thread-safe. Thread-safety
-       can be achieved with [pp] functions.}
-    {- Do not rely on the output of printer functions, they
-       are subject to change.}
-    {- Rendering results are undefined if path
-       or image data contains NaNs or infinite floats.}
-    {- Any string is assumed to be UTF-8 encoded.}
-    {- Sharing (sub)image, path and outline
-       values in the definition of an image may result in more
-       efficient rendering in space and time.}}
-*)
-
-(** {1:semantics Semantics}
-
-    The following notations and definitions are used to give precise
-    meaning to the images and the combinators.
-
-    {2:semcolors Colors}
-
-    The semantics of colors is the one ascribed to
-    {{!Gg.Color.t}[Gg.color]}: colors are in a {e linearized} sRGBA space.
-
-    {3:semstops Color stops}
-
-    A value of type {!Gg.Color.type-stops} specifies a color at each point
-    of the 1D {e unit} space. It is defined by a list of pairs
-    [(t]{_i}[, c]{_i}[)] where [t]{_i} is a value from [0] to [1] and
-    [c]{_i} the corresponding color at that value. Colors at points
-    between [t]{_i} and [t]{_i+1} are linearly interpolated between
-    [c]{_i} and [c]{_i+1}. If [t]{_i} lies outside [0] to [1]
-    or if [t]{_i-1} >= [t]{_i} the semantics is undefined.
-
-    Given a stops value [stops = \[][(t]{_0}[, c]{_0}[);]
-    [(t]{_1}[,c]{_1}[);] ... [(t]{_n}[, c]{_n}[)][\]] and any point
-    [t] of 1D space, the semantic function:
-
-    \[\] [: Gg.Color.stops -> float -> Gg.color]
-
-    maps them to a color value written \[[stops]\]{_t}
-    as follows.
-
-    {ul
-      {- \[[]\]{_t} = [(0, 0, 0, 0)] for any [t]}
-      {- \[[stops]\]{_t} [= c]{_0} if [t < t]{_0}.}
-      {- \[[stops]\]{_t} [= c]{_n} if [t >= t]{_n}.}
-      {- \[[stops]\]{_t} [= (1-u)c]{_i}[ + uc]{_i+1}
-      with [u = (t - t]{_i}[)/(t]{_i+1}[-t]{_i}[)]
-      if [t]{_i} [<= t <] [t]{_i+1}}}
-
-    {2:semimages Images}
-
-    Values of type {!image} represent maps from the infinite
-    2D euclidian space to {{!semcolors}colors}. Given an image [i] and
-    a point [pt] of the plane the semantic function
-
-    \[\][: image -> Gg.p2 -> Gg.color]
-
-    maps them to a color value written \[[i]\]{_[pt]} representing the
-    image's color at this point.
-
-    {2:sempaths Paths and areas}
-
-    A value of type {!path} is a list of subpaths. A subpath is a list
-    of {e directed} and connected curved {e segments}. Subpaths are
-    disconnected from each other and may (self-)intersect.
-
-    A path and a value of type {!P.area} defines a finite area of the
-    2D euclidian space. Given an area specification [a], a path [p]
-    and a point [pt], the semantic function:
-
-    \[\]: [P.area -> path -> Gg.p2 -> bool]
-
-    maps them to a boolean value written \[[a], [p]\]{_[pt]}
-    that indicates whether [pt] belongs to the area or not.
-
-    The semantics of area rules is as follows:
-    {ul
-
-    {- \[[`Anz], [p]\]{_[pt]} is [true] iff the winding number of [p]
-        around [pt] is non zero. To determine the winding number cast
-        a ray from [pt] to infinity in any direction (just make sure
-        the ray doesn't intersect [p] tangently or at a
-        singularity). Starting with zero add one for each intersection
-        with a counter-clockwise oriented segment of [p] and substract
-        one for each clockwise ones. The resulting sum is the
-        winding number. This is usually refered to as the {e non-zero winding
-        rule} and is the default for {!Vg.I.val-cut}.
-{%html: <img src="../_assets/doc-anz.png" style="width:90mm; height:30mm;"/> %}}
-    {- \[[`Aeo], [p]\]{_[pt]} is [true] iff the number of
-        intersections of [p] with a ray cast from [pt] to infinity in
-        any direction is odd (just make sure the ray doesn't intersect
-        [p] tangently or at a singularity). This is usually refered
-        to as the {e even-odd rule}.
-{%html: <img src="../_assets/doc-aeo.png" style="width:90mm; height:30mm;"/> %}}
-    {- \[[`O o], [p]\]{_[pt]} is [true] iff [pt] is in the outline
-        area of [p] as defined by the value [o] of type {!type:P.outline}.
-        See {!semoutlines}, {!semjoins}, {!semcaps}, {!semdashes}.}}
-
-        {3:semoutlines Outline areas}
-
-        The outline area of a path is the union of its subpaths
-        outline areas. A subpath outline area is inside the parallel
-        curves at a distance [o.width / 2] of its path segments that
-        are joined accoring to the join style [o.join] (see below) and
-        closed at the subpath end points with a cap style [o.cap] (see
-        below). The outline area of a subpath can also be chopped at
-        regular intervals according to the [o.dashes] parameter (see
-        below).
-
-        {4:semjoins Segment jointures}
-
-        The shape of subpath segment jointures is specified in
-        [o.join] by a value of type {!P.type-join}. From left to right:
-{%html: <img src="../_assets/doc-joins.png"
-             style="width:90mm; height:30mm;"/> %}
-        {ul
-        {- [`Miter], the outer parallel curves are extended until they
-           meet unless the joining angle is smaller than
-           [o.miter_angle] in which case the join is converted to a
-           bevel.}
-        {- [`Round], joins the outer parallel curves by a semicircle
-           centered at the end point with a diameter equal to [o.width].}
-        {- [`Bevel], joins the outer parallel curves by a segment.}}
-
-        {4:semcaps Subpath caps}
-
-        The shape of subpath (or dashes) end points is specified in
-        [o.cap] by a value of type {!P.type-cap}. From left to right:
-{%html: <img src="../_assets/doc-caps.png" style="width:90mm; height:20mm;"/> %}
-        {ul
-        {- [`Butt], end points are square and extend only to the
-           exact end point of the path.}
-        {- [`Round], end points are rounded by a semicircle at
-           the end point with a diameter equal to [o.width].}
-        {- [`Square], end points are square and extend by a distance
-           equal to half [o.width].}}
-
-        {4:semdashes Outline dashes}
-
-        The path outline area can be chopped at regular intervals by
-        specifying a value [(off, pat)] of type {!P.type-dashes} in
-        [o.dashes].
-
-        The {e dash pattern} [pat] is a list of lengths that specify
-        the length of alternating dashes and gaps (starting with
-        dashes). The {e dash offset} [off] is a {e positive} offset
-        that indicates where to start in the dash pattern at the
-        beginning of a subpath.  *)
-
-(** {1:examples Examples}
-
-Many examples of images and their source can be found in the
-{{:http://erratique.ch/software/vg/demos/rhtmlc.html}online version}
-of [Vg]'s test image database. Clicking on the title of an image brings
-you to its definition.
-
-The following examples show for each renderer the minimal code
-needed to output an image. This code can also be found in the [test]
-directory of the distribution.
-
-{2:minpdf Minimal PDF output}
-
-The file [min_pdf.ml] contains the following mostly self-explanatory
-code. We first define an image and then render it. For the latter
-step we define some meta-data for the image, a function to print
-rendering warnings and then render the image on stdout.
-
-{[
-open Gg
-open Vg
-
-(* 1. Define your image *)
-
-let aspect = 1.618
-let size = Size2.v (aspect *. 100.) 100. (* mm *)
-let view = Box2.v P2.o (Size2.v aspect 1.)
-let image = I.const (Color.v_srgb 0.314 0.784 0.471)
-
-(* 2. Render *)
-
-let () =
-  let title = "Vgr_pdf minimal example" in
-  let description = "Emerald Color" in
-  let xmp = Vgr.xmp ~title ~description () in
-  let warn w = Vgr.pp_warning Format.err_formatter w in
-  let r = Vgr.create ~warn (Vgr_pdf.target ~xmp ()) (`Channel stdout) in
-  ignore (Vgr.render r (`Image (size, view, image)));
-  ignore (Vgr.render r `End)
-]}
-
-This can be compiled with:
-{[
-> ocamlfind ocamlopt -package gg,vg,vg.pdf \
-                     -linkpkg -o min_pdf.native min_pdf.ml
-]}
-
-{2:minsvg Minimal SVG output}
-
-The file [min_svg.ml] contains the following mostly self-explanatory
-code. We first define an image and then render it. For the latter
-step we define some meta-data for the image, a function to print
-rendering warnings and then render the image on stdout.
-
-{[open Gg
-open Vg
-
-(* 1. Define your image *)
-
-let aspect = 1.618
-let size = Size2.v (aspect *. 100.) 100. (* mm *)
-let view = Box2.v P2.o (Size2.v aspect 1.)
-let image = I.const (Color.v_srgb 0.314 0.784 0.471)
-
-(* 2. Render *)
-
-let () =
-  let title = "Vgr_svg minimal example" in
-  let description = "Emerald Color" in
-  let xmp = Vgr.xmp ~title ~description () in
-  let warn w = Vgr.pp_warning Format.err_formatter w in
-  let r = Vgr.create ~warn (Vgr_svg.target ~xmp ()) (`Channel stdout) in
-  ignore (Vgr.render r (`Image (size, view, image)));
-  ignore (Vgr.render r `End)
-]}
-
-This can be compiled with:
-{[
-> ocamlfind ocamlopt -package gg,vg,vg.svg \
-                     -linkpkg -o min_svg.native min_svg.ml
-]}
-
-{2:minhtmlc Minimal HTML canvas output}
-
-The file [min_htmlc.ml] contains the following code. Step by step we have:
-{ol
-{- Define an image.}
-{- Create and add to the DOM an anchor [a] that will parent the canvas.
-   This will allow to download a (usually PNG) file of the image.}
-{- Create a canvas element [c] and add it as a child of [a].}
-{- Create a renderer [r] targeting the canvas [c].}
-{- Render the image.}
-{- Ask the canvas for an image data URL and set it as the the link of the
-   anchor.}}
-{[
-open Gg
-open Vg
-open Brr
-open Brr_canvas
-
-(* 1. Define your image *)
-
-let aspect = 1.618
-let size = Size2.v (aspect *. 100.) 100. (* mm *)
-let view = Box2.v P2.o (Size2.v aspect 1.)
-let image = I.const (Color.v_srgb 0.314 0.784 0.471)
-
-(* Browser bureaucracy. *)
-
-let main () =
-  let a = (* 2 *)
-    let href = At.href (Jstr.v "#") in
-    let title = At.title (Jstr.v "Download PNG file") in
-    let download = At.v (Jstr.v "download") (Jstr.v "min_htmlc.png") in
-    let a = El.a ~at:[href; title; download] [] in
-    El.append_children (Document.body G.document) [a]; a
-  in
-  let c = (* 3 *)
-    let c = Brr_canvas.Canvas.create [] in
-    El.set_children a [Brr_canvas.Canvas.to_el c]; c
-  in
-  let r = Vgr.create (Vgr_htmlc.target c) `Other in   (* 4 *)
-  ignore (Vgr.render r (`Image (size, view, image))); (* 5 *)
-  ignore (Vgr.render r `End);
-  let data = Canvas.to_data_url c |> Console.log_if_error ~use:Jstr.empty in
-  El.set_at At.Name.href (Some data) a
-
-let () = main ()
-]}
-
-This file needs to be compiled to byte code and then [js_of_ocaml]
-must be applied. This can be achieved with:
-{[> ocamlfind ocamlc \
-  -package gg,vg,vg.htmlc,brr \
-  -linkpkg -o min_htmlc.byte min_htmlc.ml \
-  && js_of_ocaml min_htmlc.byte]}
-
-Finally we need a minimal HTML file that references our final
-javascript [min_htmlc.js]. The following one will do:
-{v
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,
-                                 initial-scale=1.0">
-  <script type="text/javascript" defer="defer" src="min_htmlc.js"></script>
-  <style type="text/css"> body \{ background-color: black; margin: 3em; \}</style>
-  <title>Vgr_htmlc minimal example</title>
-</head>
-<body>
-  <noscript>Sorry, you need to enable JavaScript to see this page.</noscript>
-</body>
-</html>
-v}
-
-{2:mincairopng Minimal Cairo PNG output}
-
-The file [min_cairo_png.ml] contains the following code. We first
-define an image and then render it on stdout as a PNG file.
-
-{[open Gg
-open Vg
-
-(* 1. Define your image *)
-
-let aspect = 1.618
-let size = Size2.v (aspect *. 100.) 100. (* mm *)
-let view = Box2.v P2.o (Size2.v aspect 1.)
-let image = I.const (Color.v_srgb 0.314 0.784 0.471)
-
-(* 2. Render *)
-
-let () =
-  let res = 300. /. 0.0254 (* 300dpi in dots per meters *) in
-  let fmt = `Png (Size2.v res res) in
-  let warn w = Vgr.pp_warning Format.err_formatter w in
-  let r = Vgr.create ~warn (Vgr_cairo.stored_target fmt) (`Channel stdout) in
-  ignore (Vgr.render r (`Image (size, view, image)));
-  ignore (Vgr.render r `End)
-]}
-This can be compiled with:
-{v
->  ocamlfind ocamlopt -package gg,vg,vg.cairo \
-                      -linkpkg -o min_cairo_png.native min_cairo_png.ml
-v}
-
-{2:mincairomem Minimal Cairo memory buffer rendering}
-
-The file [min_cairo_mem.ml] contains the following code. We first
-define an image and then render to a bigarray buffer.
-
-{[open Gg
-open Vg
-
-(* 1. Define your image *)
-
-let aspect = 1.618
-let size = Size2.v (aspect *. 100.) 100. (* mm *)
-let view = Box2.v P2.o (Size2.v aspect 1.)
-let image = I.const (Color.v_srgb 0.314 0.784 0.471)
-
-(* 2. Render *)
-
-let raster, stride =
-  let res = 300. /. 25.4 (* 300dpi in dots per mm *) in
-  let w = int_of_float (res *. Size2.w size) in
-  let h = int_of_float (res *. Size2.h size) in
-  let stride = Cairo.Image.(stride_for_width ARGB32 w) in
-  let data = Bigarray.(Array1.create int8_unsigned c_layout (stride * h)) in
-  let surface = Cairo.Image.(create_for_data8 data ARGB32 ~stride w h) in
-  let ctx = Cairo.create surface in
-  Cairo.scale ctx ~x:res ~y:res;
-  let target = Vgr_cairo.target ctx in
-  let warn w = Vgr.pp_warning Format.err_formatter w in
-  let r = Vgr.create ~warn target `Other in
-  ignore (Vgr.render r (`Image (size, view, image)));
-  ignore (Vgr.render r `End);
-  Cairo.Surface.flush surface;
-  Cairo.Surface.finish surface;
-  data, stride
-]}
-
-{v
-> ocamlfind ocamlopt -package cairo2,gg,vg,vg.cairo \
-                     -linkpkg -o min_cairo_mem.native min_cairo_mem.ml
-v}
-
-*)

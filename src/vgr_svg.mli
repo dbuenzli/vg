@@ -3,7 +3,7 @@
    SPDX-License-Identifier: ISC
   ---------------------------------------------------------------------------*)
 
-(** Vg SVG renderer.
+(** SVG renderer.
 
     {b References.}
     {ul {- Erik Dahlström et al. {{:http://www.w3.org/TR/SVG11/}{e

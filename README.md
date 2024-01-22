@@ -1,11 +1,9 @@
 Vg — Declarative 2D vector graphics for OCaml
--------------------------------------------------------------------------------
-%%VERSION%%
+=============================================
 
-Vg is an OCaml module for declarative 2D vector graphics. In Vg,
-images are values that denote functions mapping points of the
-cartesian plane to colors. The module provides combinators to define
-and compose these values.
+Vg is a declarative 2D vector graphics library. In Vg, images are
+values that denote functions mapping points of the cartesian plane to
+colors. Combinators are provided to define and compose these values.
 
 Renderers for PDF, SVG, Cairo and the HTML canvas are distributed with the
 module. An API allows to implement new renderers.
@@ -27,22 +25,20 @@ Home page: http://erratique.ch/software/vg
 
 Vg can be installed with `opam`:
 
-    opam install vg                               # SVG renderer only
+    opam install vg                       # SVG renderer only
     opam install uutf otfm brr cairo2 vg  # all renderers
     
 If you don't use `opam` consult the [`opam`](opam) file for
 build instructions and a complete specification of the dependencies.
 
-
 ## Documentation
 
-The documentation and API reference is generated from the source
-interfaces. It can be consulted [online][doc] or via `odig doc vg`.
+The documentation can be consulted [online] or via `odig doc vg`.
 
-Questions are welcome but better asked on the [OCaml forum]
-than on the issue tracker.
+Questions are welcome but better asked on the [OCaml forum] than on
+the issue tracker.
 
-[doc]: http://erratique.ch/software/vg/doc/
+[online]: http://erratique.ch/software/vg/doc/
 [OCaml forum]: https://discuss.ocaml.org/
 
 ## Sample programs and images

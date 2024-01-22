@@ -1,0 +1,135 @@
+{0 The semantics of Vg}
+
+The following notations and definitions give precise meaning to images
+and their combinators.
+
+{1:semcolors Colors}
+
+The semantics of colors is the one ascribed to
+{{!Gg.Color.t}[Gg.color]}: colors are in a {e linearized} sRGBA space.
+
+{2:semstops Color stops}
+
+A value of type {!Gg.Color.type-stops} specifies a color at each point
+of the 1D {e unit} space. It is defined by a list of pairs
+[(t]{_i}[, c]{_i}[)] where [t]{_i} is a value from [0] to [1] and
+[c]{_i} the corresponding color at that value. Colors at points
+between [t]{_i} and [t]{_i+1} are linearly interpolated between
+[c]{_i} and [c]{_i+1}. If [t]{_i} lies outside [0] to [1]
+or if [t]{_i-1} >= [t]{_i} the semantics is undefined.
+
+Given a stops value [stops = \[][(t]{_0}[, c]{_0}[);]
+[(t]{_1}[,c]{_1}[);] ... [(t]{_n}[, c]{_n}[)][\]] and any point
+[t] of 1D space, the semantic function:
+
+\[\] [: Gg.Color.stops -> float -> Gg.color]
+
+maps them to a color value written \[[stops]\]{_t} as follows.
+
+{ul
+{- \[[stops]\]{_t} = [(0, 0, 0, 0)] for any [t] if [stops = []]}
+{- \[[stops]\]{_t} [= c]{_0} if [t < t]{_0}.}
+{- \[[stops]\]{_t} [= c]{_n} if [t >= t]{_n}.}
+{- \[[stops]\]{_t} [= (1-u)c]{_i}[ + uc]{_i+1}
+   with [u = (t - t]{_i}[)/(t]{_i+1}[-t]{_i}[)]
+   if [t]{_i} [<= t <] [t]{_i+1}}}
+
+{1:semimages Images}
+
+Values of type {!Vg.image} represent maps from the infinite 2D euclidian
+space to {{!semcolors}colors}. Given an image [i] and a point [pt] of
+the plane the semantic function
+
+\[\][: image -> Gg.p2 -> Gg.color]
+
+maps them to a color value written \[[i]\]{_[pt]} representing the
+image's color at this point.
+
+{1:sempaths Paths and areas}
+
+A value of type {!Vg.path} is a list of subpaths. A subpath is a list of
+{e directed} and connected curved {e segments}. Subpaths are
+disconnected from each other and may (self-)intersect.
+
+A path and an area specification of type {!Vg.P.area} define a finite
+area of the 2D euclidian space. Given an area specification [a], a
+path [p] and a point [pt], the semantic function:
+
+\[\]: [P.area -> path -> Gg.p2 -> bool]
+
+maps them to a boolean value written \[[a], [p]\]{_[pt]} that
+indicates whether [pt] belongs to the area or not.
+
+The semantics of area rules is as follows:
+
+{ul
+{- \[[`Anz], [p]\]{_[pt]} is [true] iff the winding number of [p]
+   around [pt] is non zero. To determine the winding number cast
+   a ray from [pt] to infinity in any direction (just make sure
+   the ray doesn't intersect [p] tangently or at a
+   singularity). Starting with zero add one for each intersection
+   with a counter-clockwise oriented segment of [p] and substract
+   one for each clockwise ones. The resulting sum is the
+   winding number. This is usually refered to as the {e non-zero winding
+   rule} and is the default for {!Vg.I.val-cut}.
+{%html: <img src="../_assets/doc-anz.png" style="width:90mm; height:30mm;"/> %}}
+{- \[[`Aeo], [p]\]{_[pt]} is [true] iff the number of
+   intersections of [p] with a ray cast from [pt] to infinity in
+   any direction is odd (just make sure the ray doesn't intersect
+   [p] tangently or at a singularity). This is usually refered
+   to as the {e even-odd rule}.
+{%html: <img src="../_assets/doc-aeo.png" style="width:90mm; height:30mm;"/> %}}
+{- \[[`O o], [p]\]{_[pt]} is [true] iff [pt] is in the outline
+   area of [p] as defined by the value [o] of type {!Vg.P.type-outline}.
+   See {!semoutlines}, {!semjoins}, {!semcaps}, {!semdashes}.}}
+
+{2:semoutlines Outline areas}
+
+The outline area of a path specified by a value [o] of type
+{!Vg.P.type-outline} is the union of its subpaths outline areas.
+
+A subpath outline area is inside the parallel curves at a distance
+[o.width / 2] of its path segments that are joined accoring to the
+join style [o.join] (see below) and closed at the subpath end points
+with a cap style [o.cap] (see below). The outline area of a subpath
+can also be chopped at regular intervals according to the [o.dashes]
+parameter (see below).
+
+{3:semjoins Segment jointures}
+
+The shape of subpath segment jointures is specified in
+[o.join] by a value of type {!Vg.P.type-join}. From left to right:
+{%html: <img src="../_assets/doc-joins.png"
+             style="width:90mm; height:30mm;"/> %}
+{ul
+{- [`Miter], the outer parallel curves are extended until they
+   meet unless the joining angle is smaller than
+   [o.miter_angle] in which case the join is converted to a
+   bevel.}
+{- [`Round], joins the outer parallel curves by a semicircle
+   centered at the end point with a diameter equal to [o.width].}
+{- [`Bevel], joins the outer parallel curves by a segment.}}
+
+{3:semcaps Subpath caps}
+
+The shape of subpath (or dashes) end points is specified in
+[o.cap] by a value of type {!Vg.P.type-cap}. From left to right:
+{%html: <img src="../_assets/doc-caps.png" style="width:90mm; height:20mm;"/> %}
+{ul
+{- [`Butt], end points are square and extend only to the exact end point of
+   the path.}
+{- [`Round], end points are rounded by a semicircle at the end point with a
+   diameter equal to [o.width].}
+{- [`Square], end points are square and extend by a distance
+   equal to half [o.width].}}
+
+{3:semdashes Outline dashes}
+
+The path outline area can be chopped at regular intervals by
+specifying a value [(off, pat)] of type {!Vg.P.type-dashes} in
+[o.dashes].
+
+The {e dash pattern} [pat] is a list of lengths that specify the
+length of alternating dashes and gaps (starting with dashes). The {e
+dash offset} [off] is a {e positive} offset that indicates where to
+start in the dash pattern at the beginning of a subpath.

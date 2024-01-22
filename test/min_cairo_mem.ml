@@ -1,9 +1,10 @@
-(* This code is in the public domain.
+(*---------------------------------------------------------------------------
+   Copyright (c) 2024 The vg programmers. All rights reserved.
+   SPDX-License-Identifier: CC0-1.0
+  ---------------------------------------------------------------------------*)
 
-   Minimal Vgr_cairo memory buffer example. Compile with:
-
-   ocamlfind ocamlopt -package cairo2,gg,vg,vg.cairo \
-    -linkpkg -o min_cairo_mem.native min_cairo_mem.ml
+(* Minimal Vgr_cairo memory buffer image. Compile with:
+   ocamlfind ocamlopt -package cairo2,gg,vg,vg.cairo -linkpkg min_cairo_mem.ml
 *)
 
 open Gg
@@ -27,9 +28,8 @@ let raster, stride =
   let surface = Cairo.Image.(create_for_data8 data ARGB32 ~stride ~w ~h) in
   let ctx = Cairo.create surface in
   Cairo.scale ctx res res;
-  let target = Vgr_cairo.target ctx in
   let warn w = Vgr.pp_warning Format.err_formatter w in
-  let r = Vgr.create ~warn target `Other in
+  let r = Vgr.create ~warn (Vgr_cairo.target ctx) `Other in
   ignore (Vgr.render r (`Image (size, view, image)));
   ignore (Vgr.render r `End);
   Cairo.Surface.flush surface;

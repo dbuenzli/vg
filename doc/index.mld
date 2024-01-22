@@ -1,9 +1,31 @@
 {0 Vg {%html: <span class="version">%%VERSION%%</span>%}}
 
-Vg is a declarative 2D vector graphics library.
+Vg is a declarative 2D vector graphics library. Images are
+{{!Vg.image}values} that denote functions mapping points of the
+cartesian plane to colors and {{!Vg.I}combinators} are provided to
+define and compose them.
 
-See the {{!Vg.basics}basics} for an introduction.
+Renderers for {{!Vgr_pdf}PDF}, {{!Vgr_svg}SVG}, the HTML
+{{!Vgr_htmlc}canvas} and {{!Vgr_cairo}Cairo} are distributed with the
+library. An {{!Vg.Vgr.Private}API} allows to implement new renderers.
 
-{1:api API}
+{1:manuals Manuals}
 
-{!modules: Vg Vgr_cairo Vgr_htmlc Vgr_pdf Vgr_svg}
+These manuals are available:
+
+- The {{!page-tutorial}tutorial} is a conceptual
+  overview of the library. It is recommended reading.
+- The {{!page-semantics}semantics} has the notations and definitions
+  which give precise meaning to images and their combinators.
+- The {{!page-image_howto}image howto} has minimal setup examples to render
+  images.
+
+{1:library_vg Library [vg]}
+
+{!modules: Vg}
+
+{1:library_renderer Libraries [vg.{cairo,htmlc,pdf,svg}] }
+
+Each of these modules is in its own library.
+
+{!modules: Vgr_cairo Vgr_htmlc Vgr_pdf Vgr_svg}

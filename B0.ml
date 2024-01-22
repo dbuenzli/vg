@@ -47,45 +47,67 @@ let vg_cairo_lib =
 
 (* Tests *)
 
-let test ?(more_srcs = []) ?doc base ~requires =
-  let srcs = Fpath.(`File (v (Fmt.str "test/%s.ml" base))) :: more_srcs in
+let test ?more_srcs:(srcs = []) ?(requires = []) ?doc base =
+  let requires = gg :: vg :: requires in
+  let srcs = `File (Fpath.fmt "test/%s.ml" base) :: srcs in
   B0_ocaml.exe base ?doc ~srcs ~requires
 
-let db = `Dir (Fpath.v "db")
+let test_jsoo ?more_srcs:(srcs = []) ?(requires = []) ?doc base =
+  let requires = gg :: vg :: requires in
+  let p = Fpath.fmt "test/%s" base in
+  let srcs = `File Fpath.(p + ".ml") :: `File Fpath.(p + ".html") :: srcs in
+  B0_jsoo.html_page base ?doc ~requires ~srcs
 
-let test_min_svg = test "min_svg" ~requires:[vg; gg; vg_svg]
-let test_min_pdf = test "min_pdf" ~requires:[vg; gg; vg_pdf]
-let test_min_cairo = test "min_cairo_png" ~requires:[vg; gg; cairo; vg_cairo;]
+let test_min_svg =
+  let doc = "Minimal SVG rendering example" in
+  test "min_svg" ~doc ~requires:[vg_svg]
+
+let test_min_pdf =
+  let doc = "Minimal PDF rendering example" in
+  test "min_pdf" ~doc ~requires:[vg_pdf]
+
+let test_min_htmlc =
+  let doc = "Minimal HTML canvas rendering example" in
+  test_jsoo "min_htmlc" ~doc ~requires:[brr; vg_htmlc]
+
+let test_min_cairo =
+  let doc = "Minimal cairo rendering to PNG example" in
+  test "min_cairo_png" ~doc ~requires:[cairo; vg_cairo;]
+
 let test_min_cairo_mem =
-  test "min_cairo_mem" ~requires:[vg; gg; cairo; vg_cairo]
+  let doc = "Minimal cairo to memory rendering example" in
+  test "min_cairo_mem" ~doc ~requires:[cairo; vg_cairo]
 
-let r_srcs = [db; `File (Fpath.v "test/rstored.ml")]
+let test_examples =
+  let doc = "Examples for the docs" in
+  test "examples" ~requires:[vg_svg] ~doc
+
+let test_fglyphs = test "fglyphs" ~requires:[vg_pdf; otfm]
+let test_sqc = test_jsoo "sqc" ~requires:[vg_htmlc; brr]
+let test_vecho = test "vecho" ~requires:[uutf; otfm; vg_pdf]
+
+(* Vg image test database. *)
+
+let db_srcs = `Dir ~/"db"
+let rdb = [db_srcs; `File ~/"test/rstored.ml"]
 
 let test_rsvg =
-  test "rsvg" ~requires:[unix; vg; gg; uutf; vg_svg] ~more_srcs:r_srcs
-
-let test_rpdf =
-  test "rpdf" ~requires:[unix; vg; gg; uutf; otfm; vg_pdf] ~more_srcs:r_srcs
+  let doc = "Renders sample image database with Vgr_svg" in
+  test "rsvg" ~doc ~requires:[unix; uutf; vg_svg] ~more_srcs:rdb
 
 let test_rcairo =
-  test "rcairo" ~requires:[vg; gg; uutf; vg_cairo] ~more_srcs:r_srcs
+  let doc = "Renders sample image database with Vgr_cairo" in
+  test "rcairo" ~doc ~requires:[uutf; vg_cairo] ~more_srcs:rdb
 
-let test_examples = test "examples" ~requires:[vg; gg; vg_svg]
-let test_fglyphs = test "fglyphs" ~requires:[vg; gg; vg_pdf; otfm]
+let test_rpdf =
+  let doc = "Renders sample image database with Vgr_rpdf" in
+  test "rpdf" ~doc ~requires:[unix; uutf; otfm; vg_pdf] ~more_srcs:rdb
 
-let test_jsoo ?(more_srcs = []) ?requires ?doc base =
-  let srcs =
-    `File ~/(Fmt.str "test/%s.ml" base) ::
-    `File ~/(Fmt.str "test/%s.html" base) :: more_srcs
-  in
-  B0_jsoo.html_page base ?requires ~srcs ?doc
-
-let test_min_htmlc = test_jsoo "min_htmlc" ~requires:[vg; gg; vg_htmlc; brr]
-let test_sqc = test_jsoo "sqc" ~requires:[vg; gg; vg_htmlc; brr]
 let test_rhtmlc =
-  let more_srcs = [`File ~/"test/mui.ml"; `File ~/"test/mui.mli"; db ] in
-  let requires = [gg; vg; vg_svg; vg_pdf; vg_htmlc; uutf; otfm; brr] in
-  test_jsoo "rhtmlc" ~requires ~more_srcs
+  let doc = "Renders sample image database in the browser" in
+  let more_srcs = [`File ~/"test/mui.ml"; `File ~/"test/mui.mli"; db_srcs ] in
+  let requires = [uutf; otfm; brr; vg_svg; vg_pdf; vg_htmlc] in
+  test_jsoo "rhtmlc" ~doc ~requires ~more_srcs
 
 (* Packs *)
 

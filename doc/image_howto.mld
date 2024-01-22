@@ -1,0 +1,287 @@
+{0 Image howto}
+
+The following examples show for each renderer the minimal code and
+compilation instructions needed to output an image.
+
+Other examples of images and their source can be found in the
+{{:http://erratique.ch/software/vg/demos/rhtmlc.html}online version}
+of Vg's test image database. Clicking on the title of an image brings
+you to its definition.
+
+{1:minpdf Minimal PDF output}
+
+This example produces a one-page PDF document. Step by step
+we have:
+
+{ol
+{- We define an image.}
+{- We define a function to render the image with the {!Vgr_pdf} renderer
+   on a given output channel. This function defines some metadata for the
+   image, a function to print rendering warnings and then renders the image.}
+{- We define an entry point for the program in which we put [stdout] in
+   binary mode to avoid any unhelpful surprises and render the image on it.}}
+
+{[
+cat << 'EOF' > min_pdf.ml
+open Gg
+open Vg
+
+(* 1. Define your image *)
+
+let aspect = 1.618
+let size = Size2.v (aspect *. 100.) 100. (* mm *)
+let view = Box2.v P2.o (Size2.v aspect 1.)
+let image = I.const (Color.v_srgb 0.314 0.784 0.471)
+
+(* 2. Render *)
+
+let render oc =
+  let title = "Vgr_pdf minimal example" in
+  let description = "Emerald Color" in
+  let xmp = Vgr.xmp ~title ~description () in
+  let warn w = Vgr.pp_warning Format.err_formatter w in
+  let r = Vgr.create ~warn (Vgr_pdf.target ~xmp ()) (`Channel oc) in
+  ignore (Vgr.render r (`Image (size, view, image)));
+  ignore (Vgr.render r `End)
+
+(* 3. Main *)
+
+let main () = Out_channel.set_binary_mode stdout true; render stdout; 0
+let () = if !Sys.interactive then () else exit (main ())
+EOF
+]}
+The source can be compiled an executed with:
+{v
+ocamlfind ocamlopt -package gg,vg,vg.pdf -linkpkg min_pdf.ml
+./a.out > min.pdf
+v}
+
+{1:minsvg Minimal SVG output}
+
+This example produces an SVG image. Step by step we have:
+
+{ol
+{- We define an image.}
+{- We define a function to render the image with the {!Vgr_svg} renderer
+   on a given output channel. This function defines some metadata for the
+   image, a function to print rendering warnings and then renders the image.}
+{- We define an entry point for the program in which we put [stdout] in
+   binary mode to avoid any unhelpful surprises and render the image on it.}}
+
+{[
+cat << 'EOF' > min_svg.ml
+open Gg
+open Vg
+
+(* 1. Define your image *)
+
+let aspect = 1.618
+let size = Size2.v (aspect *. 100.) 100. (* mm *)
+let view = Box2.v P2.o (Size2.v aspect 1.)
+let image = I.const (Color.v_srgb 0.314 0.784 0.471)
+
+(* 2. Render *)
+
+let render oc =
+  let title = "Vgr_svg minimal example" in
+  let description = "Emerald Color" in
+  let xmp = Vgr.xmp ~title ~description () in
+  let warn w = Vgr.pp_warning Format.err_formatter w in
+  let r = Vgr.create ~warn (Vgr_svg.target ~xmp ()) (`Channel oc) in
+  ignore (Vgr.render r (`Image (size, view, image)));
+  ignore (Vgr.render r `End)
+
+(* 3. Main *)
+
+let main () = Out_channel.set_binary_mode stdout true; render stdout; 0
+let () = if !Sys.interactive then () else exit (main ())
+EOF
+]}
+The source can be compiled and executed with:
+{v
+ocamlfind ocamlopt -package gg,vg,vg.svg -linkpkg min_svg.ml
+./a.out > min.svg
+v}
+
+{1:minhtmlc Minimal HTML canvas output}
+
+This example produces a web page with an HTML canvas image. It uses
+the {!Brr} library to interact with the browser. Step by step we have:
+
+{ol
+{- Define an image.}
+{- Create a canvas element [cnv].}
+{- Create and add to the DOM an anchor [anchor] that parents [cnv].
+   This allows to download a (usually PNG) file of the image by clicking
+   on it.}
+{- Create a renderer [r] targeting the canvas [cnv].}
+{- Render the image.}
+{- Ask the canvas for an image data URL and set it as the the link of the
+   anchor.}
+{- Invoke the image render when the page loads.}}
+
+{[
+cat << 'EOF' > min_htmlc.ml
+open Gg
+open Vg
+open Brr
+open Brr_canvas
+
+(* 1. Define your image *)
+
+let aspect = 1.618
+let size = Size2.v (aspect *. 100.) 100. (* mm *)
+let view = Box2.v P2.o (Size2.v aspect 1.)
+let image = I.const (Color.v_srgb 0.314 0.784 0.471)
+
+(* Browser bureaucracy. *)
+
+let main () =
+  let cnv = Brr_canvas.Canvas.create [] (* 2 *) in
+  let anchor = (* 3 *)
+    let href = At.href (Jstr.v "#") in
+    let title = At.title (Jstr.v "Download PNG file") in
+    let download = At.v (Jstr.v "download") (Jstr.v "min_htmlc.png") in
+    let a = El.a ~at:[href; title; download] [Brr_canvas.Canvas.to_el cnv] in
+    El.append_children (Document.body G.document) [a]; a
+  in
+  let r = Vgr.create (Vgr_htmlc.target cnv) `Other in  (* 4 *)
+  ignore (Vgr.render r (`Image (size, view, image))); (* 5 *)
+  ignore (Vgr.render r `End);
+  let data = (* 6 *)
+    Canvas.to_data_url cnv |> Console.log_if_error ~use:Jstr.empty
+  in
+  El.set_at At.Name.href (Some data) anchor
+
+let () = main () (* 7 *)
+EOF
+]}
+The source needs to be compiled to bytecode and then to JavaScript
+with [js_of_ocaml]:
+{v
+ocamlfind ocamlc -package brr,gg,vg,vg.htmlc -linkpkg min_htmlc.ml
+js_of_ocaml -o min_htmlc.js a.out
+v}
+
+Finally we need to link that with a minimal HTML file. The following one
+will do:
+{v
+cat << 'EOF' > min_htmlc.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <script type="text/javascript" defer="defer" src="min_htmlc.js"></script>
+  <style type="text/css">
+    body { background-color: black; margin: 3em; }
+  </style>
+  <title>Vgr_htmlc minimal example</title>
+</head>
+<body>
+  <noscript>Sorry, you need to enable JavaScript to see this page.</noscript>
+</body>
+</html>
+EOF
+v}
+You can now enjoy your image by invoking:
+{v
+xdg-open min_htmlc.html    # Linux and XDG compliant systems
+open min_htmlc.html        # macOS
+start min_htmlc.html       # Windows
+v}
+
+{1:mincairopng Minimal Cairo PNG output}
+
+This example produces a PNG image with Cairo. Step by step
+we have:
+
+{ol
+{- We define an image.}
+{- We define a function to render the image with the {!Vgr_cairo} renderer
+   on a given output channel. This function defines the output format,
+   a function to print rendering warnings and then renders the image.}
+{- We define an entry point for the program in which we put [stdout] in
+   binary mode to avoid any unhelpful surprises and render the image on it.}}
+
+{[
+cat << 'EOF' > min_cairo_png.ml
+open Gg
+open Vg
+
+(* 1. Define your image *)
+
+let aspect = 1.618
+let size = Size2.v (aspect *. 100.) 100. (* mm *)
+let view = Box2.v P2.o (Size2.v aspect 1.)
+let image = I.const (Color.v_srgb 0.314 0.784 0.471)
+
+(* 2. Render *)
+
+let render oc =
+  let res = 300. /. 0.0254 (* 300dpi in dots per meters *) in
+  let format = `Png (Size2.v res res) in
+  let warn w = Vgr.pp_warning Format.err_formatter w in
+  let r = Vgr.create ~warn (Vgr_cairo.stored_target format) (`Channel oc) in
+  ignore (Vgr.render r (`Image (size, view, image)));
+  ignore (Vgr.render r `End)
+
+(* 3. Main *)
+
+let main () = Out_channel.set_binary_mode stdout true; render stdout; 0
+let () = if !Sys.interactive then () else exit (main ())
+EOF
+]}
+
+The source can be compiled an executed with:
+{v
+ocamlfind ocamlopt -package gg,vg,vg.cairo -linkpkg min_cairo_png.ml
+./a.out > min.png
+v}
+
+{1:mincairomem Minimal Cairo memory buffer rendering}
+
+This example produces a raster image in memory with Cairo. Step by step
+we have:
+
+{ol
+{- We define an image.}
+{- We render the image to a bigarray of bytes}}
+
+{[
+cat << 'EOF' > min_cairo_mem.ml
+open Gg
+open Vg
+
+(* 1. Define your image *)
+
+let aspect = 1.618
+let size = Size2.v (aspect *. 100.) 100. (* mm *)
+let view = Box2.v P2.o (Size2.v aspect 1.)
+let image = I.const (Color.v_srgb 0.314 0.784 0.471)
+
+(* 2. Render *)
+
+let raster, stride =
+  let res = 300. /. 25.4 (* 300dpi in dots per mm *) in
+  let w = int_of_float (res *. Size2.w size) in
+  let h = int_of_float (res *. Size2.h size) in
+  let stride = Cairo.Image.(stride_for_width ARGB32 w) in
+  let data = Bigarray.(Array1.create int8_unsigned c_layout (stride * h)) in
+  let surface = Cairo.Image.(create_for_data8 data ARGB32 ~stride ~w ~h) in
+  let ctx = Cairo.create surface in
+  Cairo.scale ctx res res;
+  let warn w = Vgr.pp_warning Format.err_formatter w in
+  let r = Vgr.create ~warn (Vgr_cairo.target ctx) `Other in
+  ignore (Vgr.render r (`Image (size, view, image)));
+  ignore (Vgr.render r `End);
+  Cairo.Surface.flush surface;
+  Cairo.Surface.finish surface;
+  data, stride
+EOF
+]}
+
+This example can be compiled with:
+{v
+ocamlfind ocamlopt -package cairo2,gg,vg,vg.cairo -linkpkg min_cairo_mem.ml
+v}

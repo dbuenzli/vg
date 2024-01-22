@@ -3,7 +3,7 @@
    SPDX-License-Identifier: ISC
   ---------------------------------------------------------------------------*)
 
-(** Vg HTML canvas renderer.
+(** HTML canvas renderer.
 
     {b References.}
     {ul {- Rik Cabanier et al. {e {{:http://www.w3.org/TR/2dcontext/}HTML

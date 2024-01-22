@@ -217,6 +217,7 @@ let sample font size cols nobb = match font_info font with
 | Error _ as e -> e
 | Ok font_info ->
     let renderable = renderable font_info size cols nobb in
+    let () = Out_channel.set_binary_mode stdout true in
     let r = Vgr.create (Vgr_pdf.target ()) (`Channel stdout) in
     ignore (Vgr.render r renderable);
     ignore (Vgr.render r `End);

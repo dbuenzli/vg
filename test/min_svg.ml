@@ -1,10 +1,10 @@
-(* This code is in the public domain.
+(*---------------------------------------------------------------------------
+   Copyright (c) 2024 The vg programmers. All rights reserved.
+   SPDX-License-Identifier: CC0-1.0
+  ---------------------------------------------------------------------------*)
 
-   Minimal Vgr_svg example, renders on stdout. Compile with:
-
-   ocamlfind ocamlopt -package gg,vg,vg.svg \
-                      -linkpkg -o min_svg.native min_svg.ml
-*)
+(* Minimal Vgr_svg example. Compile with:
+   ocamlfind ocamlopt -package gg,vg,vg.svg min_svg.ml *)
 
 open Gg
 open Vg
@@ -18,11 +18,16 @@ let image = I.const (Color.v_srgb 0.314 0.784 0.471)
 
 (* 2. Render *)
 
-let () =
+let render oc =
   let title = "Vgr_svg minimal example" in
   let description = "Emerald Color" in
   let xmp = Vgr.xmp ~title ~description () in
   let warn w = Vgr.pp_warning Format.err_formatter w in
-  let r = Vgr.create ~warn (Vgr_svg.target ~xmp ()) (`Channel stdout) in
+  let r = Vgr.create ~warn (Vgr_svg.target ~xmp ()) (`Channel oc) in
   ignore (Vgr.render r (`Image (size, view, image)));
   ignore (Vgr.render r `End)
+
+(* 3. Main *)
+
+let main () = Out_channel.set_binary_mode stdout true; render stdout; 0
+let () = if !Sys.interactive then () else exit (main ())

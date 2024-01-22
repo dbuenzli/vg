@@ -1,12 +1,11 @@
-(* This code is in the public domain.
+(*---------------------------------------------------------------------------
+   Copyright (c) 2024 The vg programmers. All rights reserved.
+   SPDX-License-Identifier: CC0-1.0
+  ---------------------------------------------------------------------------*)
 
-   Minimal Vgr_htmlc example. Compile with:
-
-   ocamlfind ocamlc \
-    -package brr -package gg,vg,vg.htmlc \
-    -linkpkg -o min_htmlc.byte min_htmlc.ml \
-   && js_of_ocaml min_htmlc.byte
-*)
+(* Minimal Vgr_htmlc example. Compile with:
+   ocamlfind ocamlc -package brr,gg,vg,vg.htmlc -linkpkg min_htmlc.ml
+   js_of_ocaml -o min_htmlc.js a.out *)
 
 open Gg
 open Vg
@@ -23,21 +22,20 @@ let image = I.const (Color.v_srgb 0.314 0.784 0.471)
 (* Browser bureaucracy. *)
 
 let main () =
-  let a = (* 2 *)
+  let cnv = Brr_canvas.Canvas.create [] (* 2 *) in
+  let anchor = (* 3 *)
     let href = At.href (Jstr.v "#") in
     let title = At.title (Jstr.v "Download PNG file") in
     let download = At.v (Jstr.v "download") (Jstr.v "min_htmlc.png") in
-    let a = El.a ~at:[href; title; download] [] in
+    let a = El.a ~at:[href; title; download] [Brr_canvas.Canvas.to_el cnv] in
     El.append_children (Document.body G.document) [a]; a
   in
-  let c = (* 3 *)
-    let c = Brr_canvas.Canvas.create [] in
-    El.set_children a [Brr_canvas.Canvas.to_el c]; c
-  in
-  let r = Vgr.create (Vgr_htmlc.target c) `Other in   (* 4 *)
+  let r = Vgr.create (Vgr_htmlc.target cnv) `Other in  (* 4 *)
   ignore (Vgr.render r (`Image (size, view, image))); (* 5 *)
   ignore (Vgr.render r `End);
-  let data = Canvas.to_data_url c |> Console.log_if_error ~use:Jstr.empty in
-  El.set_at At.Name.href (Some data) a
+  let data = (* 6 *)
+    Canvas.to_data_url cnv |> Console.log_if_error ~use:Jstr.empty
+  in
+  El.set_at At.Name.href (Some data) anchor
 
-let () = main ()
+let () = main () (* 7 *)

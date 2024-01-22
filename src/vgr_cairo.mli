@@ -3,7 +3,7 @@
    SPDX-License-Identifier: ISC
   ---------------------------------------------------------------------------*)
 
-(** Vg {{:http://cairographics.org/}Cairo} renderer. *)
+(** {{:http://cairographics.org/}Cairo} renderer. *)
 
 (** {1:target Cairo render targets} *)
 

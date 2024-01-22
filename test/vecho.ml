@@ -169,6 +169,7 @@ let echo font size kern msg = match font_info font with
     | Error e -> Error (otfm_err_str e)
     | Ok font ->
         let renderable = renderable font_info size kern msg in
+        let () = Out_channel.set_binary_mode stdout true in
         let r = Vgr.create (Vgr_pdf.target ~font ()) (`Channel stdout) in
         ignore (Vgr.render r renderable);
         ignore (Vgr.render r `End);

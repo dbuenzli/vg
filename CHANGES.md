@@ -1,3 +1,5 @@
+
+- Reworked documentation into `.mld` pages.
 - Add `Vg.P.smooth_{ccurve,qcurve}` to smoothly stitch cubic and
   quadratic Bézier curves. Thanks to François Thiré for the patch
   (#33).

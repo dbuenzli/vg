@@ -3,7 +3,7 @@
    SPDX-License-Identifier: ISC
   ---------------------------------------------------------------------------*)
 
-(** Vg PDF renderer.
+(** PDF renderer.
 
     Renders a sequence of renderables as a multi-page PDF 1.7
     document. Each renderable defines a page of the document.
