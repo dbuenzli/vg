@@ -329,7 +329,7 @@ module I : sig
 
   val void : image
   (** [void] is [const ]{!Gg.Color.void}, an invisible black image.
-      [void] is an identity element for {!blend}. *)
+      [void] is an identity element for {!val-blend}. *)
 
   (** {1:prims Primitive images} *)
 
@@ -390,7 +390,7 @@ module I : sig
       still subject to change in the future.
 
       [cut_glyphs area text blocks advances font glyphs i] is like
-      {!cut} except the path cut is the union of all the paths of the
+      {!val-cut} except the path cut is the union of all the paths of the
       glyphs [glyphs] of the font [font].
 
       The origin of the first glyph is set to [P2.o], the origin of
@@ -606,10 +606,10 @@ module Vgr : sig
       images to [dst]. [warn] is called whenever the renderer lacks a
       capability, see {{!warnings}warnings}.
 
-      [limit] limits the time spent in the {!render} function (defaults to
+      [limit] limits the time spent in the {!val-render} function (defaults to
       [max_int], unlimited).  The cost model may change in a future
       version of the library. For now each image combinator costs one
-      unit, when the limit is reached {!render} returns with
+      unit, when the limit is reached {!val-render} returns with
       [`Partial].  *)
 
   val render : renderer -> [< `Image of renderable | `Await | `End ] ->
@@ -620,7 +620,7 @@ module Vgr : sig
          output storage or if [r] has a limit. In the first
          case the client must use {!Manual.dst} to provide
          a new buffer. In both cases the client should then
-         call {!render} with [`Await] until
+         call {!val-render} with [`Await] until
          [`Ok] is returned.}
       {- [`Ok] when the encoder is ready to encode a new [`Image] (if
          the renderer supports it) or [`End].}}
@@ -634,7 +634,7 @@ module Vgr : sig
       {b Semantics of multiple images render.} The semantics
       of multiple image renders are left to the backend.
 
-      @raise Invalid_argument if [`Image] or [`End] is encoded after
+      Raises [Invalid_argument] if [`Image] or [`End] is encoded after
       a [`Partial] encode. Or if multiple [`Image]s are encoded in
       a renderer that doesn't support them. *)
 
@@ -652,13 +652,13 @@ module Vgr : sig
   module Manual : sig
     val dst : renderer -> bytes -> int -> int -> unit
     (** [dst r s j l] provides [r] with [l] bytes to write, starting
-        at [j] in [s]. This byte range is written by calls to {!render}
+        at [j] in [s]. This byte range is written by calls to {!val-render}
         until [`Partial] is returned. Use {!dst_rem} to know the remaining
         number of non-written free bytes in [s]. *)
 
     val dst_rem : renderer -> int
     (** [dst_rem r] is the remaining number of non-written, free bytes
-        in the last buffer provided with {!dst}. *)
+        in the last buffer provided with {!val-dst}. *)
   end
 
   (** {1:renderer  Implementing renderers} *)
@@ -679,14 +679,14 @@ module Vgr : sig
          called [Vgr_bla] (lowercase).}
       {- The renderer target creation function must be named
          [Vgr_bla.target].}
-      {- Images must be rendered via the {!render} function. If you
+      {- Images must be rendered via the {!val-render} function. If you
          are writing a batch renderer provide support for each of the
          {!dst} types and especially the non-blocking interface.}
       {- Respect Vg's linear sRGB color model.}
       {- Whenever possible use an XMP metadata packet for metadata,
          see {!Vgr.xmp}.}
       {- The renderer should implement the rendering cost model,
-         see the [limit] parameter of {!render}.}
+         see the [limit] parameter of {!val-render}.}
       {- Follow [Vg]'s
          {{!coordinates}coordinate system conventions} to
          specify the relationship between a target and the view
@@ -835,7 +835,7 @@ module Vgr : sig
 
     val partial : k -> renderer -> [> `Partial]
     (** [partial k r] suspends the renderer [r] and returns [`Partial].
-        Rendering will continue with [k r], on {!render} [`Await]. *)
+        Rendering will continue with [k r], on {!val-render} [`Await]. *)
 
     (** {1 Writing {!dst_stored} destinations} *)
 
@@ -941,10 +941,10 @@ let gray = I.const (Color.gray 0.5)
     An infinite image alone cannot be rendered. We need a {e finite}
     view rectangle and a specification of that view's physical size on
     the render target. These informations are coupled together with an
-    image to form a {!Vgr.renderable}.
+    image to form a {!Vgr.type-renderable}.
 
     Renderables can be given to a renderer for display via the
-    function {!Vgr.render}.  Renderers are created with {!Vgr.create}
+    function {!Vgr.val-render}.  Renderers are created with {!Vgr.create}
     and need a {{!Vgr.target}render target} value that defines the
     concrete renderer implementation used (PDF, SVG, HTML canvas etc.).
 
@@ -974,7 +974,7 @@ let () = svg_of_usquare gray]}
     [Vg]'s cartesian coordinate space has its origin at the bottom
     left with the x-axis pointing right, the y-axis pointing up. It
     has no units, you define what they mean to you. However a
-    {{!Vgr.renderable}renderable} implicitely defines a physical unit
+    {{!Vgr.type-renderable}renderable} implicitely defines a physical unit
     for [Vg]'s coordinate space: the corners of the specified view
     rectangle are mapped on a rectangular area of the given physical
     size on the target.
@@ -982,7 +982,7 @@ let () = svg_of_usquare gray]}
     {2:scissors Scissors and glue}
 
     Constant images can be boring. To make things more interesting
-    [Vg] gives you scissors: the {!I.cut} combinator.
+    [Vg] gives you scissors: the {!I.val-cut} combinator.
 
     This combinator takes a finite area of the plane defined by a path
     [path] (more on paths later) and a source image [img] to define the
@@ -1009,7 +1009,7 @@ let gray_circle = I.cut circle gray
     background against which the image is composited. Your eyes
     require a wavelength there and {!Gg.Color.void} cannot provide it.
 
-    {!I.cut} has an optional [area] argument of type {!P.area} that
+    {!I.val-cut} has an optional [area] argument of type {!P.area} that
     determines how a path should be interpreted as an area of the
     plane. The default value is [`Anz], which means that it uses the
     non-zero winding number rule and for [circle] that defines its
@@ -1035,8 +1035,8 @@ let circle_outline =
 {%html: <img src="../_assets/doc-circle-outline.png"
              style="width:30mm; height:30mm;"/> %}
 
-    {!I.cut} gives us scissors but to combine the results of cuts we
-    need some glue: the {!I.blend} combinator. This combinator takes
+    {!I.val-cut} gives us scissors but to combine the results of cuts we
+    need some glue: the {!I.val-blend} combinator. This combinator takes
     two infinite images [front] and [back] and defines an image
     [I.blend front back] that has the colors of [front] alpha blended
     on top of those of [back]. [I.blend front back] represents
@@ -1053,14 +1053,14 @@ let dot = I.blend circle_outline gray_circle
 {%html: <img src="../_assets/doc-dot.png"
              style="width:30mm; height:30mm;"/> %}
 
-    The order of arguments in {!I.blend} is defined so that images can
+    The order of arguments in {!I.val-blend} is defined so that images can
     be blended using the left-associative composition operator
     [|>]. That is [dot] can also be written as follows:
 {[
 let dot = gray_circle |> I.blend circle_outline
 ]}
 
-    This means that with [|>] and {!I.blend} left to right order in
+    This means that with [|>] and {!I.val-blend} left to right order in
     code maps to back to front image blending.
 
     {2:transforming Transforming images}
@@ -1183,7 +1183,7 @@ I.const Color.black |> I.cut ~area p
 
     {3:semstops Color stops}
 
-    A value of type {!Gg.Color.stops} specifies a color at each point
+    A value of type {!Gg.Color.type-stops} specifies a color at each point
     of the 1D {e unit} space. It is defined by a list of pairs
     [(t]{_i}[, c]{_i}[)] where [t]{_i} is a value from [0] to [1] and
     [c]{_i} the corresponding color at that value. Colors at points
@@ -1245,7 +1245,7 @@ I.const Color.black |> I.cut ~area p
         with a counter-clockwise oriented segment of [p] and substract
         one for each clockwise ones. The resulting sum is the
         winding number. This is usually refered to as the {e non-zero winding
-        rule} and is the default for {!I.cut}.
+        rule} and is the default for {!Vg.I.val-cut}.
 {%html: <img src="../_assets/doc-anz.png" style="width:90mm; height:30mm;"/> %}}
     {- \[[`Aeo], [p]\]{_[pt]} is [true] iff the number of
         intersections of [p] with a ray cast from [pt] to infinity in
@@ -1271,7 +1271,7 @@ I.const Color.black |> I.cut ~area p
         {4:semjoins Segment jointures}
 
         The shape of subpath segment jointures is specified in
-        [o.join] by a value of type {!P.join}. From left to right:
+        [o.join] by a value of type {!P.type-join}. From left to right:
 {%html: <img src="../_assets/doc-joins.png"
              style="width:90mm; height:30mm;"/> %}
         {ul
@@ -1286,7 +1286,7 @@ I.const Color.black |> I.cut ~area p
         {4:semcaps Subpath caps}
 
         The shape of subpath (or dashes) end points is specified in
-        [o.cap] by a value of type {!P.cap}. From left to right:
+        [o.cap] by a value of type {!P.type-cap}. From left to right:
 {%html: <img src="../_assets/doc-caps.png" style="width:90mm; height:20mm;"/> %}
         {ul
         {- [`Butt], end points are square and extend only to the
@@ -1299,7 +1299,8 @@ I.const Color.black |> I.cut ~area p
         {4:semdashes Outline dashes}
 
         The path outline area can be chopped at regular intervals by
-        spefiying a value [(off, pat)] of type {!P.dashes} in [o.dashes].
+        specifying a value [(off, pat)] of type {!P.type-dashes} in
+        [o.dashes].
 
         The {e dash pattern} [pat] is a list of lengths that specify
         the length of alternating dashes and gaps (starting with

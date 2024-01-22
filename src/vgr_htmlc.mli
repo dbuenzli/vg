@@ -23,7 +23,7 @@ val target :
     occur).
     {ul
     {- [resize] if [true] (default) sets the canvas CSS size to the
-       physical size of {{!Vg.Vgr.renderable}renderables}. If [false]
+       physical size of {{!Vg.Vgr.type-renderable}renderables}. If [false]
        the physical size of renderables is ignored and the view
        rectangle is simply mapped on the canvas CSS size at the given
        resolution but {b WARNING} for this to work do not use any
@@ -56,17 +56,18 @@ val target :
 
     At the moment the renderer also needs to work around a particular
     browser bug which means that glyph cuts are currently limited to
-    non-outline area cuts in {!I.const} images.  *)
+    non-outline area cuts in {!Vg.I.const} images.  *)
 
 (** {1:limits Render warnings and limitations}
 
     The following render warnings are reported.
     {ul
     {- [`Unsupported_cut ((`O o), i)], outline area cuts can be performed
-       only on (possibly transformed) {!I.const}, {!I.axial} and {!I.radial}
+       only on (possibly transformed) {!Vg.I.const},
+       {!Vg.I.axial} and {!Vg.I.radial}
        primitive images.}
     {- [`Unsupported_glyph_cut (a, i)], glyph cuts can be performed only
-       on bare {!I.const} primitive images and outline area glyph cuts are
+       on bare {!Vg.I.const} primitive images and outline area glyph cuts are
        currently unsupported.}
     {- [`Textless_glyph_cut i] if no [text] argument is specified in a glyph
        cut.}

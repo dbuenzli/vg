@@ -26,7 +26,7 @@ val target : ?xml_decl:bool -> ?xmp:string ->unit ->
        generate a packet.}}
 
     {b Multiple images.} Multiple image renders on the target are not
-    supported. [Invalid_argument] is raised by {!Vg.Vgr.render} if multiple
+    supported. [Invalid_argument] is raised by {!Vg.Vgr.val-render} if multiple
     images are rendered. *)
 
 (** {1:text Text rendering}

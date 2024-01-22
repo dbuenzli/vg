@@ -9,7 +9,7 @@
 
 val target : Cairo.context -> [`Other] Vg.Vgr.target
 (** [target ctx] is a render target for rendering to the Cairo
-    context [ctx]. Rendering a {{!Vg.Vgr.renderable}renderable}
+    context [ctx]. Rendering a {{!Vg.Vgr.type-renderable}renderable}
     [(size, view, i)] is done as follows.
     {ol
     {- The context's current state is saved using {!Cairo.save}.}
@@ -35,7 +35,7 @@ val stored_target : [< `Pdf | `Png of Gg.V2.t | `Ps | `Svg ] ->
     [`Pdf] and [`Ps] target, each renderable creates a new page of the
     renderable size. Multiple image rendering is not supported on
     [`Png] and [`Svg] and [Invalid_argument] is raised by
-    {!Vg.Vgr.render} if multiple images are rendered. *)
+    {!Vg.Vgr.val-render} if multiple images are rendered. *)
 
 (** {1:text Text rendering}
 

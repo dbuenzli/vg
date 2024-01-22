@@ -16,7 +16,7 @@
 (** {1:fonts Font resolution}
 
     Font resolution happens during the rendering of {!Vg.I.cut_glyphs}
-    images through the [font] callback given to the PDF rendering {!target}.
+    images through the [font] callback given to the PDF rendering {!val-target}.
     See {!text} for more details. *)
 
 type otf_font
@@ -65,7 +65,7 @@ val target :
 (** {1:text Text rendering}
 
     Text rendering depends on the way fonts are resolved by the
-    function specified in the rendering {!target}. Given a glyph
+    function specified in the rendering {!val-target}. Given a glyph
     cut:
 
 {!Vg.I.cut_glyphs}[ ~text ~blocks ~advances font glyphs]
@@ -83,8 +83,8 @@ val target :
        used.}
     {- [`Helvetica], uses one of the standard PDF font Helvetica,
        Helvetica-Bold, Helvetica, Helvetica-Bold, Helvetica-Oblique,
-       Helvetica-BoldOblique according to [font]'s {!Vg.Font.slant} and
-       {!Vg.Font.weight}. The values in [glyphs] are glyph indexes
+       Helvetica-BoldOblique according to [font]'s {!Vg.Font.type-slant} and
+       {!Vg.Font.type-weight}. The values in [glyphs] are glyph indexes
        representing the corresponding Unicode character (e.g. glyph
        index [0x20] is the glyph for character [U+0020]). The font
        supports glyph indexes for all the characters listed in the in
