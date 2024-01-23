@@ -3,12 +3,15 @@ true : package(gg)
 <_b0> : -traverse
 
 <src> : include
+<src/cairo> : include
+<src/pdf> : include
+<src/htmlc> : include
 <db> : include
 <test> : include
 
-<src/vgr_pdf.*> : package(uutf), package(otfm)
-<src/vgr_htmlc.*> : package(brr)
-<src/vgr_cairo.*> : package(cairo2)
+<src/pdf/vgr_pdf.*> : package(uutf), package(otfm)
+<src/htmlc/vgr_htmlc.*> : package(brr)
+<src/cairo/vgr_cairo.*> : package(cairo2)
 
 <db/glyphs_pdf.*> : package(uutf)
 
@@ -16,13 +19,13 @@ true : package(gg)
 <test/rsvg.*> : package(uutf), package(unix)
 <test/rcairo.*> : package(uutf), package(unix), package(cairo2)
 
-<test/mui.*> : package(js_of_ocaml), package(js_of_ocaml-ppx)
-<test/rhtmlc.*> : package(otfm), package(uutf), package(js_of_ocaml)
+<test/mui.*> : package(brr)
+<test/rhtmlc.*> : package(otfm), package(uutf), package(brr)
 
 <test/min_pdf.*> : package(uutf), package(otfm)
 <test/min_cairo*> : package(cairo2)
-<test/min_htmlc*> : package(js_of_ocaml), package(js_of_ocaml-ppx)
+<test/min_htmlc*> : package(brr)
 
-<test/sqc.*> : package(js_of_ocaml), package(js_of_ocaml-ppx)
+<test/sqc.*> : package(brr)
 <test/vecho.*> : package(uutf), package(otfm)
 <test/fglyphs.*> : package(uutf), package(otfm)

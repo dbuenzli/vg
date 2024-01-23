@@ -8,11 +8,6 @@ let otfm = Conf.with_pkg "otfm"
 let brr = Conf.with_pkg "brr"
 let cairo2 = Conf.with_pkg "cairo2"
 
-let jsoo_test ~cond test =
-  Pkg.flatten
-    [ Pkg.test ~run:false ~cond ~auto:false (test ^ ".js");
-      Pkg.test ~run:false ~cond ~auto:false (test ^ ".html"); ]
-
 let doc_images () =
   let is_dir p = OS.Dir.exists p |> Log.on_error_msg ~use:(fun _ -> false) in
   let skip p = not (Fpath.has_ext ".png" p) && not (is_dir p) in
@@ -20,11 +15,8 @@ let doc_images () =
   OS.File.fold ~skip (fun p acc -> p :: acc) [] ["doc"]
   >>= fun files -> Ok (Pkg.flatten (List.fold_left mv [] files))
 
-let publish =
-  Pkg.publish ~artefacts:[`Doc; `Distrib; `Alt "www-demos"] ()
-
 let () =
-  Pkg.describe "vg" ~publish @@ fun c ->
+  Pkg.describe "vg" @@ fun c ->
   let uutf = Conf.value c uutf in
   let otfm = Conf.value c otfm in
   let brr = Conf.value c brr in
@@ -33,16 +25,15 @@ let () =
   doc_images () >>= fun doc_images ->
   Ok [
     Pkg.mllib "src/vg.mllib";
-    Pkg.mllib "src/vgr_svg.mllib";
-    Pkg.mllib ~cond:vgr_pdf "src/vgr_pdf.mllib";
-    Pkg.mllib ~cond:brr "src/vgr_htmlc.mllib";
-    Pkg.mllib ~cond:cairo2 "src/vgr_cairo.mllib";
-    Pkg.bin ~cond:vgr_pdf "test/vecho";
+    Pkg.mllib ~cond:vgr_pdf "src/pdf/vgr_pdf.mllib" ~dst_dir:"pdf";
+    Pkg.mllib ~cond:brr "src/htmlc/vgr_htmlc.mllib" ~dst_dir:"htmlc";
+    Pkg.mllib ~cond:cairo2 "src/cairo/vgr_cairo.mllib" ~dst_dir:"cairo";
 
+    Pkg.bin ~cond:vgr_pdf "test/vecho";
     Pkg.doc "doc/index.mld" ~dst:"odoc-pages/index.mld";
     Pkg.doc "doc/tutorial.mld" ~dst:"odoc-pages/tutorial.mld";
     Pkg.doc "doc/semantics.mld" ~dst:"odoc-pages/semantics.mld";
-    Pkg.doc "doc/semantics.mld" ~dst:"odoc-pages/image_howto.mld";
+    Pkg.doc "doc/image_howto.mld" ~dst:"odoc-pages/image_howto.mld";
     Pkg.doc "test/examples.ml";
     Pkg.doc "test/min_htmlc.html";
     Pkg.doc "test/min_htmlc.ml";
@@ -63,8 +54,4 @@ let () =
     Pkg.test ~run:false ~cond:cairo2 "test/rcairo";
     Pkg.test ~run:false "test/examples";
     Pkg.test ~run:false ~cond:vgr_pdf "fglyphs";
-
-(*    jsoo_test ~cond:jsoo "test/min_htmlc";
-    jsoo_test ~cond:jsoo "test/sqc";
-    jsoo_test ~cond:jsoo "test/rhtmlc"; *)
 ]

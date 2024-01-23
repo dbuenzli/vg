@@ -1,4 +1,7 @@
 
+- The `Vgr_svg` module is now part of the `vg` library. 
+  The `vg.svg` library is deprecated, it warns on usage
+  and simply requires `vg`.
 - Reworked documentation into `.mld` pages.
 - Add `Vg.P.smooth_{ccurve,qcurve}` to smoothly stitch cubic and
   quadratic Bézier curves. Thanks to François Thiré for the patch

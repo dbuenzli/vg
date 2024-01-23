@@ -1,23 +1,23 @@
 Vg — Declarative 2D vector graphics for OCaml
 =============================================
 
-Vg is a declarative 2D vector graphics library. In Vg, images are
-values that denote functions mapping points of the cartesian plane to
-colors. Combinators are provided to define and compose these values.
+Vg is a declarative 2D vector graphics library. Images are values that
+denote functions mapping points of the cartesian plane to colors and
+combinators are provided to define and compose them.
 
 Renderers for PDF, SVG, Cairo and the HTML canvas are distributed with the
 module. An API allows to implement new renderers.
      
-Vg depends only on [Gg]. The SVG renderer has no dependency, the PDF
-renderer depends on [Uutf] and [Otfm], the HTML canvas renderer
-depends on [Brr], the Cairo renderer depends on [cairo2]. Vg and its
-renderers are distributed under the ISC license.
+Vg is distributed under the ISC license. Vg and the SVG renderer
+depend on [Gg]. The PDF renderer depends on [Uutf] and [Otfm], the
+HTML canvas renderer depends on [Brr], the Cairo renderer depends on
+[cairo2].
      
 [Gg]: http://erratique.ch/software/gg
 [Uutf]: http://erratique.ch/software/uutf
 [Otfm]: http://erratique.ch/software/otfm
-[Brr]: http://ocsigen.org/js_of_ocaml/ 
-[cairo2]: https://forge.ocamlcore.org/projects/cairo/
+[Brr]: http://erratique.ch/software/brr
+[cairo2]: https://github.com/Chris00/ocaml-cairo
 
 Home page: http://erratique.ch/software/vg  
 

@@ -1,51 +1,49 @@
-version = "%%VERSION_NUM%%"
 description = "Declarative 2D vector graphics for OCaml"
+version = "%%VERSION_NUM%%"
 requires = "gg"
 archive(byte) = "vg.cma"
 archive(native) = "vg.cmxa"
 plugin(byte) = "vg.cma"
 plugin(native) = "vg.cmxs"
+exists_if = "vg.cma vg.cmxa"
 
-package "svg" (
+package "cairo" (
+  directory = "cairo"
+  description = "The vg.cairo library"
   version = "%%VERSION_NUM%%"
-  description = "Vg's SVG renderer"
-  requires = "vg"
-  archive(byte) = "vgr_svg.cma"
-  archive(native) = "vgr_svg.cmxa"
-  plugin(byte) = "vgr_svg.cma"
-  plugin(native) = "vgr_svg.cmxs"
-  exists_if = "vgr_svg.cma"
-)
-
-package "pdf" (
-  version = "%%VERSION_NUM%%"
-  description = "Vg's PDF renderer"
-  requires = "vg uutf otfm"
-  archive(byte) = "vgr_pdf.cma"
-  archive(native) = "vgr_pdf.cmxa"
-  plugin(byte) = "vgr_pdf.cma"
-  plugin(native) = "vgr_pdf.cmxs"
-  exists_if = "vgr_pdf.cma"
+  requires = "vg gg cairo2"
+  archive(byte) = "vg_cairo.cma"
+  archive(native) = "vg_cairo.cmxa"
+  plugin(byte) = "vg_cairo.cma"
+  plugin(native) = "vg_cairo.cmxs"
+  exists_if = "vg_cairo.cma vg_cairo.cmxa"
 )
 
 package "htmlc" (
+  directory = "htmlc"
+  description = "The vg.htmlc library"
   version = "%%VERSION_NUM%%"
-  description = "Vg's HTML canvas renderer"
-  requires = "vg brr"
-  archive(byte) = "vgr_htmlc.cma"
-  archive(native) = "vgr_htmlc.cmxa"
-  plugin(byte) = "vgr_htmlc.cma"
-  plugin(native) = "vgr_htmlc.cmxs"
-  exists_if = "vgr_htmlc.cma"
+  requires = "vg gg brr"
+  archive(byte) = "vg_htmlc.cma"
+  archive(native) = "vg_htmlc.cmxa"
+  plugin(byte) = "vg_htmlc.cma"
+  plugin(native) = "vg_htmlc.cmxs"
+  exists_if = "vg_htmlc.cma vg_htmlc.cmxa"
 )
 
-package "cairo" (
+package "pdf" (
+  directory = "pdf"
+  description = "The vg.pdf library"
   version = "%%VERSION_NUM%%"
-  description = "Vg's Cairo renderer"
-  requires = "vg cairo2"
-  archive(byte) = "vgr_cairo.cma"
-  archive(native) = "vgr_cairo.cmxa"
-  plugin(byte) = "vgr_cairo.cma"
-  plugin(native) = "vgr_cairo.cmxs"
-  exists_if = "vgr_cairo.cma"
+  requires = "vg gg otfm uutf"
+  archive(byte) = "vg_pdf.cma"
+  archive(native) = "vg_pdf.cmxa"
+  plugin(byte) = "vg_pdf.cma"
+  plugin(native) = "vg_pdf.cmxs"
+  exists_if = "vg_pdf.cma vg_pdf.cmxa"
+)
+
+package "svg" (
+  warning = "Deprecated. Use the vg library, the Vgr_svg module has moved there."
+  requires = "vg"
 )

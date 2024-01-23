@@ -22,10 +22,11 @@ These manuals are available:
 
 {1:library_vg Library [vg]}
 
-{!modules: Vg}
+{!modules: Vg Vgr_svg}
 
-{1:library_renderer Libraries [vg.{cairo,htmlc,pdf,svg}] }
+{1:library_renderer Libraries [vg.{cairo,htmlc,pdf}] }
 
-Each of these modules is in its own library.
+Each of these modules is in its own library as they entails more
+dependencies.
 
-{!modules: Vgr_cairo Vgr_htmlc Vgr_pdf Vgr_svg}
+{!modules: Vgr_cairo Vgr_htmlc Vgr_pdf}
