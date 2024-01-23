@@ -87,12 +87,12 @@ a {{!Vg.Vgr.target}render target} value that defines the concrete
 renderer implementation used (PDF, SVG, HTML canvas etc.).
 
 The following function outputs the unit square of [gray] on a 30x30
-millimeters SVG target in the file [/tmp/vg-basics.svg]:
+millimeters SVG target in the file [/tmp/vg-tutorial.svg]:
 
 {[
 let svg_of_unit_square i =
   try
-    Out_channel.with_open_bin "/tmp/vg-basics.svg" @@ fun oc ->
+    Out_channel.with_open_bin "/tmp/vg-tutorial.svg" @@ fun oc ->
     let size = Size2.v 30. 30. (* mm *) in
     let view = Box2.unit in
     let r = Vgr.create (Vgr_svg.target ()) (`Channel oc) in
@@ -106,7 +106,7 @@ let () = svg_of_unit_square gray
 The result should be an SVG image with a gray square
 like this:
 
-{%html: <img src="../_assets/doc-gray-square.png"
+{%html: <img src="_assets/doc-gray-square.png"
              style="width:30mm; height:30mm;"/> %}
 
 {1:coordinates Coordinate space}
@@ -144,15 +144,15 @@ let circle = P.empty |> P.circle (P2.v 0.5 0.5) 0.4
 let gray_circle = I.cut circle gray
 ]}
 
-Rendered by [svg_of_usquare] the result is:
+Rendered by [svg_of_unit_square] the result is:
 
-{%html: <img src="../_assets/doc-gray-circle.png"
+{%html: <img src="_assets/doc-gray-circle.png"
              style="width:30mm; height:30mm;"/> %}
 
-Note that the background white color surrounding the circle does not
-belong to the image itself, it is the color of the webpage background
-against which the image is composited. Your eyes require a wavelength
-there and {!Gg.Color.void} cannot provide it.
+Note that the background color surrounding the circle does not belong
+to the image itself, it is the color of the webpage background against
+which the image is composited. Your eyes require a wavelength there
+and {!Gg.Color.void} cannot provide it.
 
 {!Vg.I.val-cut} has an optional [area] argument of type {!Vg.P.area} that
 determines how a path should be interpreted as an area of the
@@ -170,14 +170,14 @@ area of width [0.04] in an infinite black image.
 {[
 let circle_outline =
   let area = `O { P.o with P.width = 0.04 } in
-  let black = I.const Color.black in
-  I.cut ~area circle black
+  let blue = I.const (Color.v_srgb 0.000 0.439 0.722) in
+  I.cut ~area circle blue
 ]}
 
-Below is the result and again, the white you see here is in fact
+Below is the result and again, except for the blue color, the rest is in fact
 {!Gg.Color.void}.
 
-{%html: <img src="../_assets/doc-circle-outline.png"
+{%html: <img src="_assets/doc-circle-outline.png"
              style="width:30mm; height:30mm;"/> %}
 
 {!Vg.I.val-cut} gives us scissors but to combine the results of cuts we
@@ -198,7 +198,7 @@ let dot = I.blend circle_outline gray_circle
 
 We get:
 
-{%html: <img src="../_assets/doc-dot.png"
+{%html: <img src="_assets/doc-dot.png"
              style="width:30mm; height:30mm;"/> %}
 
 The order of arguments in {!I.val-blend} is defined so that images can
@@ -236,7 +236,7 @@ together.
 let scatter_plot pts pt_width =
   let dot =
     let circle = P.empty |> P.circle P2.o (0.5 *. pt_width) in
-    I.const Color.black |> I.cut circle
+    I.const (Color.v_srgb 0.000 0.439 0.722) |> I.cut circle
   in
   let mark pt = dot |> I.move pt in
   let blend_mark acc pt = acc |> I.blend (mark pt) in
@@ -252,7 +252,7 @@ time optimizations. For example the SVG renderer will output a single
 Here's the result of [scatter_point] on 800 points with coordinates
 on independent normal distributions.
 
-{%html: <img src="../_assets/doc-scatter-plot.png"
+{%html: <img src="_assets/doc-scatter-plot.png"
              style="width:40mm; height:40mm;"/> %}
 
 {1:paths Paths}
@@ -273,7 +273,7 @@ paths.
 The image below is made by cutting the outline of the single path [p]
 defined hereafter.
 
-{%html: <img src="../_assets/doc-subpaths.png"
+{%html: <img src="_assets/doc-subpaths.png"
              style="width:30mm; height:30mm;"/> %}
 {[
 let p =
@@ -291,7 +291,7 @@ let p =
     P.line ~rel (P2.v 0.1 (-. 0.05))
 in
 let area = `O { P.o with P.width = 0.01 } in
-I.const Color.black |> I.cut ~area p
+I.const (Color.v_srgb 0.000 0.439 0.722) |> I.cut ~area p
 ]}
 
 Except for {!Vg.P.close} which has no other argument but a path, the

@@ -10,7 +10,7 @@ let gray = I.const (Color.gray 0.5)
 
 let svg_of_unit_square i =
   try
-    Out_channel.with_open_bin "/tmp/vg-basics.svg" @@ fun oc ->
+    Out_channel.with_open_bin "/tmp/vg-tutorial.svg" @@ fun oc ->
     let size = Size2.v 30. 30. (* mm *) in
     let view = Box2.unit in
     let r = Vgr.create (Vgr_svg.target ()) (`Channel oc) in
@@ -26,8 +26,8 @@ let gray_circle = I.cut circle gray
 
 let circle_outline =
   let area = `O { P.o with P.width = 0.04 } in
-  let black = I.const Color.black in
-  I.cut ~area circle black
+  let blue = I.const (Color.v_srgb 0.000 0.439 0.722) in
+  I.cut ~area circle blue
 
 let dot = I.blend circle_outline gray_circle
 let dot = gray_circle |> I.blend circle_outline
@@ -35,13 +35,13 @@ let dot = gray_circle |> I.blend circle_outline
 let scatter_plot pts pt_width =
   let dot =
     let circle = P.empty |> P.circle P2.o (0.5 *. pt_width) in
-    I.const Color.black |> I.cut circle
+     I.const (Color.v_srgb 0.000 0.439 0.722) |> I.cut circle
   in
   let mark pt = dot |> I.move pt in
   let blend_mark acc pt = acc |> I.blend (mark pt) in
   List.fold_left blend_mark I.void pts
 
-let () =
+let subs =
   let p =
     let rel = true in
     P.empty |>
@@ -57,4 +57,4 @@ let () =
     P.line ~rel (P2.v 0.1 (-. 0.05))
   in
   let area = `O { P.o with P.width = 0.01 } in
-  ignore (I.const Color.black |> I.cut ~area p)
+  I.const (Color.v_srgb 0.000 0.439 0.722) |> I.cut ~area p

@@ -33,7 +33,7 @@ Db.image "doc-gray-circle" __POS__ ~author:Db.dbuenzli
   end;
 
 Db.image "doc-circle-outline" __POS__ ~author:Db.dbuenzli
-  ~title:"Black circle outline centered in the unit square"
+  ~title:"Blue circle outline centered in the unit square"
   ~tags:["doc";]
   ~size:(Size2.v 30. 30.)
   ~view:Box2.unit
@@ -41,8 +41,8 @@ Db.image "doc-circle-outline" __POS__ ~author:Db.dbuenzli
     let circle = P.empty |> P.circle (P2.v 0.5 0.5) 0.4 in
     let circle_outline =
       let area = `O { P.o with P.width = 0.04 } in
-      let black = I.const Color.black in
-      I.cut ~area circle black
+      let blue = I.const (Color.v_srgb 0.000 0.439 0.722) in
+      I.cut ~area circle blue
     in
     circle_outline
   end;
@@ -55,10 +55,10 @@ Db.image "doc-dot" __POS__ ~author:Db.dbuenzli
   begin fun _ ->
     let circle = P.empty |> P.circle (P2.v 0.5 0.5) 0.4 in
     let area = `O { P.o with P.width = 0.04 } in
-    let gray = I.const (Color.gray 0.5) in
-    let black = I.const Color.black in
+    let gray = I.const (Color.gray 0.65) in
+    let blue = I.const (Color.v_srgb 0.000 0.439 0.722) in
     let gray_circle = I.cut circle gray in
-    let circle_outline = I.cut ~area circle black in
+    let circle_outline = I.cut ~area circle blue in
     let dot = I.blend circle_outline gray_circle in
     dot
   end;
@@ -73,7 +73,7 @@ Db.image "doc-scatter-plot" __POS__ ~author:Db.dbuenzli
     let scatter_plot pts pt_width =
       let dot =
         let circle = P.empty |> P.circle P2.o (0.5 *. pt_width) in
-        I.const Color.black |> I.cut circle
+        I.const (Color.v_srgb 0.000 0.439 0.722) |> I.cut circle
       in
       let mark pt = dot |> I.move pt in
       let blend_mark acc pt = acc |> I.blend (mark pt) in
@@ -120,7 +120,7 @@ Db.image "doc-subpaths" __POS__ ~author:Db.dbuenzli
         P.line ~rel (P2.v 0.1 (-. 0.05))
     in
     let area = `O { P.o with P.width = 0.01 } in
-    I.const Color.black |> I.cut ~area p
+    I.const (Color.v_srgb 0.000 0.439 0.722) |> I.cut ~area p
   end
 ;;
 
@@ -182,7 +182,8 @@ let area_rule_examples area =
   let annulus   = directed_annulus arrow ~rev:false area 0.3 in
   let annulus_r = directed_annulus arrow ~rev:true  area 0.3 in
   let y = 0.46 in
-  pentagram |> I.move (V2.v 0.5 y) |>
+  I.const Color.white |>
+  I.blend pentagram |> I.move (V2.v 0.5 y) |>
   I.blend (annulus   |> I.move (V2.v 1.5 y)) |>
   I.blend (annulus_r |> I.move (V2.v 2.5 y))
 ;;

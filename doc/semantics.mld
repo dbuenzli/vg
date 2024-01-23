@@ -72,13 +72,13 @@ The semantics of area rules is as follows:
    one for each clockwise ones. The resulting sum is the
    winding number. This is usually refered to as the {e non-zero winding
    rule} and is the default for {!Vg.I.val-cut}.
-{%html: <img src="../_assets/doc-anz.png" style="width:90mm; height:30mm;"/> %}}
+{%html: <img src="_assets/doc-anz.png" style="width:90mm; height:30mm;"/> %}}
 {- \[[`Aeo], [p]\]{_[pt]} is [true] iff the number of
    intersections of [p] with a ray cast from [pt] to infinity in
    any direction is odd (just make sure the ray doesn't intersect
    [p] tangently or at a singularity). This is usually refered
    to as the {e even-odd rule}.
-{%html: <img src="../_assets/doc-aeo.png" style="width:90mm; height:30mm;"/> %}}
+{%html: <img src="_assets/doc-aeo.png" style="width:90mm; height:30mm;"/> %}}
 {- \[[`O o], [p]\]{_[pt]} is [true] iff [pt] is in the outline
    area of [p] as defined by the value [o] of type {!Vg.P.type-outline}.
    See {!semoutlines}, {!semjoins}, {!semcaps}, {!semdashes}.}}
@@ -99,7 +99,7 @@ parameter (see below).
 
 The shape of subpath segment jointures is specified in
 [o.join] by a value of type {!Vg.P.type-join}. From left to right:
-{%html: <img src="../_assets/doc-joins.png"
+{%html: <img src="_assets/doc-joins.png"
              style="width:90mm; height:30mm;"/> %}
 {ul
 {- [`Miter], the outer parallel curves are extended until they
@@ -114,7 +114,7 @@ The shape of subpath segment jointures is specified in
 
 The shape of subpath (or dashes) end points is specified in
 [o.cap] by a value of type {!Vg.P.type-cap}. From left to right:
-{%html: <img src="../_assets/doc-caps.png" style="width:90mm; height:20mm;"/> %}
+{%html: <img src="_assets/doc-caps.png" style="width:90mm; height:20mm;"/> %}
 {ul
 {- [`Butt], end points are square and extend only to the exact end point of
    the path.}
