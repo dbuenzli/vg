@@ -1,3 +1,5 @@
+v0.9.5 2024-01-23 La Forclaz (VS)
+---------------------------------
 
 - Add `Vg.P.smooth_{ccurve,qcurve}` to smoothly stitch cubic and
   quadratic Bézier curves. Thanks to François Thiré for the patch
