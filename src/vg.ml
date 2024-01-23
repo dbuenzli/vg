@@ -69,7 +69,7 @@ module Font = struct
     let c = cmp font.size font'.size in
     c
 
-  (* Printers *)
+  (* Formatters *)
 
   let weight_to_str = function
   | `W100 -> "100" | `W200 -> "200" | `W300 -> "300" | `W400 -> "400"
@@ -495,7 +495,7 @@ module P = struct
         if c <> 0 then c else compare_f cmp p p'
     | p, p' -> stdlib_compare p p'
 
-  (* Printers *)
+  (* Formatters *)
 
   let pp_seg pp_f pp_v2 ppf = function
   | `Sub pt ->
@@ -804,7 +804,7 @@ module I = struct
     in
     loop [(i, i')]
 
-  (* Printers *)
+  (* Formatters *)
 
   let pp_image pp_f ppf i =
     let pp_alpha pp_f ppf = function

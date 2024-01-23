@@ -20,9 +20,11 @@
 - The `Vgr_svg` module is now part of the `vg` library. The `vg.svg`
   library is deprecated, it warns on usage and simply requires `vg`.
 
+- Reworked documentation into `.mld` pages.
+
 - Drop optional dependency on `uutf` and require OCaml 4.14.0. 
 
-- Reworked documentation into `.mld` pages.
+- Deprecate `Vg.{Font,I,P}.to_string`, they are not thread-safe.
 
 v0.9.4 2020-05-28 La Forclaz (VS)
 ---------------------------------

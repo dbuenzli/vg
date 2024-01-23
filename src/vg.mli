@@ -58,13 +58,14 @@ module Font : sig
   (** [compare_f cmp font font'] is like {!compare} but uses [cmp] to compare
       floating point values. *)
 
-  (** {1 Printers} *)
-
-  val to_string : t -> string
-  (** [to_string font] is a textual representation of [font]. *)
+  (** {1:fmt Formatters} *)
 
   val pp : Format.formatter -> t -> unit
   (** [pp ppf font] is a textual representation of [font] on [ppf]. *)
+
+  val to_string : t -> string
+  [@@ocaml.deprecated "Use Font.pp instead."]
+  (** @deprecated use {!pp} instead. *)
 end
 
 type font = Font.t
@@ -293,10 +294,7 @@ module P : sig
   (** [compare_f cmp p p'] is like {!compare} but uses [cmp] to compare
       floating point values. *)
 
-  (** {1:printers Printers} *)
-
-  val to_string : path -> string
-  (** [to_string p] is a textual representation of [p]. *)
+  (** {1:fmt Formatters} *)
 
   val pp : Format.formatter -> path -> unit
   (** [pp ppf p] prints a textual representation of [p] on [ppf]. *)
@@ -305,6 +303,10 @@ module P : sig
     path -> unit
   (** [pp_f pp_float ppf p] prints [p] like {!pp} but uses [pp_float] to
       print floating point values. *)
+
+  val to_string : path -> string
+  [@@ocaml.deprecated "Use P.pp instead."]
+  (** @deprecated use {!pp} instead. *)
 end
 
 (** Images.
@@ -473,10 +475,7 @@ module I : sig
 
       {b Note.} Raster images are tested with {!Gg.Raster.compare}. *)
 
-  (** {1:printers Printers} *)
-
-  val to_string : image -> string
-  (** [to_string i] is a textual representation of [i]. *)
+  (** {1:fmt Formatters} *)
 
   val pp : Format.formatter -> image -> unit
   (** [pp ppf i] prints a textual representation of [i] on [ppf]. *)
@@ -485,6 +484,10 @@ module I : sig
     image -> unit
   (** [pp_f pp_float ppf i] prints [i] like {!pp} but uses [pp_float]
       to print floating point values. *)
+
+  val to_string : image -> string
+  [@@ocaml.deprecated "Use I.pp instead."]
+  (** @deprecated use {!pp} instead. *)
 end
 
 (** {1:renderers Image renderers} *)
