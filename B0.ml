@@ -65,35 +65,43 @@ let test_min_cairo_mem =
   let doc = "Minimal cairo to memory rendering example" in
   test "min_cairo_mem" ~doc ~requires:[cairo; vg_cairo]
 
-let test_examples = test "examples" ~doc:"Examples for the docs"
-let test_fglyphs = test "fglyphs" ~requires:[vg_pdf; otfm]
-let test_sqc = test_jsoo "sqc" ~requires:[vg_htmlc; brr]
+let test_examples =
+  test "examples" ~doc:"Examples for the docs"
+
+let test_font_glyphs =
+  let doc = "Render a font's repertoire to PDF (without the glyph API)" in
+  test "font_glyphs" ~requires:[vg_pdf; otfm] ~doc
+
+let test_sqc =
+  let doc = "Square circle spiral illusion" in
+  test_jsoo "sqc" ~requires:[vg_htmlc; brr] ~doc
+
 let test_vecho =
-  let doc = "Vector graphics echo(3)" in
+  let doc = "Like echo(3) but produces a PDF." in
   test "vecho" ~doc ~requires:[uutf; otfm; vg_pdf]
 
-(* Vg image test database. *)
+(* Vg test image database. *)
 
-let db_srcs = `Dir ~/"db"
-let rdb = [db_srcs; `File ~/"test/rstored.ml"]
+let db_srcs = `Dir ~/"test/db"
+let sdb = [db_srcs; `File ~/"test/test_vgr_stored.ml"]
 
-let test_rsvg =
-  let doc = "Renders sample image database with Vgr_svg" in
-  test "rsvg" ~doc ~requires:[unix; uutf] ~more_srcs:rdb
+let test_vgr_svg =
+  let doc = "Renders test images with Vgr_svg" in
+  test "test_vgr_svg" ~doc ~requires:[unix; uutf] ~more_srcs:sdb
 
-let test_rcairo =
-  let doc = "Renders sample image database with Vgr_cairo" in
-  test "rcairo" ~doc ~requires:[uutf; vg_cairo] ~more_srcs:rdb
+let test_vgr_cairo =
+  let doc = "Renders test images with Vgr_cairo" in
+  test "test_vgr_cairo" ~doc ~requires:[uutf; vg_cairo] ~more_srcs:sdb
 
-let test_rpdf =
-  let doc = "Renders sample image database with Vgr_rpdf" in
-  test "rpdf" ~doc ~requires:[unix; uutf; otfm; vg_pdf] ~more_srcs:rdb
+let test_vgr_pdf =
+  let doc = "Renders test images with Vgr_pdf" in
+  test "test_vgr_pdf" ~doc ~requires:[unix; uutf; otfm; vg_pdf] ~more_srcs:sdb
 
-let test_rhtmlc =
-  let doc = "Renders sample image database in the browser" in
+let db_viewer =
+  let doc = "Test image browser viewer" in
   let more_srcs = [`File ~/"test/mui.ml"; `File ~/"test/mui.mli"; db_srcs ] in
   let requires = [uutf; otfm; brr; vg_pdf; vg_htmlc] in
-  test_jsoo "rhtmlc" ~doc ~requires ~more_srcs
+  test_jsoo "db_viewer" ~doc ~requires ~more_srcs
 
 (* Packs *)
 

@@ -84,7 +84,8 @@ Db.image "path-cubics" __POS__ ~author:Db.dbuenzli
     b20 |> I.blend b21
   end;
 
-Db.image "paths-smooths" __POS__ ~author:("François Thiré", "franth2@gmail.com")
+Db.image "paths-smooths" __POS__
+  ~author:("François Thiré", "mailto:franth2@gmail.com")
   ~title:"Smooth paths"
   ~tags:["path"]
   ~note:"Geometric cases for smooth paths"
@@ -96,10 +97,10 @@ Db.image "paths-smooths" __POS__ ~author:("François Thiré", "franth2@gmail.com
     let mgray = Color.gray 0.3 |> I.const in
     let dgray = Color.gray 0.1 |> I.const in
     let blue  = Color.blue     |> I.const in
-    let red   = Color.red      |> I.const in    
+    let red   = Color.red      |> I.const in
     let ctrl_pt pt = blue |> I.cut square |> I.move pt in
     let smooth_pt pt =
-      red |> I.cut square |> I.move pt in    
+      red |> I.cut square |> I.move pt in
     let end_pt pt = dgray |> I.cut square |> I.move pt in
     let tangent p0 p1 =
       let t = P.empty |> P.sub p0 |> P.line p1 in
@@ -115,7 +116,7 @@ Db.image "paths-smooths" __POS__ ~author:("François Thiré", "franth2@gmail.com
       let c1 = if rel then V2.(c1 + p0) else c1 in
       let p1 = if rel then V2.(p1 + p0) else p1 in
       let c2 = if rel then V2.(c2 + p1) else c2 in
-      let p2 = if rel then V2.(p2 + p1) else p2 in                              
+      let p2 = if rel then V2.(p2 + p1) else p2 in
       mgray |> I.cut ~area:(`O { P.o with P.width = 0.02 }) curve |>
       I.blend (tangent p0 c0)    |> I.blend (tangent p1 c1) |>
       I.blend (ctrl_pt c0)       |> I.blend (ctrl_pt c1)    |>
@@ -131,7 +132,7 @@ Db.image "paths-smooths" __POS__ ~author:("François Thiré", "franth2@gmail.com
       let smooth = P2.tr (M3.rot2 ~pt:p1 Float.pi) c0 in
       let c0 = if rel then V2.(c0 + p0) else c0 in
       let p1 = if rel then V2.(p1 + p0) else p1 in
-      let p2 = if rel then V2.(p2 + p1) else p2 in         
+      let p2 = if rel then V2.(p2 + p1) else p2 in
       mgray |> I.cut ~area:(`O { P.o with P.width = 0.02 }) curve |>
       I.blend (tangent p0 c0)    |> I.blend (tangent p1 c0) |>
       I.blend (ctrl_pt c0)       |> I.blend (ctrl_pt c0)    |>

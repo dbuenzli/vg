@@ -7,7 +7,7 @@ combinators are provided to define and compose them.
 
 Renderers for PDF, SVG, Cairo and the HTML canvas are distributed with the
 module. An API allows to implement new renderers.
-     
+
 Vg is distributed under the ISC license. Vg and the SVG renderer
 depend on [Gg]. The PDF renderer depends on [Uutf] and [Otfm], the
 HTML canvas renderer depends on [Brr], the Cairo renderer depends on
@@ -41,33 +41,13 @@ the issue tracker.
 [online]: http://erratique.ch/software/vg/doc/
 [OCaml forum]: https://discuss.ocaml.org/
 
-## Sample programs and images
+## Sample programs
 
-If you install Vg with `opam` sample programs are located in the
-directory `opam var vg:doc`.
+A database of test images can be found in the `test/db` directory.  An
+online rendering of the database with the different backends and links
+to the of source images is available [here][online-db]
 
-A database of sample images can be found in the `db` directory of the
-distribution. An online rendering of the database is available
-[here][online-db].
+A few test programs and minimal rendering examples can be found in
+the [`test`][test] directory, see `b0 list`.
 
-[online-db]: http://erratique.ch/software/vg/demos/rhtmlc.html
-
-Sample programs are located in the `test` directory of the
-distribution. They can be built and listed with:
-
-    topkg build --tests true && topkg test --list
-
-- `min_pdf.native`, minimal example to render an image to a PDF file. 
-- `min_svg.native`, minimal example to render an image to an SVG file. 
-- `min_htmlc.byte`, minimal example to render with the HTML canvas.
-- `rsvg.native`, renders images of the Vg image database to SVG files.
-- `rpdf.native`, renders images of the Vg image database to PDF files.
-- `rcairo.native`, renders images of the Vg image database with Cairo
-   to PDF, PNG, PS or SVG files.
-- `rhtmlc.html` and `rhtmlc.byte` can be processed with `js_of_ocaml`,
-   the resulting webapp renders images of the Vg image database with
-   the HTML canvas, PDF and SVG renderers.   
-- `vecho.native`, like echo(1) but produces a PDF file on stdout, the 
-  font file can be specified, invoke with `-help` for options. 
-- `fglyphs.native`, renders a font's glyphs to a PDF file (without using
-  Vg's glyph API).
+[online-db]: http://erratique.ch/software/vg/db_viewer.html

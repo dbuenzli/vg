@@ -34,24 +34,4 @@ let () =
     Pkg.doc "doc/tutorial.mld" ~dst:"odoc-pages/tutorial.mld";
     Pkg.doc "doc/semantics.mld" ~dst:"odoc-pages/semantics.mld";
     Pkg.doc "doc/image_howto.mld" ~dst:"odoc-pages/image_howto.mld";
-    Pkg.doc "test/examples.ml";
-    Pkg.doc "test/min_htmlc.html";
-    Pkg.doc "test/min_htmlc.ml";
-    Pkg.doc "test/min_pdf.ml";
-    Pkg.doc "test/min_svg.ml";
-    Pkg.doc "test/min_cairo_png.ml";
-    Pkg.doc "test/min_cairo_mem.ml";
-    Pkg.doc "test/fglyphs.ml";
-    Pkg.doc "test/vecho.ml";
-    doc_images;
-
-    Pkg.test ~run:false "test/min_svg";
-    Pkg.test ~run:false "test/min_pdf";
-    Pkg.test ~run:false ~cond:cairo2 "test/min_cairo_png";
-    Pkg.test ~run:false ~cond:cairo2 "test/min_cairo_mem";
-    Pkg.test ~run:false "test/rsvg";
-    Pkg.test ~run:false ~cond:vgr_pdf "test/rpdf";
-    Pkg.test ~run:false ~cond:cairo2 "test/rcairo";
-    Pkg.test ~run:false "test/examples";
-    Pkg.test ~run:false ~cond:vgr_pdf "fglyphs";
-]
+    doc_images; ]

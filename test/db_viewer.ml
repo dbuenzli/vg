@@ -27,7 +27,7 @@ let to_str_of_pp pp v =
   Format.flush_str_formatter ()
 
 let src_link =
-  format_of_string "https://github.com/dbuenzli/vg/blob/master/db/%s#L%d"
+  format_of_string "https://github.com/dbuenzli/vg/blob/master/test/db/%s#L%d"
 
 let open_sans_xbold = match Vgr_pdf.otf_font Open_sans.extra_bold with
 | Error e -> Log.msg "%a" Otfm.pp_error e; `Sans
