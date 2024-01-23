@@ -2,7 +2,7 @@ A few development tips.
 
 # Test image database 
 
-The test image database in [`test/db`][test/db] is a collection of
+The test image database in [`test/db`](test/db) is a collection of
 test images.
 
 Most images should render identically by with all renderers. However
@@ -26,10 +26,10 @@ viewer which runs in your browser:
 
 To add a new image either add it to an existing relevant file or
 create a new file for it. In the latter case, include the new file in
-[`db_contents.ml`](db_contents.ml).
+[`test/db/db_contents.ml`](test/db/db_contents.ml).
 
 An image is added by calling the function `Db.image` 
-(see [`test/db.mli`](test/db.mli)) at the toplevel of the file:
+(see [`test/db/db.mli`](test/db/db.mli)) at the toplevel of the file:
 
 ```ocaml
 Db.image "a-unique-string-id" __POS__

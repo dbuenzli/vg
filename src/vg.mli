@@ -506,7 +506,7 @@ type renderer
        {{:http://www.w3.org/TR/SVG11/}SVG 1.1} document.}
     {- {!Vgr_htmlc}, renders sequence of images on an
        {{:http://www.w3.org/TR/2dcontext/}HTML canvas}
-       via {{:http://ocsigen.org/js_of_ocaml/}js_of_ocaml}.}
+       via {{:http://erratique.ch/software/brr}[brr]}.}
     {- {!Vgr_cairo}, renders images using the
        {{:http://cairographics.org/}Cairo} library.}} *)
 module Vgr : sig

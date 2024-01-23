@@ -1,4 +1,0 @@
-# Vg image database
-
-
-

@@ -41,11 +41,12 @@ the issue tracker.
 
 ## Sample programs
 
-A database of test images can be found in the `test/db` directory.  An
-online rendering of the database with the different backends and links
-to the source of images is available [here][online-db]
+A database of test images can be found in the [`test/db`](test/db)
+directory.  An online rendering of the database with the different
+backends and links to the source of images is available
+[here][online-db]
 
-A few test programs and minimal rendering examples can be found in
-the [`test`][test] directory, see `b0 list`.
+A few test programs and minimal rendering examples can be found in the
+[`test`](test) directory, see `b0 list`.
 
 [online-db]: http://erratique.ch/software/vg/demos/db_viewer.html
