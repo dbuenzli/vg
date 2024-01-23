@@ -11,7 +11,7 @@ open Mui
 
 include Db_contents
 
-let app_name = "rhtmlc"
+let app_name = "db_viewer"
 
 let str = Format.sprintf
 let pp = Format.fprintf

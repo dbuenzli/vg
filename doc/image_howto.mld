@@ -4,7 +4,7 @@ The following examples show for each renderer the minimal code and
 compilation instructions needed to output an image.
 
 Other examples of images and their source can be found in the
-{{:http://erratique.ch/software/vg/demos/rhtmlc.html}online version}
+{{:http://erratique.ch/software/vg/demos/db_viewer.html}online version}
 of Vg's test image database. Clicking on the title of an image brings
 you to its definition.
 
