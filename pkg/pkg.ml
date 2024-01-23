@@ -22,9 +22,9 @@ let () =
   doc_images () >>= fun doc_images ->
   Ok [
     Pkg.mllib "src/vg.mllib";
-    Pkg.mllib ~cond:otfm "src/pdf/vgr_pdf.mllib" ~dst_dir:"pdf";
-    Pkg.mllib ~cond:brr "src/htmlc/vgr_htmlc.mllib" ~dst_dir:"htmlc";
-    Pkg.mllib ~cond:cairo2 "src/cairo/vgr_cairo.mllib" ~dst_dir:"cairo";
+    Pkg.mllib ~cond:otfm "src/pdf/vg_pdf.mllib" ~dst_dir:"pdf";
+    Pkg.mllib ~cond:brr "src/htmlc/vg_htmlc.mllib" ~dst_dir:"htmlc";
+    Pkg.mllib ~cond:cairo2 "src/cairo/vg_cairo.mllib" ~dst_dir:"cairo";
 
     Pkg.bin ~cond:otfm "test/vecho";
     Pkg.doc "doc/index.mld" ~dst:"odoc-pages/index.mld";
