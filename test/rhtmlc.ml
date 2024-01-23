@@ -368,9 +368,7 @@ let ui () =
   in
   let link () =
     on_change white (fun s b -> { s with S.white_bg = b });
-    on_change res (fun s r ->
-        Format.printf "RES: %g@." r;
-        { s with S.resolution = r });
+    on_change res (fun s r -> { s with S.resolution = r });
     on_change ids begin fun s id -> match id with
     | Some id -> { s with S.id = id }
     | None -> s

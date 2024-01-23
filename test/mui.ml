@@ -97,23 +97,13 @@ module Ui = struct
     ui, set
 
   let c_bool = Jstr.v "mu-bool"
-  let bool ?id v =
-    let at = At.[type' (Jstr.v "checkbox")] in
+  let bool ?id check =
+    let at = At.[type' (Jstr.v "checkbox"); if' check checked] in
     let c = el ?id ~at El.input [c_bool] () in
     let ui = { n = c; on_change = nop } in
-    let set b =
-      El.set_at At.Name.checked (Some (Jstr.v (Bool.to_string b))) c
-    in
-    let cb _  =
-      let b = match El.at At.Name.checked c with
-      | None -> false
-      | Some b ->
-          Option.value ~default:false (bool_of_string_opt (Jstr.to_string b))
-      in
-      ui.on_change b
-    in
-    set v; ignore (Ev.listen Ev.change cb (El.as_target c));
-    ui, set
+    let cb _ = ui.on_change (El.prop El.Prop.checked c) in
+    ignore (Ev.listen Ev.change cb (El.as_target c));
+    ui, (fun _ -> failwith "TODO")
 
   let make_focusable e = El.set_at At.Name.tabindex (Some (Jstr.v "0")) e; e
 
