@@ -9,12 +9,10 @@ Renderers for PDF, SVG, Cairo and the HTML canvas are distributed with the
 module. An API allows to implement new renderers.
 
 Vg is distributed under the ISC license. Vg and the SVG renderer
-depend on [Gg]. The PDF renderer depends on [Uutf] and [Otfm], the
-HTML canvas renderer depends on [Brr], the Cairo renderer depends on
-[cairo2].
+depend on [Gg]. The PDF renderer depends on [Otfm], the HTML canvas
+renderer depends on [Brr], the Cairo renderer depends on [cairo2].
      
 [Gg]: http://erratique.ch/software/gg
-[Uutf]: http://erratique.ch/software/uutf
 [Otfm]: http://erratique.ch/software/otfm
 [Brr]: http://erratique.ch/software/brr
 [cairo2]: https://github.com/Chris00/ocaml-cairo
@@ -25,8 +23,8 @@ Home page: http://erratique.ch/software/vg
 
 Vg can be installed with `opam`:
 
-    opam install vg                       # SVG renderer only
-    opam install uutf otfm brr cairo2 vg  # all renderers
+    opam install vg                   # SVG renderer only
+    opam install brr cairo2 otfm vg   # All renderers
     
 If you don't use `opam` consult the [`opam`](opam) file for
 build instructions and a complete specification of the dependencies.
@@ -45,9 +43,9 @@ the issue tracker.
 
 A database of test images can be found in the `test/db` directory.  An
 online rendering of the database with the different backends and links
-to the of source images is available [here][online-db]
+to the source of images is available [here][online-db]
 
 A few test programs and minimal rendering examples can be found in
 the [`test`][test] directory, see `b0 list`.
 
-[online-db]: http://erratique.ch/software/vg/db_viewer.html
+[online-db]: http://erratique.ch/software/vg/demos/db_viewer.html

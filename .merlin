@@ -1,4 +1,4 @@
-PKG b0.kit uutf otfm gg brr cairo2
+PKG b0.kit otfm gg brr cairo2
 S src/**
 S test/**
 S db/**

@@ -10,12 +10,10 @@ Renderers for PDF, SVG, Cairo and the HTML canvas are distributed with the
 module. An API allows to implement new renderers.
 
 Vg is distributed under the ISC license. Vg and the SVG renderer
-depend on [Gg]. The PDF renderer depends on [Uutf] and [Otfm], the
-HTML canvas renderer depends on [Brr], the Cairo renderer depends on
-[cairo2].
+depend on [Gg]. The PDF renderer depends on [Otfm], the HTML canvas
+renderer depends on [Brr], the Cairo renderer depends on [cairo2].
      
 [Gg]: http://erratique.ch/software/gg
-[Uutf]: http://erratique.ch/software/uutf
 [Otfm]: http://erratique.ch/software/otfm
 [Brr]: http://erratique.ch/software/brr
 [cairo2]: https://github.com/Chris00/ocaml-cairo
@@ -38,18 +36,17 @@ homepage: "https://erratique.ch/software/vg"
 doc: "https://erratique.ch/software/vg/doc"
 bug-reports: "https://github.com/dbuenzli/vg/issues"
 depends: [
-  "ocaml" {>= "4.08.0"}
+  "ocaml" {>= "4.14.0"}
   "ocamlfind" {build}
   "ocamlbuild" {build}
   "topkg" {build & >= "1.0.3"}
-  "gg" {>= "0.9.0"}
+  "gg" {>= "1.0.0"}
 ]
-depopts: ["uutf" "otfm" "cairo2"]
+depopts: ["brr" "cairo2" "otfm"]
 conflicts: [
-  "otfm" {< "0.3.0"}
-  "cairo2" {< "0.6"}
-  "uutf" {< "1.0.0"}
   "brr" {< "0.0.6"}
+  "cairo2" {< "0.6"}
+  "otfm" {< "0.3.0"}
 ]
 build: [
   "ocaml"
@@ -57,13 +54,11 @@ build: [
   "build"
   "--dev-pkg"
   "%{dev}%"
-  "--with-uutf"
-  "%{uutf:installed}%"
-  "--with-otfm"
-  "%{otfm:installed}%"
   "--with-brr"
   "%{brr:installed}%"
   "--with-cairo2"
   "%{cairo2:installed}%"
+  "--with-otfm"
+  "%{otfm:installed}%"
 ]
 dev-repo: "git+https://erratique.ch/repos/vg.git"

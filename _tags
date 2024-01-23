@@ -6,26 +6,9 @@ true : package(gg)
 <src/cairo> : include
 <src/pdf> : include
 <src/htmlc> : include
-<db> : include
-<test> : include
 
-<src/pdf/vgr_pdf.*> : package(uutf), package(otfm)
+<src/pdf/vgr_pdf.*> : package(otfm)
 <src/htmlc/vgr_htmlc.*> : package(brr)
 <src/cairo/vgr_cairo.*> : package(cairo2)
 
-<db/glyphs_pdf.*> : package(uutf)
-
-<test/rpdf.*> : package(uutf), package(otfm), package(unix)
-<test/rsvg.*> : package(uutf), package(unix)
-<test/rcairo.*> : package(uutf), package(unix), package(cairo2)
-
-<test/mui.*> : package(brr)
-<test/rhtmlc.*> : package(otfm), package(uutf), package(brr)
-
-<test/min_pdf.*> : package(uutf), package(otfm)
-<test/min_cairo*> : package(cairo2)
-<test/min_htmlc*> : package(brr)
-
-<test/sqc.*> : package(brr)
-<test/vecho.*> : package(uutf), package(otfm)
-<test/fglyphs.*> : package(uutf), package(otfm)
+<test/vecho*> : package(otfm)

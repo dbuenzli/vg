@@ -15,7 +15,17 @@ let unsafe_chr = Char.unsafe_chr
 
 (* Constants and convenience functions. *)
 
-external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
+let fold_utf_8 f acc s = (* XXX code should be rewritten without this *)
+  let rec loop s i acc =
+    if i >= String.length s then acc else
+    let dec = String.get_utf_8_uchar s i in
+    let n = Uchar.utf_decode_length dec in
+    let i' = i + n in
+    match Uchar.utf_decode_is_valid dec with
+    | false -> loop s i' (f acc i (`Malformed (String.sub s i n)))
+    | true -> loop s i' (f acc i (`Uchar (Uchar.utf_decode_uchar dec)))
+  in
+  loop s 0 acc
 
 let u_lpar   = 0x0028 (* U+0028 *)
 let u_rpar   = 0x0029 (* U+0029 *)
@@ -188,7 +198,7 @@ let b_m3 b m =
         (e00 m) (e10 m) (e01 m) (e11 m) (e02 m) (e12 m))
 
 let b_utf16_be b u =
-  (* Can't use Uutf.Buffer.add_utf16_be because of the PDF escape rules. *)
+  (* Can't use Buffer.add_utf16_be because of the PDF escape rules. *)
   let u = Uchar.to_int u in
   let w byte = Buffer.add_char b (unsafe_chr byte) in
   if u < 0x10000 then begin
@@ -205,11 +215,11 @@ let b_utf16_be b u =
 
 let b_str_text b str =      (* adds UTF-8 [str] as an UTF-16BE text string. *)
   let rec add_utf16_be () i = function
-  | `Malformed _ -> add_utf16_be () i (`Uchar Uutf.u_rep)
+  | `Malformed _ -> add_utf16_be () i (`Uchar Uchar.rep)
   | `Uchar u -> b_utf16_be b u
   in
   Buffer.add_string b "\xFE\xFF"; (* BOM *)
-  Uutf.String.fold_utf_8 add_utf16_be () str
+  fold_utf_8 add_utf16_be () str
 
 let b_fmt s fmt = Printf.bprintf s.buf fmt
 let b_str s str = Buffer.add_string s.buf str
@@ -430,9 +440,9 @@ let make_blocks run =
   | None -> []
   | Some s ->
       let add_uchar acc _ = function
-      | `Malformed _ -> Uutf.u_rep :: acc | `Uchar u -> u :: acc
+      | `Malformed _ -> Uchar.rep :: acc | `Uchar u -> u :: acc
       in
-      List.rev (Uutf.String.fold_utf_8 add_uchar [] s)
+      List.rev (fold_utf_8 add_uchar [] s)
   in
   let rec blocks_one_to_one acc us gs = match us, gs with
   | u :: _ as us , g :: [] -> List.rev (((List.length us), 1) :: acc)
@@ -475,11 +485,11 @@ let pdf_text_glyphs run = match run.Vgr.Private.Data.text with
 | Some text ->
     let add_glyph acc _ dec =
       let u = match dec with
-      | `Uchar u -> Uchar.to_int u | `Malformed _ -> Uchar.to_int Uutf.u_rep
+      | `Uchar u -> Uchar.to_int u | `Malformed _ -> Uchar.to_int Uchar.rep
       in
       u :: acc
     in
-    List.rev (Uutf.String.fold_utf_8 add_glyph [] text)
+    List.rev (fold_utf_8 add_glyph [] text)
 
 let w_glyph_run s run op k r =
   let font_mode = set_font s run.Vgr.Private.Data.font in

@@ -14,7 +14,7 @@ for `Vgr_pdf` you can issue:
 
     b0 -- test_vgr_pdf 
 
-which renders all the test images to pdf in `/tmp`, invoke with `--help`f
+which renders all the test images to pdf in `/tmp`, invoke with `--help`
 for more options.
 
 Backends can be compared directly to each other by using the database

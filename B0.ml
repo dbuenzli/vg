@@ -7,7 +7,6 @@ let cairo = B0_ocaml.libname "cairo2"
 let gg = B0_ocaml.libname "gg"
 let otfm = B0_ocaml.libname "otfm"
 let unix = B0_ocaml.libname "unix"
-let uutf = B0_ocaml.libname "uutf"
 
 let vg = B0_ocaml.libname "vg"
 let vg_cairo = B0_ocaml.libname "vg.cairo"
@@ -18,19 +17,19 @@ let vg_pdf = B0_ocaml.libname "vg.pdf"
 
 let vg_lib =
   let srcs = [`Dir ~/"src"] and requires = [gg] in
-  B0_ocaml.lib vg ~doc:"The vg library" ~srcs ~requires
+  B0_ocaml.lib vg ~srcs ~requires
 
 let vg_pdf_lib =
-  let srcs = [`Dir ~/"src/pdf"] and requires = [gg; vg; uutf; otfm] in
-  B0_ocaml.lib vg_pdf ~doc:"The vg.pdf library" ~srcs ~requires
+  let srcs = [`Dir ~/"src/pdf"] and requires = [gg; vg; otfm] in
+  B0_ocaml.lib vg_pdf ~srcs ~requires
 
 let vg_htmlc_lib =
-  let srcs = [`Dir ~/"src/htmlc"] and requires = [vg; gg; brr] in
-  B0_ocaml.lib vg_htmlc ~doc:"The vg.htmlc library" ~srcs ~requires
+  let srcs = [`Dir ~/"src/htmlc"] and requires = [gg; vg; brr] in
+  B0_ocaml.lib vg_htmlc ~srcs ~requires
 
 let vg_cairo_lib =
-  let srcs = [`Dir ~/"src/cairo"] and requires = [vg; gg; cairo] in
-  B0_ocaml.lib vg_cairo ~doc:"The vg.cairo library" ~srcs ~requires
+  let srcs = [`Dir ~/"src/cairo"] and requires = [gg; vg; cairo] in
+  B0_ocaml.lib vg_cairo ~srcs ~requires
 
 (* Tests *)
 
@@ -70,15 +69,15 @@ let test_examples =
 
 let test_font_glyphs =
   let doc = "Render a font's repertoire to PDF (without the glyph API)" in
-  test "font_glyphs" ~requires:[vg_pdf; otfm] ~doc
+  test "font_glyphs" ~requires:[otfm; vg_pdf] ~doc
 
 let test_sqc =
   let doc = "Square circle spiral illusion" in
-  test_jsoo "sqc" ~requires:[vg_htmlc; brr] ~doc
+  test_jsoo "sqc" ~requires:[brr; vg_htmlc] ~doc
 
 let test_vecho =
-  let doc = "Like echo(3) but produces a PDF." in
-  test "vecho" ~doc ~requires:[uutf; otfm; vg_pdf]
+  let doc = "An echo(3) producing PDF banners" in
+  test "vecho" ~doc ~requires:[otfm; vg_pdf]
 
 (* Vg test image database. *)
 
@@ -87,20 +86,20 @@ let sdb = [db_srcs; `File ~/"test/test_vgr_stored.ml"]
 
 let test_vgr_svg =
   let doc = "Renders test images with Vgr_svg" in
-  test "test_vgr_svg" ~doc ~requires:[unix; uutf] ~more_srcs:sdb
+  test "test_vgr_svg" ~doc ~requires:[unix] ~more_srcs:sdb
 
 let test_vgr_cairo =
   let doc = "Renders test images with Vgr_cairo" in
-  test "test_vgr_cairo" ~doc ~requires:[uutf; vg_cairo] ~more_srcs:sdb
+  test "test_vgr_cairo" ~doc ~requires:[vg_cairo] ~more_srcs:sdb
 
 let test_vgr_pdf =
   let doc = "Renders test images with Vgr_pdf" in
-  test "test_vgr_pdf" ~doc ~requires:[unix; uutf; otfm; vg_pdf] ~more_srcs:sdb
+  test "test_vgr_pdf" ~doc ~requires:[unix; otfm; vg_pdf] ~more_srcs:sdb
 
 let db_viewer =
   let doc = "Test image browser viewer" in
   let more_srcs = [`File ~/"test/mui.ml"; `File ~/"test/mui.mli"; db_srcs ] in
-  let requires = [uutf; otfm; brr; vg_pdf; vg_htmlc] in
+  let requires = [otfm; brr; vg_pdf; vg_htmlc] in
   test_jsoo "db_viewer" ~doc ~requires ~more_srcs
 
 (* Packs *)
@@ -120,25 +119,23 @@ let default =
        "org:erratique"; ]
     |> ~~ B0_opam.build
       {|[["ocaml" "pkg/pkg.ml" "build" "--dev-pkg" "%{dev}%"
-          "--with-uutf" "%{uutf:installed}%"
-          "--with-otfm" "%{otfm:installed}%"
           "--with-brr" "%{brr:installed}%"
-          "--with-cairo2" "%{cairo2:installed}%"]]|}
+          "--with-cairo2" "%{cairo2:installed}%"
+          "--with-otfm" "%{otfm:installed}%"]]|}
     |> ~~ B0_opam.depopts
-      [ "uutf", "";
-        "otfm", "";
-        "cairo2", "" ]
+      [ "brr", "";
+        "cairo2", "";
+        "otfm", "";]
     |> ~~ B0_opam.conflicts
-      [ "otfm", {|< "0.3.0"|};
+      [ "brr", {|< "0.0.6"|};
         "cairo2", {|< "0.6"|};
-        "uutf", {|< "1.0.0"|};
-        "brr", {|< "0.0.6"|}; ]
+        "otfm", {|< "0.3.0"|} ]
     |> ~~ B0_opam.depends
-      [ "ocaml", {|>= "4.08.0"|};
+      [ "ocaml", {|>= "4.14.0"|};
         "ocamlfind", {|build|};
         "ocamlbuild", {|build|};
         "topkg", {|build & >= "1.0.3"|};
-        "gg", {|>= "0.9.0"|}; ]
+        "gg", {|>= "1.0.0"|}; ]
     |> B0_meta.tag B0_opam.tag
 
   in

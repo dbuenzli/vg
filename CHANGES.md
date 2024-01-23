@@ -1,21 +1,29 @@
 
-- The `Vgr_svg` module is now part of the `vg` library. 
-  The `vg.svg` library is deprecated, it warns on usage
-  and simply requires `vg`.
-- Reworked documentation into `.mld` pages.
 - Add `Vg.P.smooth_{ccurve,qcurve}` to smoothly stitch cubic and
   quadratic Bézier curves. Thanks to François Thiré for the patch
   (#33).
+
 - `Vgr_htmlc` is now implemented via `brr` which becomes an optional
-  dependency of the package. The mandatory `js_of_ocaml` and
-  `js_of_ocaml-ppx` dependencies are dropped.
-- `Vgr_htmlc.screen_resolution` is now a function taking unit. This 
-  allows the safe (but useless) linking of `Vgr_htmlc` in a web workers.
-- Fix `Vgr_pdf` glyph cut rendering. All glyphs id of the form `0xHH0D`
-  were rendered as id `0xHH0A`. The text of the 2008 standard of the
-  `Tj` operator (§9.4.3) misleads, PDF strings do perform newline
-  normalisation (§7.3.4.2) so `0D` bytes also need to be escaped.
-  
+  dependency of the package. The package no longer depends on 
+  `js_of_ocaml` and `js_of_ocaml-ppx` at all.
+
+- `Vgr_htmlc.screen_resolution` is now a function taking unit. This
+  allows the safe (but useless) linking of `Vgr_htmlc` in a web
+  workers.
+
+- Fix `Vgr_pdf` glyph cut rendering. All glyphs id of the form
+  `0xHH0D` were rendered as id `0xHH0A`. The text of the 2008 standard
+  of the `Tj` operator (§9.4.3) misleads, PDF strings do perform
+  newline normalisation (§7.3.4.2) so `0D` bytes also need to be
+  escaped.
+
+- The `Vgr_svg` module is now part of the `vg` library. The `vg.svg`
+  library is deprecated, it warns on usage and simply requires `vg`.
+
+- Drop optional dependency on `uutf` and require OCaml 4.14.0. 
+
+- Reworked documentation into `.mld` pages.
+
 v0.9.4 2020-05-28 La Forclaz (VS)
 ---------------------------------
 

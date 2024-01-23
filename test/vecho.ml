@@ -8,6 +8,18 @@
 open Gg
 open Vg
 
+let fold_utf_8 f acc s = (* XXX code should be rewritten without this *)
+  let rec loop s i acc =
+    if i >= String.length s then acc else
+    let dec = String.get_utf_8_uchar s i in
+    let n = Uchar.utf_decode_length dec in
+    let i' = i + n in
+    match Uchar.utf_decode_is_valid dec with
+    | false -> loop s i' (f acc i (`Malformed (String.sub s i n)))
+    | true -> loop s i' (f acc i (`Uchar (Uchar.utf_decode_uchar dec)))
+  in
+  loop s 0 acc
+
 let str = Printf.sprintf
 let otfm_err_str err =
   Format.fprintf Format.str_formatter "%a" Otfm.pp_error err;
@@ -96,28 +108,29 @@ let get_kern fi g g' =
 let fixed_layout size text =
   let units_per_em = 1000. in
   let add_adv acc _ = function
-  | `Malformed _ -> acc | `Uchar _ -> acc + 600 (* Courier's advance *)
+  | `Malformed _ -> acc + 600
+  | `Uchar _ -> acc + 600 (* Courier's advance *)
   in
-  let len = size *. (float (Uutf.String.fold_utf_8 add_adv 0 text)) in
+  let len = size *. (float (fold_utf_8 add_adv 0 text)) in
   [], [], (len /. units_per_em)
 
 let otf_layout fi size text =
   let u_to_em = float fi.i_units_per_em in
   let rec add_glyph (gs, advs, len as acc) i = function
-  | `Malformed _ -> add_glyph acc i (`Uchar Uutf.u_rep)
+  | `Malformed _ -> add_glyph acc i (`Uchar Uchar.rep)
   | `Uchar u ->
       let g = get_glyph fi (Uchar.to_int u) in
       let adv = get_adv fi g in
       let sadv = V2.v ((size *. (float adv)) /. u_to_em) 0. in
       (g :: gs, sadv :: advs, len + adv)
   in
-  let gs, advs, len = Uutf.String.fold_utf_8 add_glyph ([], [], 0) text in
+  let gs, advs, len = fold_utf_8 add_glyph ([], [], 0) text in
   gs, advs, ((size *. (float len)) /. u_to_em)
 
 let otf_kern_layout fi size text =
   let u_to_em = float fi.i_units_per_em in
   let rec add (prev, gs, advs, kerns as acc) i = function
-  | `Malformed _ -> add acc i (`Uchar Uutf.u_rep)
+  | `Malformed _ -> add acc i (`Uchar Uchar.rep)
   | `Uchar u ->
       let g = get_glyph fi (Uchar.to_int u) in
       let advs = get_adv fi g :: advs in
@@ -132,7 +145,7 @@ let otf_kern_layout fi size text =
   | adv :: [], [] -> acc, len + adv
   | _ -> assert false
   in
-  let _, gs, advs, kerns = Uutf.String.fold_utf_8 add (-1, [], [], []) text in
+  let _, gs, advs, kerns = fold_utf_8 add (-1, [], [], []) text in
   let advs, len = advances [] 0 (List.rev advs) (List.rev kerns) in
   gs, advs, ((size *. float len) /. u_to_em)
 

@@ -29,7 +29,7 @@ let foldi_uchars f acc =
 
 let utf8 u =
   let b = Buffer.create 4 in
-  Uutf.Buffer.add_utf_8 b (Uchar.of_int u); Buffer.contents b
+  Buffer.add_utf_8_uchar b (Uchar.of_int u); Buffer.contents b
 
 let glyph_chart font =
   let black = I.const Color.black in
