@@ -13,7 +13,7 @@ Vg is distributed under the ISC license. Vg and the SVG renderer
 depend on [Gg]. The PDF renderer depends on [Uutf] and [Otfm], the
 HTML canvas renderer depends on [Brr], the Cairo renderer depends on
 [cairo2].
-
+     
 [Gg]: http://erratique.ch/software/gg
 [Uutf]: http://erratique.ch/software/uutf
 [Otfm]: http://erratique.ch/software/otfm

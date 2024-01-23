@@ -122,7 +122,7 @@ let default =
       {|[["ocaml" "pkg/pkg.ml" "build" "--dev-pkg" "%{dev}%"
           "--with-uutf" "%{uutf:installed}%"
           "--with-otfm" "%{otfm:installed}%"
-          "--with-js_of_ocaml" "%{js_of_ocaml:installed}%"
+          "--with-brr" "%{brr:installed}%"
           "--with-cairo2" "%{cairo2:installed}%"]]|}
     |> ~~ B0_opam.depopts
       [ "uutf", "";
