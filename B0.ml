@@ -31,6 +31,10 @@ let vg_cairo_lib =
   let srcs = [`Dir ~/"src/cairo"] and requires = [gg; vg; cairo] in
   B0_ocaml.lib vg_cairo ~srcs ~requires
 
+let vg_svg_lib =
+  let represents = [vg] in
+  B0_ocaml.deprecated_lib ~represents (B0_ocaml.libname "vg.svg")
+
 (* Tests *)
 
 let test ?more_srcs:(srcs = []) ?(requires = []) ?doc base =

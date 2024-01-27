@@ -44,6 +44,9 @@ package "pdf" (
 )
 
 package "svg" (
-  warning = "Deprecated. Use the vg library, the Vgr_svg module has moved there."
+  description = "The vg.svg library (deprecated)"
+  version = "%%VERSION_NUM%%"
   requires = "vg"
+  represents = "vg"
+  warning = "Deprecated. Use the vg library."
 )
