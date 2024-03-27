@@ -94,7 +94,7 @@ let test_vgr_svg =
 
 let test_vgr_cairo =
   let doc = "Renders test images with Vgr_cairo" in
-  test "test_vgr_cairo" ~doc ~requires:[vg_cairo] ~more_srcs:sdb
+  test "test_vgr_cairo" ~doc ~requires:[unix; vg_cairo] ~more_srcs:sdb
 
 let test_vgr_pdf =
   let doc = "Renders test images with Vgr_pdf" in

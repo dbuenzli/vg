@@ -48,5 +48,5 @@ package "svg" (
   version = "%%VERSION_NUM%%"
   requires = "vg"
   represents = "vg"
-  warning = "Deprecated. Use the vg library."
+  warning = "Deprecated, use the vg library."
 )
