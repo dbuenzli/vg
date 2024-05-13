@@ -32,8 +32,8 @@ let vg_cairo_lib =
   B0_ocaml.lib vg_cairo ~srcs ~requires
 
 let vg_svg_lib =
-  let represents = [vg] in
-  B0_ocaml.deprecated_lib ~represents (B0_ocaml.libname "vg.svg")
+  let exports = [vg] in
+  B0_ocaml.deprecated_lib ~exports (B0_ocaml.libname "vg.svg")
 
 (* Tests *)
 
