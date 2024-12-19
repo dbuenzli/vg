@@ -1,3 +1,7 @@
+
+- `Vgr_svg` fix rendering of matrix transforms.
+  Thanks to John Jackson for the report (#38).
+
 v0.9.5 2024-01-23 La Forclaz (VS)
 ---------------------------------
 

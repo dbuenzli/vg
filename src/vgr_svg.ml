@@ -69,7 +69,7 @@ let pr_tr b = function
 | Rot a -> pr b "rotate(%g)" (Float.deg_of_rad a); M3.rot2 a
 | Scale sv -> pr b "scale(%g %g)" (V2.x sv) (V2.y sv); M3.scale2 sv
 | Matrix m ->
-    pr b "transform(%g %g %g %g %g %g)"
+    pr b "matrix(%g %g %g %g %g %g)"
       (M3.e00 m) (M3.e10 m) (M3.e01 m) (M3.e11 m) (M3.e02 m) (M3.e12 m); m
 
 let get_font s font = try Hashtbl.find s.fonts font with
