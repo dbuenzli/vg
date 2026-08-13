@@ -38,13 +38,15 @@ let vg_svg_lib =
 (* Tests *)
 
 let test ?more_srcs:(srcs = []) ?(requires = []) ?doc base =
-  let srcs = `File (Fpath.fmt "test/%s.ml" base) :: srcs in
+  let srcs = `File (Filepath.fmt "test/%s.ml" base) :: srcs in
   let requires = gg :: vg :: requires in
   B0_ocaml.exe base ?doc ~srcs ~requires
 
 let test_jsoo ?more_srcs:(srcs = []) ?(requires = []) ?doc base =
-  let p = Fpath.fmt "test/%s" base in
-  let srcs = `File Fpath.(p + ".ml") :: `File Fpath.(p + ".html") :: srcs in
+  let p = Filepath.fmt "test/%s" base in
+  let srcs =
+    `File Filepath.(p + ".ml") :: `File Filepath.(p + ".html") :: srcs
+  in
   let requires = gg :: vg :: requires in
   B0_jsoo.html_page base ?doc ~srcs ~requires
 
